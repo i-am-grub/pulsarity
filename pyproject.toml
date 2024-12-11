@@ -1,0 +1,54 @@
+[tool.poetry]
+name = "PropHazard"
+version = "0.1.0"
+description = "A demonstrator project for a RotorHazard variant"
+authors = ["Bryce Gruber <dev@brycegruber.com>"]
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/i-am-grub/PropHazard"
+
+
+
+[tool.poetry.dependencies]
+python = "^3.11"
+quart = "^0.19.9"
+quart-auth = "^0.10.1"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.36"}
+aiosqlite = "^0.20.0"
+hypercorn = "^0.17.3"
+uvloop = [
+    {version = "^0.21.0", platform = "linux"}, 
+    {version = "^0.21.0", platform = "darwin"}
+]
+winloop = {version = "^0.1.7", platform = "win32"}
+httpx = "^0.28.0"
+cryptography = "^44.0.0"
+anyio = "^4.6.2.post1"
+quart-tasks = "^0.2.2"
+argon2-cffi = "^23.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+pytest = "*"
+pytest-asyncio = "*"
+pytest-cov = "*"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "*"
+Sphinx-Substitution-Extensions = "*"
+sphinx-copybutton = "*"
+
+[tool.pytest.ini_options]
+addopts = "--no-cov-on-fail --showlocals --strict-markers"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_mode = "auto"
+testpaths = ["tests"]

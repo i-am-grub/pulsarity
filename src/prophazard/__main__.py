@@ -1,0 +1,3 @@
+"""
+PropHazard server entry point
+"""
