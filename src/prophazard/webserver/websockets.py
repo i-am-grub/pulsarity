@@ -1,5 +1,7 @@
-"""The avaliable websockets for the application"""
+"""
+Webserver Websocket Connections
+"""
 
 from quart import Blueprint
 
-websockets = Blueprint('websockets', __name__)
+websockets = Blueprint("websockets", __name__)
