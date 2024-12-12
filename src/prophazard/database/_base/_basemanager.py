@@ -1,6 +1,7 @@
 from typing import TypeVar, Generic, ParamSpec, Concatenate, Self
 from abc import ABCMeta, abstractmethod
 from collections.abc import Callable, AsyncGenerator, Coroutine
+from functools import wraps
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import make_transient
@@ -23,7 +24,8 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         """
         Class Initalization
 
-        :param async_sessionmaker[AsyncSession] session_maker: _description_
+        :param async_sessionmaker[AsyncSession] session_maker: The default session
+        maker to use for the manager.
         """
         self._session_maker: async_sessionmaker[AsyncSession] = session_maker
 
@@ -48,6 +50,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         When using this decorator, the transaction will not be automatically
         commited when a session is provided.
         """
+        wraps(func)
 
         async def wrapper(self, *args: P.args, **kwargs: P.kwargs) -> R:
             session: AsyncSession = args[0]  # type: ignore
@@ -73,6 +76,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         When using this decorator, the transaction will not be automatically
         commited when a session is provided.
         """
+        wraps(func)
 
         async def wrapper(
             self, *args: P.args, **kwargs: P.kwargs
@@ -94,7 +98,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
     @_optional_session
     async def num_entries(self, session: AsyncSession) -> int:
         """
-        Counts the number of entries in the table.
+        The number of entries in the table.
 
         :param AsyncSession | None session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
@@ -107,7 +111,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
     @_optional_session
     async def get_by_id(self, session: AsyncSession, id: int) -> T | None:
         """
-        _summary_
+        Get an object from the database by id.
 
         :param AsyncSession | None session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
@@ -120,7 +124,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
     @_optional_session
     async def get_all(self, session: AsyncSession) -> ScalarResult[T]:
         """
-        _summary_
+        Get all objects in the table from the database.
 
         :param AsyncSession | None session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
@@ -132,7 +136,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
     @_optional_session_generator
     async def get_all_as_stream(self, session: AsyncSession) -> AsyncGenerator[T, None]:
         """
-        _summary_
+        Streams all objects in the tables from the database.
 
         :param AsyncSession | None session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
@@ -154,37 +158,37 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         :return int: Id of the new
         """
         if db_object is None:
-            _db_object = self._table_class()
+            db_object_ = self._table_class()
         else:
-            _db_object = db_object
+            db_object_ = db_object
 
-        session.add(_db_object)
+        session.add(db_object_)
         await session.flush()
 
-        return _db_object.id
+        return db_object_.id
 
     @_optional_session
     async def add_many(
         self, session: AsyncSession, num_defaults: int, *db_objects: T
     ) -> list[int]:
         """
-        _summary_
+        Adds multiple objects to the database in a single transaction.
 
         :param AsyncSession | None session: Session to use for database transaction
         When providing a session, transactions **will not** be automatically commited.
         :param int num_defaults: The number of defaults to add
-        :param T *db_objects: Objects to add to the database
+        :param T *db_objects: Predefined objects to add to the database
         :return list[int]: List of ids of the newly added objects
         """
 
-        _db_objects = db_objects + tuple(
+        db_objects_ = db_objects + tuple(
             (self._table_class() for _ in range(num_defaults))
         )
 
-        session.add_all(_db_objects)
+        session.add_all(db_objects_)
         await session.flush()
 
-        return [db_object.id for db_object in _db_objects]
+        return [db_object.id for db_object in db_objects_]
 
     async def add_duplicate(self, session: AsyncSession, db_object: T) -> int:
         """
@@ -216,7 +220,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
     @_optional_session
     async def clear_table(self, session: AsyncSession) -> None:
         """
-        Clear all database entries from the table.
+        Clear all entries from the table.
 
         :param AsyncSession | None session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
