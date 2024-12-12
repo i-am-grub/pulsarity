@@ -22,3 +22,11 @@ After installing poetry, you can install the current dependencies using
 ```
 poetry install
 ```
+
+## Starting the Webserver
+
+To start the webserver run
+
+```
+python -m prophazard
+```
