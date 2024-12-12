@@ -1,10 +1,10 @@
 from typing import TypeVar, Generic, ParamSpec, Concatenate, Self
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from collections.abc import Callable, AsyncGenerator, Coroutine
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import make_transient
-from sqlalchemy import ScalarResult, select, func
+from sqlalchemy import ScalarResult, select, delete, func
 
 from ._baseclassifiers import _UserBase, _RaceBase
 
@@ -14,7 +14,7 @@ R = TypeVar("R")
 U = TypeVar("U")
 
 
-class _BaseManager(Generic[T]):
+class _BaseManager(Generic[T], metaclass=ABCMeta):
     """
     The abstract class manager for all database objects
     """
@@ -44,6 +44,9 @@ class _BaseManager(Generic[T]):
         """
         Decorator to ensure there is a valid session for the async method
         if one isn't provided
+
+        When using this decorator, the transaction will not be automatically
+        commited when a session is provided.
         """
 
         async def wrapper(self, *args: P.args, **kwargs: P.kwargs) -> R:
@@ -66,6 +69,9 @@ class _BaseManager(Generic[T]):
         """
         Decorator that mimics ensure_session for methods that create
         an `AsyncGenerator`
+
+        When using this decorator, the transaction will not be automatically
+        commited when a session is provided.
         """
 
         async def wrapper(
@@ -90,9 +96,9 @@ class _BaseManager(Generic[T]):
         """
         Counts the number of entries in the table.
 
-        :param AsyncSession session: _description_
-        :return int: _description_
-        :yield Iterator[int]: _description_
+        :param AsyncSession | None session: Session to use for database transaction.
+        When providing a session, transactions **will not** be automatically commited.
+        :return int: The number of objects in the database table
         """
         statement = func.count(self._table_class.id)
         result = await session.scalar(statement)
@@ -103,9 +109,10 @@ class _BaseManager(Generic[T]):
         """
         _summary_
 
-        :param AsyncSession session: _description_
-        :param int id: _description_
-        :return T | None: _description_
+        :param AsyncSession | None session: Session to use for database transaction.
+        When providing a session, transactions **will not** be automatically commited.
+        :param int id: Id of the object to retreive
+        :return T | None: Object from the database
         """
         statement = select(self._table_class).where(self._table_class.id == id)
         return await session.scalar(statement)
@@ -115,8 +122,9 @@ class _BaseManager(Generic[T]):
         """
         _summary_
 
-        :param AsyncSession session: _description_, defaults to None
-        :return ScalarResult[T]: _description_
+        :param AsyncSession | None session: Session to use for database transaction.
+        When providing a session, transactions **will not** be automatically commited.
+        :return ScalarResult[T]: List of objects from the database
         """
         statement = select(self._table_class)
         return await session.scalars(statement)
@@ -126,9 +134,9 @@ class _BaseManager(Generic[T]):
         """
         _summary_
 
-        :param AsyncSession session: _description_, defaults to None
-        :return AsyncGenerator[T,None]: _description_
-        :yield Iterator[AsyncGenerator[T,None]]: _description_
+        :param AsyncSession | None session: Session to use for database transaction.
+        When providing a session, transactions **will not** be automatically commited.
+        :yield AsyncGenerator[T,None]: Stream of objects from the database
         """
         statement = select(self._table_class)
         result = await session.stream_scalars(statement)
@@ -140,9 +148,10 @@ class _BaseManager(Generic[T]):
         """
         Adds an object to the database. Adds a default object if one is not provided.
 
-        :param AsyncSession | None session: _description_
+        :param AsyncSession | None session: Session to use for database transaction
+        When providing a session, transactions **will not** be automatically commited.
         :param T | None db_object: _description_, defaults to None
-        :return int: _description_
+        :return int: Id of the new
         """
         if db_object is None:
             _db_object = self._table_class()
@@ -161,10 +170,11 @@ class _BaseManager(Generic[T]):
         """
         _summary_
 
-        :param AsyncSession session: _description_
-        :param int num_defaults: _description_
-        :param T *db_objects: _description_
-        :return list[int]: _description_
+        :param AsyncSession | None session: Session to use for database transaction
+        When providing a session, transactions **will not** be automatically commited.
+        :param int num_defaults: The number of defaults to add
+        :param T *db_objects: Objects to add to the database
+        :return list[int]: List of ids of the newly added objects
         """
 
         _db_objects = db_objects + tuple(
@@ -181,12 +191,36 @@ class _BaseManager(Generic[T]):
         Duplicates an instance of T. Must occur within the same session as when the
         original is pulled from the database.
 
-        :param AsyncSession session: _description_
-        :param T db_object: _description_
-        :return int: _description_
+        :param AsyncSession session: Session to use for database transaction
+        :param T db_object: Object to duplicate
+        :return int: Id of the newly created object
         """
         session.expunge(db_object)
         make_transient(db_object)
         del db_object.id
 
         return await self.add(session, db_object)
+
+    @_optional_session
+    async def delete(self, session: AsyncSession, db_object: T) -> None:
+        """
+        Delete an object from the database
+
+        :param AsyncSession | None session: Session to use for database transaction.
+        When providing a session, transactions **will not** be automatically commited.
+        :param T db_object: Object to delete from the database.
+        """
+        await session.delete(db_object)
+        await session.flush()
+
+    @_optional_session
+    async def clear_table(self, session: AsyncSession) -> None:
+        """
+        Clear all database entries from the table.
+
+        :param AsyncSession | None session: Session to use for database transaction.
+        When providing a session, transactions **will not** be automatically commited.
+        """
+        statement = delete(self._table_class)
+        await session.execute(statement)
+        await session.flush()

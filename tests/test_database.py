@@ -1,6 +1,7 @@
 import pytest
 import pytest_asyncio
 
+from prophazard.database._base._basemanager import _BaseManager
 from prophazard.database.race import RaceDatabaseManager, Pilot
 
 
@@ -10,6 +11,13 @@ async def race_database():
     await race_database.sync_database()
     yield race_database
     await race_database.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_abc_manager(race_database: RaceDatabaseManager):
+    session_maker = race_database.new_session_maker()
+    with pytest.raises(TypeError):
+        _BaseManager(session_maker)
 
 
 @pytest.mark.asyncio
@@ -189,3 +197,41 @@ async def test_add_duplicate(race_database: RaceDatabaseManager):
     assert pilot1.id != pilot2.id
     assert pilot1.name == pilot2.name
     assert pilot1.callsign == pilot2.callsign
+
+
+@pytest.mark.asyncio
+async def test_delete_object(race_database: RaceDatabaseManager):
+
+    num_entries = await race_database.pilots.num_entries(None)
+    assert num_entries == 0
+
+    new_pilot = Pilot()
+
+    pilot_id = await race_database.pilots.add(None, new_pilot)
+    assert pilot_id == 1
+
+    num_entries = await race_database.pilots.num_entries(None)
+    assert num_entries == 1
+
+    await race_database.pilots.delete(None, new_pilot)
+
+    num_entries = await race_database.pilots.num_entries(None)
+    assert num_entries == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_table(race_database: RaceDatabaseManager):
+    num_entries = await race_database.pilots.num_entries(None)
+    assert num_entries == 0
+
+    num_of_objects = 5
+    pilot_ids = await race_database.pilots.add_many(None, num_of_objects)
+    assert len(pilot_ids) == num_of_objects
+
+    num_entries = await race_database.pilots.num_entries(None)
+    assert num_entries == num_of_objects
+
+    await race_database.pilots.clear_table(None)
+
+    num_entries = await race_database.pilots.num_entries(None)
+    assert num_entries == 0
