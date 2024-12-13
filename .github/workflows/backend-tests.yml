@@ -1,7 +1,8 @@
 name: Backend-Tests
 
-push:
-  branches: [master]
+on:
+  push:
+    branches: [master]
     paths-ignore: ['docs/**', '*.md', '*.rst']
   pull_request:
     paths-ignore: [ 'docs/**', '*.md', '*.rst' ]
