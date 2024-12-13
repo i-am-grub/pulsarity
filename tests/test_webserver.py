@@ -1,11 +1,5 @@
 import pytest
 from quart.typing import TestClientProtocol
-from prophazard import test_client
-
-
-@pytest.fixture()
-def client():
-    yield test_client()
 
 
 @pytest.mark.asyncio

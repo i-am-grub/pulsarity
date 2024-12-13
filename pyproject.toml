@@ -7,8 +7,6 @@ readme = "README.md"
 license = "MIT"
 repository = "https://github.com/i-am-grub/PropHazard"
 
-
-
 [tool.poetry.dependencies]
 python = "^3.11"
 quart = "^0.19.9"
@@ -31,10 +29,10 @@ argon2-cffi = "^23.1.0"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.group.test]
+[tool.poetry.group.dev]
 optional = true
 
-[tool.poetry.group.test.dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "*"
 pytest-asyncio = "*"
 pytest-cov = "*"
@@ -46,6 +44,9 @@ optional = true
 sphinx = "*"
 Sphinx-Substitution-Extensions = "*"
 sphinx-copybutton = "*"
+
+[tool.mypy]
+exclude = ["tests"]
 
 [tool.pytest.ini_options]
 addopts = "--no-cov-on-fail --showlocals --strict-markers"

@@ -15,48 +15,34 @@ logger = logging.getLogger(__name__)
 _file_lock = Lock()
 
 
-def get_configs_defaults() -> dict:
-    config: dict[str, dict] = {
-        "SECRETS": {},
-        "GENERAL": {},
-        "TIMING": {},
-        "UI": {},
-        "USER": {},
-        "HARDWARE": {},
-        "LED": {},
-        "LOGGING": {},
-        "SENSORS": {},
-    }
+def get_configs_defaults() -> dict[str, dict]:
 
     # LED strip configuration:
-    config["LED"]["LED_COUNT"] = 0  # Number of LED pixels.
-    config["LED"][
-        "LED_GPIO"
-    ] = 10  # GPIO pin connected to the pixels (10 uses SPI /dev/spidev0.0).
-    config["LED"][
-        "LED_FREQ_HZ"
-    ] = 800000  # LED signal frequency in hertz (usually 800khz)
-    config["LED"]["LED_DMA"] = 10  # DMA channel to use for generating signal (try 10)
-    config["LED"][
-        "LED_INVERT"
-    ] = False  # True to invert the signal (when using NPN transistor level shift)
-    config["LED"]["LED_CHANNEL"] = 0  # set to '1' for GPIOs 13, 19, 41, 45 or 53
-    config["LED"]["LED_STRIP"] = "GRB"  # Strip type and colour ordering
-    config["LED"]["LED_ROWS"] = 1  # Number of rows in LED array
-    config["LED"]["PANEL_ROTATE"] = 0
-    config["LED"]["INVERTED_PANEL_ROWS"] = False
-    config["LED"]["SERIAL_CTRLR_PORT"] = None  # Serial port for LED-controller module
-    config["LED"][
-        "SERIAL_CTRLR_BAUD"
-    ] = 115200  # Serial baud rate for LED-controller module
+    led: dict = {}
+    led["LED_COUNT"] = 0  # Number of LED pixels.
+    led["LED_GPIO"] = (
+        10  # GPIO pin connected to the pixels (10 uses SPI /dev/spidev0.0).
+    )
+    led["LED_FREQ_HZ"] = 800000  # LED signal frequency in hertz (usually 800khz)
+    led["LED_DMA"] = 10  # DMA channel to use for generating signal (try 10)
+    led["LED_INVERT"] = (
+        False  # True to invert the signal (when using NPN transistor level shift)
+    )
+    led["LED_CHANNEL"] = 0  # set to '1' for GPIOs 13, 19, 41, 45 or 53
+    led["LED_STRIP"] = "GRB"  # Strip type and colour ordering
+    led["LED_ROWS"] = 1  # Number of rows in LED array
+    led["PANEL_ROTATE"] = 0
+    led["INVERTED_PANEL_ROWS"] = False
+    led["SERIAL_CTRLR_PORT"] = None  # Serial port for LED-controller module
+    led["SERIAL_CTRLR_BAUD"] = 115200  # Serial baud rate for LED-controller module
 
     # LED effect configuration
-    config["LED"]["ledEffects"] = ""
-    config["LED"]["ledBrightness"] = 32
-    config["LED"]["ledColorNodes"] = ""
-    config["LED"]["ledColorFreqs"] = ""
-    config["LED"]["ledColorMode"] = ""
-    config["LED"]["seatColors"] = [
+    led["ledEffects"] = ""
+    led["ledBrightness"] = 32
+    led["ledColorNodes"] = ""
+    led["ledColorFreqs"] = ""
+    led["ledColorMode"] = ""
+    led["seatColors"] = [
         "#0022ff",  # Blue
         "#ff5500",  # Orange
         "#00ff22",  # Green
@@ -68,71 +54,90 @@ def get_configs_defaults() -> dict:
     ]
 
     # Legacy Video Receiver Configuration (DEPRECATED)
-    config["VRX_CONTROL"] = {}
-    config["VRX_CONTROL"]["HOST"] = "localhost"  # MQTT broker IP Address
-    config["VRX_CONTROL"]["ENABLED"] = False
-    config["VRX_CONTROL"]["OSD_LAP_HEADER"] = "L"
+    vrx: dict = {}
+    vrx["HOST"] = "localhost"  # MQTT broker IP Address
+    vrx["ENABLED"] = False
+    vrx["OSD_LAP_HEADER"] = "L"
 
     # hardware default configurations
-    config["HARDWARE"]["I2C_BUS"] = 1
+    hardware: dict = {}
+    hardware["I2C_BUS"] = 1
 
     # other default configurations
-    config["GENERAL"]["HOST"] = "0.0.0.0"
-    config["GENERAL"]["HTTP_PORT"] = 5000
-    config["GENERAL"]["ADMIN_USERNAME"] = "admin"
-    config["GENERAL"]["ADMIN_PASSWORD"] = "rotorhazard"
-    config["GENERAL"]["SECONDARIES"] = []
-    config["GENERAL"]["SECONDARY_TIMEOUT"] = 300  # seconds
-    config["GENERAL"]["DEBUG"] = False
-    config["GENERAL"]["CORS_ALLOWED_HOSTS"] = "*"
-    config["GENERAL"]["FORCE_S32_BPILL_FLAG"] = False
-    config["GENERAL"]["DEF_NODE_FWUPDATE_URL"] = ""
-    config["GENERAL"]["SHUTDOWN_BUTTON_GPIOPIN"] = 18
-    config["GENERAL"]["SHUTDOWN_BUTTON_DELAYMS"] = 2500
-    config["GENERAL"]["DB_AUTOBKP_NUM_KEEP"] = 30
-    config["GENERAL"][
-        "RACE_START_DELAY_EXTRA_SECS"
-    ] = 0.9  # amount of extra time added to prestage time
-    config["GENERAL"]["LOG_SENSORS_DATA_RATE"] = 300  # rate at which to log sensor data
-    config["GENERAL"]["SERIAL_PORTS"] = []
-    config["GENERAL"]["LAST_MODIFIED_TIME"] = 0
+    general: dict = {}
+    general["HOST"] = "0.0.0.0"
+    general["HTTP_PORT"] = 5000
+    general["ADMIN_USERNAME"] = "admin"
+    general["ADMIN_PASSWORD"] = "rotorhazard"
+    general["SECONDARIES"] = []
+    general["SECONDARY_TIMEOUT"] = 300  # seconds
+    general["DEBUG"] = False
+    general["CORS_ALLOWED_HOSTS"] = "*"
+    general["FORCE_S32_BPILL_FLAG"] = False
+    general["DEF_NODE_FWUPDATE_URL"] = ""
+    general["SHUTDOWN_BUTTON_GPIOPIN"] = 18
+    general["SHUTDOWN_BUTTON_DELAYMS"] = 2500
+    general["DB_AUTOBKP_NUM_KEEP"] = 30
+    general["RACE_START_DELAY_EXTRA_SECS"] = (
+        0.9  # amount of extra time added to prestage time
+    )
+    general["LOG_SENSORS_DATA_RATE"] = 300  # rate at which to log sensor data
+    general["SERIAL_PORTS"] = []
+    general["LAST_MODIFIED_TIME"] = 0
 
     # UI
-    config["UI"]["timerName"] = "RotorHazard"
-    config["UI"]["timerLogo"] = ""
-    config["UI"]["hue_0"] = "212"
-    config["UI"]["sat_0"] = "55"
-    config["UI"]["lum_0_low"] = "29.2"
-    config["UI"]["lum_0_high"] = "46.7"
-    config["UI"]["contrast_0_low"] = "#ffffff"
-    config["UI"]["contrast_0_high"] = "#ffffff"
-    config["UI"]["hue_1"] = "25"
-    config["UI"]["sat_1"] = "85.3"
-    config["UI"]["lum_1_low"] = "37.6"
-    config["UI"]["lum_1_high"] = "54.5"
-    config["UI"]["contrast_1_low"] = "#ffffff"
-    config["UI"]["contrast_1_high"] = "#000000"
-    config["UI"]["currentLanguage"] = ""
-    config["UI"]["timeFormat"] = "{m}:{s}.{d}"
-    config["UI"]["timeFormatPhonetic"] = "{m} {s}.{d}"
-    config["UI"]["pilotSort"] = "name"
+    ui: dict = {}
+    ui["timerName"] = "RotorHazard"
+    ui["timerLogo"] = ""
+    ui["hue_0"] = "212"
+    ui["sat_0"] = "55"
+    ui["lum_0_low"] = "29.2"
+    ui["lum_0_high"] = "46.7"
+    ui["contrast_0_low"] = "#ffffff"
+    ui["contrast_0_high"] = "#ffffff"
+    ui["hue_1"] = "25"
+    ui["sat_1"] = "85.3"
+    ui["lum_1_low"] = "37.6"
+    ui["lum_1_high"] = "54.5"
+    ui["contrast_1_low"] = "#ffffff"
+    ui["contrast_1_high"] = "#000000"
+    ui["currentLanguage"] = ""
+    ui["timeFormat"] = "{m}:{s}.{d}"
+    ui["timeFormatPhonetic"] = "{m} {s}.{d}"
+    ui["pilotSort"] = "name"
 
     # timing
-    config["TIMING"]["startThreshLowerAmount"] = "0"
-    config["TIMING"]["startThreshLowerDuration"] = "0"
-    config["TIMING"]["calibrationMode"] = 1
-    config["TIMING"]["MinLapBehavior"] = 0
+    timing: dict = {}
+    timing["startThreshLowerAmount"] = "0"
+    timing["startThreshLowerDuration"] = "0"
+    timing["calibrationMode"] = 1
+    timing["MinLapBehavior"] = 0
 
     # user-specified behavior
-    config["USER"]["voiceCallouts"] = ""
-    config["USER"]["actions"] = "[]"
+    user: dict = {}
+    user["voiceCallouts"] = ""
+    user["actions"] = "[]"
 
     # logging defaults
-    config["LOGGING"]["CONSOLE_LEVEL"] = "INFO"
-    config["LOGGING"]["SYSLOG_LEVEL"] = "NONE"
-    config["LOGGING"]["FILELOG_LEVEL"] = "INFO"
-    config["LOGGING"]["FILELOG_NUM_KEEP"] = 30
-    config["LOGGING"]["CONSOLE_STREAM"] = "stdout"
+    log: dict = {}
+    log["CONSOLE_LEVEL"] = "INFO"
+    log["SYSLOG_LEVEL"] = "NONE"
+    log["FILELOG_LEVEL"] = "INFO"
+    log["FILELOG_NUM_KEEP"] = 30
+    log["CONSOLE_STREAM"] = "stdout"
+
+    config: dict[str, dict] = {
+        "SECRETS": {},
+        "GENERAL": general,
+        "TIMING": timing,
+        "UI": ui,
+        "USER": user,
+        "HARDWARE": hardware,
+        "LED": led,
+        "LOGGING": log,
+        "SENSORS": {},
+        "VRX_CONTROL": vrx,
+    }
 
     return config
 
