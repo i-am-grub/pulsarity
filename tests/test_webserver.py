@@ -1,24 +1,26 @@
 import pytest
 from quart.typing import TestClientProtocol
 
-
-@pytest.mark.asyncio
-async def test_webserver_none(client: TestClientProtocol):
-    response = await client.get("/fake")
-    assert response.status_code == 404
+from quart_auth import Unauthorized
 
 
 @pytest.mark.asyncio
-async def test_webserver_hello(client: TestClientProtocol):
-    response = await client.get("/hello")
+async def test_webserver_index(client: TestClientProtocol):
+    response = await client.get("/")
     assert response.status_code == 200
-    assert await response.get_json() == {"hello": 0}
 
 
 @pytest.mark.asyncio
-async def test_webserver_echo(client: TestClientProtocol):
-    data = {"name": "foo"}
-    response = await client.post("/echo", json=data)
+async def test_webserver_unauthorized(client: TestClientProtocol):
+    response = await client.get("/pilots")
+    assert response.status_code != 200
+
+
+@pytest.mark.asyncio
+async def test_webserver_login(client: TestClientProtocol):
+    login_data = {"username": "admin", "password": "password"}
+    response = await client.post("/login", json=login_data)
     assert response.status_code == 200
-    returned_data = await response.get_json()
-    assert returned_data == {"input": data, "extra": True}
+
+    data = await response.get_json()
+    assert data == {"success": True}

@@ -208,23 +208,33 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
     @_optional_session
     async def delete(self, session: AsyncSession, db_object: T) -> None:
         """
-        Delete an object from the database
+        Delete an object from the database. Persistent objects are not removed
 
         :param AsyncSession | None session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
         :param T db_object: Object to delete from the database.
         """
-        await session.delete(db_object)
-        await session.flush()
+
+        if issubclass(self._table_class, _UserBase) and self._table_class._persistent:
+            return
+        else:
+            await session.delete(db_object)
+            await session.flush()
 
     @_optional_session
     async def clear_table(self, session: AsyncSession) -> None:
         """
-        Clear all entries from the table.
+        Clear all entries from the table. Persistent objects are not removed
 
         :param AsyncSession | None session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
         """
-        statement = delete(self._table_class)
+        if issubclass(self._table_class, _UserBase):
+            statement = delete(self._table_class).where(
+                self._table_class._persistent == False
+            )
+        else:
+            statement = delete(self._table_class)
+
         await session.execute(statement)
         await session.flush()

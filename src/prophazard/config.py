@@ -7,6 +7,7 @@ import logging
 import json
 import time
 import anyio
+from secrets import token_urlsafe
 from asyncio import Lock
 
 DEFAULT_CONFIG_FILE_NAME = "config.json"
@@ -16,6 +17,12 @@ _file_lock = Lock()
 
 
 def get_configs_defaults() -> dict[str, dict]:
+
+    # secret configuration:
+    secrets: dict = {}
+    secrets["ADMIN_USERNAME"] = "admin"
+    secrets["ADMIN_PASSWORD"] = "rotorhazard"
+    secrets["SECRET_KEY"] = token_urlsafe(32)
 
     # LED strip configuration:
     led: dict = {}
@@ -67,8 +74,6 @@ def get_configs_defaults() -> dict[str, dict]:
     general: dict = {}
     general["HOST"] = "0.0.0.0"
     general["HTTP_PORT"] = 5000
-    general["ADMIN_USERNAME"] = "admin"
-    general["ADMIN_PASSWORD"] = "rotorhazard"
     general["SECONDARIES"] = []
     general["SECONDARY_TIMEOUT"] = 300  # seconds
     general["DEBUG"] = False
@@ -127,7 +132,7 @@ def get_configs_defaults() -> dict[str, dict]:
     log["CONSOLE_STREAM"] = "stdout"
 
     config: dict[str, dict] = {
-        "SECRETS": {},
+        "SECRETS": secrets,
         "GENERAL": general,
         "TIMING": timing,
         "UI": ui,
