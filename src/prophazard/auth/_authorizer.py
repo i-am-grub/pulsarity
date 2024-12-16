@@ -12,7 +12,7 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 
-class InvalidPermissions(Exception):
+class InvalidPermissions(Unauthorized):
     """
     Raised when a user attempts to reach a resource without proper permissions.
     """

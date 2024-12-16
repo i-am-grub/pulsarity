@@ -27,7 +27,7 @@ async def login():
         user = await database.users.get_by_username(None, data["username"])
 
         if await user.verify_password(data["password"]):
-            login_user(RHUser(user.auth_id))
+            login_user(RHUser(user.auth_id.hex))
             return {"success": True}
 
     return {"success": False}
@@ -39,6 +39,8 @@ async def logout():
     return {"success": True}
 
 
-@permission_required(UserPermission.READ_PILOTS)
 @routes.get("/pilots")
-async def get_pilots(): ...
+@permission_required(UserPermission.READ_PILOTS)
+async def get_pilots():
+    database = await current_app.get_user_database()
+    return {"status": True}

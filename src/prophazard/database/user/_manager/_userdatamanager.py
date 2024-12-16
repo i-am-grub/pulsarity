@@ -26,7 +26,7 @@ class UserDatabaseManager:
         self.roles = RoleManager(default_session_maker)
         self.permissions = PermissionManager(default_session_maker)
 
-    async def sync_database(self) -> None:
+    async def setup(self) -> None:
         """Setup the database connection. Used at server startup.
 
         :return: _description_
@@ -35,6 +35,14 @@ class UserDatabaseManager:
 
         async with self.engine.begin() as conn:
             await conn.run_sync(_UserBase.metadata.create_all)
+
+        await self.permissions.verify_persistant()
+        permissions = await self.permissions.get_all(None)
+        await self.roles.verify_persistant_role(None, "SYSTEM_ADMIN", set(permissions))
+        roles = set()
+        if (role := await self.roles.role_by_name(None, "SYSTEM_ADMIN")) is not None:
+            roles.add(role)
+        await self.users.verify_persistant_user(None, "admin", roles)
 
     async def shutdown(self) -> None:
         """Shutdown the database connection.

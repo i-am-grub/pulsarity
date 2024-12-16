@@ -42,7 +42,7 @@ class User(_UserBase):
 
     __tablename__ = "user"
 
-    auth_id: Mapped[str] = mapped_column(server_default=str(uuid4()))
+    auth_id: Mapped[UUID] = mapped_column(default=uuid4)
     """The UUID associated with the user"""
     username: Mapped[str] = mapped_column(unique=True)
     """Username of user"""

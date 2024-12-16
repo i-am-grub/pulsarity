@@ -28,12 +28,12 @@ def generate_app(*, test_mode: bool = False) -> RHApplication:
 
     app.secret_key = str(get_item_from_file("SECRETS", "SECRET_KEY"))
 
-    QuartAuth(
+    auth_manager = QuartAuth(
         app,
         cookie_name="PROPHAZARD_AUTH",
         mode="cookie",
-        user_class=RHUser,
     )
+    auth_manager.user_class = RHUser
 
     for blueprint in (_events, _routes, _tasks, _websockets):
         app.register_blueprint(blueprint)

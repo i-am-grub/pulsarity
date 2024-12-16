@@ -1,4 +1,5 @@
 from typing_extensions import override
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -20,7 +21,7 @@ class UserManager(_BaseManager[User]):
         return User
 
     @_BaseManager._optional_session
-    async def get_by_uuid(self, session: AsyncSession, uuid: str) -> User | None:
+    async def get_by_uuid(self, session: AsyncSession, uuid: UUID) -> User | None:
         """
         Attempt to retrieve a user by uuid
 
