@@ -26,7 +26,7 @@ class RaceDatabaseManager:
         self.pilots = _PilotManager(default_session_maker)
         """A handler to an instance of _PilotManager"""
 
-    async def sync_database(self) -> None:
+    async def setup(self) -> None:
         """
         Setup the database connection. Used at server startup.
         """

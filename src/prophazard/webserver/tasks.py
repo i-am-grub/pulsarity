@@ -2,6 +2,6 @@
 Webserver Tasks
 """
 
-from .components import RHBlueprint
+from ..extensions import RHBlueprint
 
 tasks = RHBlueprint("tasks", __name__)

@@ -7,25 +7,9 @@ from collections.abc import Coroutine
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
 
-from quart.typing import TestClientProtocol
-
-from .webserver.components import RHApplication
+from .extensions import RHApplication
 from .webserver import generate_app
 from .config import get_item_from_file
-
-
-def test_client(app: RHApplication | None = None) -> TestClientProtocol:
-    """
-    Generates a client to be used for testing the webserver
-
-    :param RHApplication | None app: Application to use for the webserver, defaults to None
-    :return TestClientProtocol: The generated test client
-    """
-
-    if app is None:
-        app = generate_app()
-
-    return app.test_client()
 
 
 def prophazard_webserver(

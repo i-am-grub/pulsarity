@@ -10,6 +10,8 @@ class _UserBase(AsyncAttrs, DeclarativeBase):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     """Internal identifier"""
+    _persistent: Mapped[bool] = mapped_column(name="persistent")
+    """Entry is persistent in database"""
 
 
 class _RaceBase(AsyncAttrs, DeclarativeBase):
