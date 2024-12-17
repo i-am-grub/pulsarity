@@ -8,6 +8,8 @@ from ..extensions import RHBlueprint, current_app
 from ..database.user import UserDatabaseManager
 from ..database.race import RaceDatabaseManager
 
+from ..utils.executor import shutdown_executor
+
 p_events = RHBlueprint("private_events", __name__)
 events = RHBlueprint("events", __name__)
 
@@ -45,3 +47,8 @@ async def setup_race_database():
 async def shutdown_race_database():
     database_manager = await current_app.get_race_database()
     await database_manager.shutdown()
+
+
+@events.after_app_serving
+async def await_executor():
+    await shutdown_executor()
