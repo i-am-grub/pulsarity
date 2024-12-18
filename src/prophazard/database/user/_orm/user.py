@@ -89,9 +89,8 @@ class User(_UserBase):
 
         :param str password: The password to hash.
         """
-        loop = asyncio.get_event_loop()
         try:
-            hashed_password = await loop.run_in_executor(None, _ph.hash, password)
+            hashed_password = await asyncio.to_thread(_ph.hash, password)
             self.password_hash = hashed_password
         except HashingError:
             logger.error(f"Failed to hash password for {self.username}")
@@ -108,10 +107,7 @@ class User(_UserBase):
             return False
 
         try:
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None, _ph.verify, self.password_hash, password
-            )
+            result = await asyncio.to_thread(_ph.verify, self.password_hash, password)
         except VerifyMismatchError:
             logger.warning(f"Failed login attempt for {self.username}")
             return False

@@ -32,7 +32,7 @@ def get_executor() -> ThreadPoolExecutor | ProcessPoolExecutor:
     """
     Get an executor to enable parallel processing for computationally
     intensive tasks. If the task to schedule in the executor is IO bound,
-    consider using a default executor instead.
+    consider using `asyncio.to_thread` instead.
 
     Returns a `ProcessPoolExecutor` under most circumstances. The exception
     providing an instance of ThreadPoolExecutor is when the python global
