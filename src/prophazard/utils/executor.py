@@ -59,5 +59,4 @@ async def shutdown_executor() -> None:
     """
     Wait for the executor to finish all tasks and shutdown.
     """
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, _executor.shutdown)
+    await asyncio.to_thread(_executor.shutdown)
