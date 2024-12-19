@@ -6,6 +6,8 @@ from quart import current_app as _current_app
 from quart_auth import AuthUser
 from quart_auth import current_user as _current_user
 
+from .config import Config
+
 from .database.user import UserDatabaseManager, User
 from .database.race import RaceDatabaseManager
 
@@ -19,6 +21,8 @@ class RHApplication(Quart):
 
     _user_database: Future[UserDatabaseManager] | None = None
     _race_database: Future[RaceDatabaseManager] | None = None
+
+    rh_configs = Config()
 
     async def get_user_database(self) -> UserDatabaseManager:
         if self._user_database is None:

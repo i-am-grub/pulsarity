@@ -246,7 +246,7 @@ class Config:
 
     configs = None
 
-    def __init__(self, filename=DEFAULT_CONFIG_FILE_NAME):
+    def __init__(self, filename: str = DEFAULT_CONFIG_FILE_NAME):
         self.filename = filename
 
     async def load_config_file(self):

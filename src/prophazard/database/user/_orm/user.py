@@ -50,7 +50,7 @@ class User(_UserBase):
     """First name of user"""
     last_name: Mapped[str | None] = mapped_column()
     """Last name of user"""
-    password_hash: Mapped[str | None] = mapped_column()
+    _password_hash: Mapped[str | None] = mapped_column()
     """Hash of the user's password"""
     _roles: Mapped[set[Role]] = relationship(secondary=user_role_association)
     """The role of the user"""
@@ -91,7 +91,7 @@ class User(_UserBase):
         """
         try:
             hashed_password = await asyncio.to_thread(_ph.hash, password)
-            self.password_hash = hashed_password
+            self._password_hash = hashed_password
         except HashingError:
             logger.error(f"Failed to hash password for {self.username}")
 
@@ -103,11 +103,11 @@ class User(_UserBase):
         :return bool: Whether the comparsion of the hash was sucessful or not.
         """
 
-        if self.password_hash is None:
+        if self._password_hash is None:
             return False
 
         try:
-            result = await asyncio.to_thread(_ph.verify, self.password_hash, password)
+            result = await asyncio.to_thread(_ph.verify, self._password_hash, password)
         except VerifyMismatchError:
             logger.warning(f"Failed login attempt for {self.username}")
             return False
@@ -119,3 +119,16 @@ class User(_UserBase):
             return False
         else:
             return result
+
+    async def check_password_rehash(self, password: str) -> None:
+        """
+        Checks if the password needs to be rehashed due to a
+        configuration change.
+
+        :param str password: The password to rehash if needed
+        """
+        if self._password_hash is None:
+            return
+
+        if await asyncio.to_thread(_ph.check_needs_rehash, self._password_hash):
+            await self.set_password(password)

@@ -28,6 +28,11 @@ async def login():
 
         if await user.verify_password(data["password"]):
             login_user(RHUser(user.auth_id.hex))
+
+            current_app.add_background_task(
+                user.check_password_rehash(data["password"])
+            )
+
             return {"success": True}
 
     return {"success": False}
@@ -37,6 +42,23 @@ async def login():
 async def logout():
     logout_user()
     return {"success": True}
+
+
+@routes.post("/reset-password")
+async def reset_password():
+    data: dict[str, str] = await request.get_json()
+
+    if all(["username" in data, "password" in data, "new_password" in data]):
+
+        database = await current_app.get_user_database()
+        user = await database.users.get_by_username(None, data["username"])
+
+        if await user.verify_password(data["password"]):
+            await user.set_password(data["new_password"])
+
+            return {"success": True}
+
+    return {"success": False}
 
 
 @routes.get("/pilots")
