@@ -13,7 +13,6 @@ elif sys.platform == "darwin":
     multiprocessing.set_start_method("spawn")
     from uvloop import run
 elif sys.platform == "win32":
-    multiprocessing.set_start_method("spawn")
     from winloop import run
 else:
     multiprocessing.set_start_method("spawn")

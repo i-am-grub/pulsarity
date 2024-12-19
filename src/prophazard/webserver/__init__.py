@@ -3,7 +3,6 @@ Webserver Components
 """
 
 from quart_auth import QuartAuth
-from secrets import token_urlsafe
 
 from ..extensions import RHApplication, RHBlueprint, RHUser
 from .events import p_events as _p_events

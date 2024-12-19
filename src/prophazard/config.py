@@ -70,10 +70,18 @@ def get_configs_defaults() -> dict[str, dict]:
     hardware: dict = {}
     hardware["I2C_BUS"] = 1
 
+    # webserver settings
+    webserver: dict = {}
+    webserver["HOST"] = "localhost"
+    webserver["PORT"] = 5000
+    webserver["USE_HTTPS"] = False
+    webserver["KEY_FILE"] = "key.pem"
+    webserver["KEY_PASSWORD"] = None
+    webserver["CERT_FILE"] = "cert.pem"
+    webserver["CA_CERT_FILE"] = None
+
     # other default configurations
     general: dict = {}
-    general["HOST"] = "0.0.0.0"
-    general["HTTP_PORT"] = 5000
     general["SECONDARIES"] = []
     general["SECONDARY_TIMEOUT"] = 300  # seconds
     general["DEBUG"] = False
@@ -133,6 +141,7 @@ def get_configs_defaults() -> dict[str, dict]:
 
     config: dict[str, dict] = {
         "SECRETS": secrets,
+        "WEBSERVER": webserver,
         "GENERAL": general,
         "TIMING": timing,
         "UI": ui,
