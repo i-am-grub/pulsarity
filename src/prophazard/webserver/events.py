@@ -8,7 +8,7 @@ from ..extensions import RHBlueprint, current_app
 from ..database.user import UserDatabaseManager
 from ..database.race import RaceDatabaseManager
 
-from ..utils.executor import shutdown_executor
+from ..utils.executor import set_executor, shutdown_executor
 
 p_events = RHBlueprint("private_events", __name__)
 events = RHBlueprint("events", __name__)
@@ -21,6 +21,11 @@ async def redirect_to_index(*_):
 
 @events.errorhandler(InvalidPermissions)
 async def invalid_permissions(*_): ...
+
+
+@events.before_app_serving
+async def setup_global_executor():
+    set_executor()
 
 
 @p_events.before_app_serving

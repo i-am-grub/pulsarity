@@ -5,7 +5,7 @@ from cryptography.x509.oid import NameOID
 from cryptography import x509
 
 
-def generate_self_signed_cert() -> None:
+def generate_self_signed_cert(key_filename: str, cert_filename: str) -> None:
     """
     Generates a simple self signed cert to enable HTTPS on the webserver.
 
@@ -13,6 +13,9 @@ def generate_self_signed_cert() -> None:
 
     ***NOTE***: It is the responsibility of the user to replace any generated certs
     with ones signed by a reputable certificate authority.
+
+    :param str key_filename: Location to save the `key_file`
+    :param str cert_filename: Location to save the `cert_file`
     """
 
     key = ec.generate_private_key(ec.SECP256R1())
@@ -63,7 +66,7 @@ def generate_self_signed_cert() -> None:
         .sign(key, hashes.SHA256())
     )
 
-    with open("key.pem", "wb") as key_file:
+    with open(key_filename, "wb") as key_file:
         key_file.write(
             key.private_bytes(
                 encoding=serialization.Encoding.PEM,
@@ -72,5 +75,5 @@ def generate_self_signed_cert() -> None:
             )
         )
 
-    with open("cert.pem", "wb") as cert_file:
+    with open(cert_filename, "wb") as cert_file:
         cert_file.write(cert.public_bytes(encoding=serialization.Encoding.PEM))

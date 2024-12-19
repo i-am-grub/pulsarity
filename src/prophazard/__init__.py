@@ -41,7 +41,7 @@ def prophazard_webserver(
         cert_file = str(get_item_from_file("WEBSERVER", "CERT_FILE"))
 
         if not (os.path.isfile(key_file) and os.path.isfile(cert_file)):
-            generate_self_signed_cert()
+            generate_self_signed_cert(key_file, cert_file)
 
         webserver_config.keyfile = key_file
         webserver_config.certfile = cert_file
