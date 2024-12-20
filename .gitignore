@@ -162,7 +162,10 @@ cython_debug/
 #.idea/
 
 # User Added
+# IDE files
 .vscode
-config.json
 
+# PropHazard based files
+config.json
 *.db
+*.pem

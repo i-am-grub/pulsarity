@@ -2,26 +2,46 @@
 Global configurations
 """
 
-import copy
 import logging
 import json
-import time
 import anyio
+import asyncio
+import datetime
 from secrets import token_urlsafe
-from asyncio import Lock
 
-DEFAULT_CONFIG_FILE_NAME = "config.json"
+from typing import Literal
 
-logger = logging.getLogger(__name__)
-_file_lock = Lock()
+_DEFAULT_CONFIG_FILE_NAME = "config.json"
+
+_logger = logging.getLogger(__name__)
+_file_lock = asyncio.Lock()
+
+_SECTIONS = Literal[
+    "SECRETS",
+    "WEBSERVER",
+    "GENERAL",
+    "TIMING",
+    "UI",
+    "USER",
+    "HARDWARE",
+    "LED",
+    "LOGGING",
+    "SENSORS",
+    "VRX_CONTROL",
+]
 
 
-def get_configs_defaults() -> dict[str, dict]:
+def _get_configs_defaults() -> dict[_SECTIONS, dict]:
+    """
+    Provides the server default configurations
+
+    :return dict[_SECTIONS, dict]: The server defaults
+    """
 
     # secret configuration:
     secrets: dict = {}
-    secrets["ADMIN_USERNAME"] = "admin"
-    secrets["ADMIN_PASSWORD"] = "rotorhazard"
+    secrets["DEFAULT_USERNAME"] = "admin"
+    secrets["DEFAULT_PASSWORD"] = "rotorhazard"
     secrets["SECRET_KEY"] = token_urlsafe(32)
 
     # LED strip configuration:
@@ -70,10 +90,18 @@ def get_configs_defaults() -> dict[str, dict]:
     hardware: dict = {}
     hardware["I2C_BUS"] = 1
 
+    # webserver settings
+    webserver: dict = {}
+    webserver["HOST"] = "localhost"
+    webserver["PORT"] = 5000
+    webserver["USE_HTTPS"] = False
+    webserver["KEY_FILE"] = "key.pem"
+    webserver["KEY_PASSWORD"] = None
+    webserver["CERT_FILE"] = "cert.pem"
+    webserver["CA_CERT_FILE"] = None
+
     # other default configurations
     general: dict = {}
-    general["HOST"] = "0.0.0.0"
-    general["HTTP_PORT"] = 5000
     general["SECONDARIES"] = []
     general["SECONDARY_TIMEOUT"] = 300  # seconds
     general["DEBUG"] = False
@@ -131,8 +159,9 @@ def get_configs_defaults() -> dict[str, dict]:
     log["FILELOG_NUM_KEEP"] = 30
     log["CONSOLE_STREAM"] = "stdout"
 
-    config: dict[str, dict] = {
+    config: dict[_SECTIONS, dict] = {
         "SECRETS": secrets,
+        "WEBSERVER": webserver,
         "GENERAL": general,
         "TIMING": timing,
         "UI": ui,
@@ -147,35 +176,79 @@ def get_configs_defaults() -> dict[str, dict]:
     return config
 
 
-def write_file_config(configs: dict, filename: str = DEFAULT_CONFIG_FILE_NAME):
-    configs["GENERAL"]["LAST_MODIFIED_TIME"] = int(time.time())
+def _write_file_config(
+    configs: dict[_SECTIONS, dict], filename: str = _DEFAULT_CONFIG_FILE_NAME
+):
+    """
+    Writes configs to a file synchronously. This should only be used before the
+    webserver has been started.
+
+    :param dict configs: Config dictionary to write
+    :param str filename: The file to save config to, defaults to _DEFAULT_CONFIG_FILE_NAME
+    """
+    configs["GENERAL"]["LAST_MODIFIED_TIME"] = datetime.datetime.now().isoformat()
 
     with open(filename, "w") as f:
         f.write(json.dumps(configs, indent=2))
 
 
-def load_config_from_file(filename: str = DEFAULT_CONFIG_FILE_NAME) -> dict:
+async def _write_file_config_async(
+    configs: dict[_SECTIONS, dict], filename: str = _DEFAULT_CONFIG_FILE_NAME
+):
+    """
+    Writes configs to a file asynchronously. This should only be used after
+    the webserver has started.
+
+    :param dict[_SECTIONS, dict] configs: Config dictionary to write
+    :param str filename: The file to save config to, defaults to _DEFAULT_CONFIG_FILE_NAME
+    """
+    configs["GENERAL"]["LAST_MODIFIED_TIME"] = datetime.datetime.now().isoformat()
+
+    async with _file_lock:
+        async with await anyio.open_file(filename, "w") as f:
+            await f.write(json.dumps(configs, indent=2))
+
+
+def _load_config_from_file(
+    filename: str = _DEFAULT_CONFIG_FILE_NAME,
+) -> dict[_SECTIONS, dict]:
+    """
+    Loads configs to a file synchronously. This should only be used before the
+    webserver has been started.
+
+    :param str filename: The file to load the config from, defaults to _DEFAULT_CONFIG_FILE_NAME
+    :return dict[_SECTIONS, dict]: The configuration settings
+    """
     try:
         with open(filename, "r") as f:
             external_config = json.load(f)
 
     except IOError:
-        logger.info("No configuration file found, using defaults")
-        configs = get_configs_defaults()
-        write_file_config(configs)
+        _logger.info("No configuration file found, using defaults")
+        configs = _get_configs_defaults()
+        _write_file_config(configs)
         return configs
 
     except ValueError as ex:
-        logger.error(f"Configuration file invalid, using defaults; error is: {ex}")
-        configs = get_configs_defaults()
-        write_file_config(configs)
+        _logger.error(f"Configuration file invalid, using defaults; error is: {ex}")
+        configs = _get_configs_defaults()
+        _write_file_config(configs)
         return configs
 
     else:
         return external_config
 
 
-async def load_config_from_file_async(filename: str = DEFAULT_CONFIG_FILE_NAME) -> dict:
+async def _load_config_from_file_async(
+    filename: str = _DEFAULT_CONFIG_FILE_NAME,
+) -> dict[_SECTIONS, dict]:
+    """
+    Loads configs to a file asynchronously. This should be used after the
+    webserver has started.
+
+    :param str filename: The file to load the config from, defaults to _DEFAULT_CONFIG_FILE_NAME
+    :return dict[_SECTIONS, dict]: The configuration settings
+    """
     try:
         async with _file_lock:
             async with await anyio.open_file(filename, "r") as f:
@@ -183,35 +256,36 @@ async def load_config_from_file_async(filename: str = DEFAULT_CONFIG_FILE_NAME) 
                 external_config = json.loads(content)
 
     except IOError:
-        logger.info("No configuration file found, using defaults")
-        configs = get_configs_defaults()
-        await write_file_config_async(configs)
+        _logger.info("No configuration file found, using defaults")
+        configs = _get_configs_defaults()
+        await _write_file_config_async(configs)
         return configs
 
     except ValueError as ex:
-        logger.error(f"Configuration file invalid, using defaults; error is: {ex}")
-        configs = get_configs_defaults()
-        await write_file_config_async(configs)
+        _logger.error(f"Configuration file invalid, using defaults; error is: {ex}")
+        configs = _get_configs_defaults()
+        await _write_file_config_async(configs)
         return configs
 
     else:
         return external_config
 
 
-async def write_file_config_async(
-    configs: dict, filename: str = DEFAULT_CONFIG_FILE_NAME
-):
-    configs["GENERAL"]["LAST_MODIFIED_TIME"] = int(time.time())
-
-    async with _file_lock:
-        async with await anyio.open_file(filename, "w") as f:
-            await f.write(json.dumps(configs, indent=2))
-
-
-def get_item_from_file(
-    section: str, key: str, filename: str = DEFAULT_CONFIG_FILE_NAME
+def get_config(
+    section: _SECTIONS,
+    key: str,
 ) -> str | bool | int | float | None:
-    configs = load_config_from_file(filename)
+    """
+    Gets a setting from the config file synchronously. This method
+    of getting settings from the config file should be prefered
+    before the webserver has started
+
+    :param _SECTIONS section: The section in the config file for the setting
+    :param str key: The setting name
+    :return str | bool | int | float | None: The setting value
+    """
+
+    configs = _load_config_from_file()
     try:
         item = configs[section][key]
     except KeyError:
@@ -220,62 +294,49 @@ def get_item_from_file(
         return item
 
 
-async def set_item_in_file(
-    section: str, key: str, value, filename: str = DEFAULT_CONFIG_FILE_NAME
-) -> bool:
-    configs = await load_config_from_file_async(filename)
+async def get_config_async(
+    section: _SECTIONS,
+    key: str,
+) -> str | bool | int | float | None:
+    """
+    Gets a setting from the config file asynchronously. This method
+    of getting settings from the config file should be prefered
+    once the webserver has started.
+
+    :param _SECTIONS section: The section in the config file for the setting
+    :param str key: The setting name
+    :return str | bool | int | float | None: The setting value
+    """
+    configs = await _load_config_from_file_async()
     try:
-        configs[section][key] = value
-        await write_file_config_async(configs, filename)
+        item = configs[section][key]
     except KeyError:
-        return False
+        return None
     else:
-        return True
+        return item
 
 
-class Config:
+async def set_config_async(section: _SECTIONS, key: str, value) -> None:
+    """
+    Sets a setting from the config file asynchronously.
 
-    configs = None
+    :param _SECTIONS section: The section in the config file for the setting
+    :param str key: The setting name
+    :param _type_ value: The value to change the setting to
+    """
+    configs = await _load_config_from_file_async()
+    configs[section][key] = value
+    await _write_file_config_async(configs)
 
-    def __init__(self, filename=DEFAULT_CONFIG_FILE_NAME):
-        self.filename = filename
 
-    async def load_config_file(self):
-        self.configs = await load_config_from_file_async(self.filename)
+async def get_sharable_config() -> dict[_SECTIONS, dict]:
+    """
+    Generates a copy of the config file with the `SECRETS`
+    section cleared
 
-    def get_item(self, section, key):
-        try:
-            return self.configs[section][key]
-        except KeyError:
-            return False
+    :return dict[_SECTIONS, dict]: An object storing the object configs
+    """
 
-    def get_item_int(self, section, key, default_value=0):
-        try:
-            val = self.configs[section][key]
-            if val:
-                return int(val)
-            else:
-                return default_value
-        except KeyError:
-            return default_value
-        except ValueError:
-            return default_value
-
-    def get_section(self, section):
-        try:
-            return self.configs[section]
-        except KeyError:
-            return False
-
-    async def set_item(self, section, key, value):
-        try:
-            self.configs[section][key] = value
-            await write_file_config_async(self.configs, self.filename)
-        except KeyError:
-            return False
-        return True
-
-    def get_sharable_config(self):
-        sharable_config = copy.deepcopy(self.configs)
-        del sharable_config["SECRETS"]
-        return sharable_config
+    sharable_config = await _load_config_from_file_async()
+    sharable_config["SECRETS"] = {}
+    return sharable_config

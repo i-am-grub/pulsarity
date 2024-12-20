@@ -8,7 +8,8 @@ from ..extensions import RHBlueprint, current_app
 from ..database.user import UserDatabaseManager
 from ..database.race import RaceDatabaseManager
 
-from ..utils.executor import shutdown_executor
+from ..utils.executor import set_executor, shutdown_executor
+from ..config import get_config_async
 
 p_events = RHBlueprint("private_events", __name__)
 events = RHBlueprint("events", __name__)
@@ -23,10 +24,21 @@ async def redirect_to_index(*_):
 async def invalid_permissions(*_): ...
 
 
+@events.before_app_serving
+async def setup_global_executor():
+    set_executor()
+
+
 @p_events.before_app_serving
 async def setup_user_database():
     database_manager = UserDatabaseManager(filename="user.db")
     await database_manager.setup()
+
+    default_username = await get_config_async("SECRETS", "DEFAULT_USERNAME")
+    default_password = await get_config_async("SECRETS", "DEFAULT_PASSWORD")
+
+    await database_manager.verify_persistant_objects(default_username, default_password)
+
     current_app.set_user_database(database_manager)
 
 

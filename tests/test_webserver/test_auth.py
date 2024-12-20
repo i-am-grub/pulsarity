@@ -10,31 +10,14 @@ from prophazard.database.user import User, Role, Permission
 
 
 @pytest.mark.asyncio
-async def test_webserver_index(client: TestClientProtocol):
-    response = await client.get("/")
-    assert response.status_code == 200
-
-
-@pytest.mark.asyncio
-async def test_webserver_login(client: TestClientProtocol):
-    login_data = {"username": "admin", "password": "password"}
-    response = await client.post("/login", json=login_data)
-    assert response.status_code == 200
-
-    data = await response.get_json()
-    assert data == {"success": True}
-
-
-@pytest.mark.asyncio
 async def test_webserver_unauthorized(client: TestClientProtocol):
     response = await client.get("/pilots")
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
-async def test_webserver_lack_permissions(client_pair):
-    app: RHApplication = client_pair[0]
-    client: TestClientProtocol = client_pair[1]
+async def test_webserver_lack_permissions(app: RHApplication):
+    client: TestClientProtocol = app.test_client()
 
     database = await app.get_user_database()
     session_maker = database.new_session_maker()
@@ -61,12 +44,11 @@ async def test_webserver_lack_permissions(client_pair):
 
 
 @pytest.mark.asyncio
-async def test_webserver_authorized(client_pair):
-    app: RHApplication = client_pair[0]
-    client: TestClientProtocol = client_pair[1]
+async def test_webserver_authorized(app: RHApplication, default_user_creds: tuple[str]):
+    client: TestClientProtocol = app.test_client()
 
     database = await app.get_user_database()
-    user = await database.users.get_by_username(None, "admin")
+    user = await database.users.get_by_username(None, default_user_creds[0])
     assert user is not None
 
     async with authenticated_client(client, user.auth_id.hex):

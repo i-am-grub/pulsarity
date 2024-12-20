@@ -14,9 +14,9 @@ class UserDatabaseManager:
 
     def __init__(self, *, filename: str = ":memory:"):
         """
-        _summary_
+        Class initialization
 
-        :param _type_ filename: _description_, defaults to ":memory:"
+        :param str filename: Filename for the database, defaults to ":memory:"
         """
 
         self.engine = create_async_engine(f"sqlite+aiosqlite:///{filename}", echo=False)
@@ -27,28 +27,37 @@ class UserDatabaseManager:
         self.permissions = PermissionManager(default_session_maker)
 
     async def setup(self) -> None:
-        """Setup the database connection. Used at server startup.
-
-        :return: _description_
-        :rtype: None
+        """
+        Setup the database connection. Used at server startup.
         """
 
         async with self.engine.begin() as conn:
             await conn.run_sync(_UserBase.metadata.create_all)
 
+    async def verify_persistant_objects(
+        self, defualt_username: str, default_password: str
+    ):
+        """
+        Verify that the default object are in the database.
+
+        :param str defualt_username: Default username to use for the admin user
+        :param str default_password: Default password to use for the admin user
+        """
         await self.permissions.verify_persistant()
         permissions = await self.permissions.get_all(None)
         await self.roles.verify_persistant_role(None, "SYSTEM_ADMIN", set(permissions))
+
         roles = set()
         if (role := await self.roles.role_by_name(None, "SYSTEM_ADMIN")) is not None:
             roles.add(role)
-        await self.users.verify_persistant_user(None, "admin", roles)
+
+        await self.users.verify_persistant_user(
+            None, defualt_username, default_password, roles
+        )
 
     async def shutdown(self) -> None:
-        """Shutdown the database connection.
-
-        :return: _description_
-        :rtype: None
+        """
+        Shutdown the database connection.
         """
 
         await self.engine.dispose()
