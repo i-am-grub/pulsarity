@@ -11,7 +11,7 @@ from .routes import routes as _routes
 from .tasks import tasks as _tasks
 from .websockets import websockets as _websockets
 
-from ..config import get_item_from_file
+from ..config import get_config
 
 
 def generate_app(*, test_mode: bool = False) -> RHApplication:
@@ -25,7 +25,7 @@ def generate_app(*, test_mode: bool = False) -> RHApplication:
 
     app = RHApplication(__name__)
 
-    app.secret_key = str(get_item_from_file("SECRETS", "SECRET_KEY"))
+    app.secret_key = str(get_config("SECRETS", "SECRET_KEY"))
 
     auth_manager = QuartAuth(
         app,

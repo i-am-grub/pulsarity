@@ -83,17 +83,21 @@ class User(_UserBase):
 
         return permissions
 
-    async def set_password(self, password: str) -> None:
+    @staticmethod
+    async def generate_hash(password: str) -> str:
         """
-        Saves a hash of the provided password for the user.
+        Generates a hash of the provided password.
 
         :param str password: The password to hash.
+        :return str: The hashed password
         """
         try:
-            hashed_password = await asyncio.to_thread(_ph.hash, password)
-            self._password_hash = hashed_password
+            result = await asyncio.to_thread(_ph.hash, password)
         except HashingError:
-            logger.error(f"Failed to hash password for {self.username}")
+            logger.error("Failed to hash password")
+            raise
+
+        return result
 
     async def verify_password(self, password: str) -> bool:
         """
@@ -120,15 +124,13 @@ class User(_UserBase):
         else:
             return result
 
-    async def check_password_rehash(self, password: str) -> None:
+    async def check_password_rehash(self) -> bool:
         """
-        Checks if the password needs to be rehashed due to a
+        Checks if the user's password needs to be rehashed due to a
         configuration change.
-
-        :param str password: The password to rehash if needed
         """
         if self._password_hash is None:
-            return
+            return True
 
-        if await asyncio.to_thread(_ph.check_needs_rehash, self._password_hash):
-            await self.set_password(password)
+        result = await asyncio.to_thread(_ph.check_needs_rehash, self._password_hash)
+        return result

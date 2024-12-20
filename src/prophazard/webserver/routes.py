@@ -2,6 +2,8 @@
 HTTP Rest API Routes
 """
 
+from uuid import UUID
+
 from quart import render_template_string, request
 from quart_auth import login_user, logout_user
 
@@ -26,11 +28,15 @@ async def login():
         database = await current_app.get_user_database()
         user = await database.users.get_by_username(None, data["username"])
 
-        if await user.verify_password(data["password"]):
+        if user is not None and await user.verify_password(data["password"]):
             login_user(RHUser(user.auth_id.hex))
 
             current_app.add_background_task(
-                user.check_password_rehash(data["password"])
+                database.users.update_user_login_time(None, user)
+            )
+
+            current_app.add_background_task(
+                database.users.check_for_rehash(None, user, data["password"])
             )
 
             return {"success": True}
@@ -45,17 +51,19 @@ async def logout():
 
 
 @routes.post("/reset-password")
+@permission_required(UserPermission.RESET_PASSWORD)
 async def reset_password():
     data: dict[str, str] = await request.get_json()
 
-    if all(["username" in data, "password" in data, "new_password" in data]):
+    if all(["password" in data, "new_password" in data]):
+
+        uuid = UUID(hex=current_user.auth_id)
 
         database = await current_app.get_user_database()
-        user = await database.users.get_by_username(None, data["username"])
+        user = await database.users.get_by_uuid(None, uuid)
 
-        if await user.verify_password(data["password"]):
-            await user.set_password(data["new_password"])
-
+        if user is not None and await user.verify_password(data["password"]):
+            await database.users.update_user_password(None, user, data["new_password"])
             return {"success": True}
 
     return {"success": False}

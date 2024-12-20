@@ -1,8 +1,9 @@
 from typing_extensions import override
 from uuid import UUID
+from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from ..._base._basemanager import _BaseManager
 from .._orm.user import User, Role
@@ -49,18 +50,70 @@ class UserManager(_BaseManager[User]):
         return await session.scalar(statement)
 
     @_BaseManager._optional_session
+    async def update_user_password(
+        self, session: AsyncSession, user: User, password: str
+    ) -> None:
+        """
+        Updates a user's password hash in the database.
+
+        :param AsyncSession session: _description_
+        :param User user: _description_
+        :param str password: The password to hash and store
+        """
+        hashed_passwrod = await user.generate_hash(password)
+
+        statement = (
+            update(User)
+            .where(User.id == user.id)
+            .values(_password_hash=hashed_passwrod)
+        )
+
+        await session.execute(statement)
+        await session.flush()
+
+    @_BaseManager._optional_session
     async def verify_persistant_user(
-        self, session: AsyncSession, username: str, roles: set[Role]
+        self, session: AsyncSession, username: str, password: str, roles: set[Role]
     ) -> None:
         """
         Verify permissions are setup for a role.
 
         :param AsyncSession session: _description_
-        :param str name: Name of role to check
+        :param str username: Username of role to check
+        :param str password: Password to set if the user doesn't exist yet.
         :param set[Permission] permissions: Set of permissions to apply
         """
         if await self.get_by_username(session, username) is None:
-            user = User("admin", roles, persistent=True)
-            await user.set_password("password")
+            user = User(username, roles, persistent=True)
             await self.add(session, user)
             await session.flush()
+            await self.update_user_password(session, user, password)
+
+    @_BaseManager._optional_session
+    async def check_for_rehash(
+        self, session: AsyncSession, user: User, password: str
+    ) -> None:
+        """
+        Checks to see if a user's hash needs to be updated. Updates if it does.
+
+        :param AsyncSession session: _description_
+        :param User user: _description_
+        :param str password: The password to rehash
+        """
+        if await user.check_password_rehash():
+            await self.update_user_password(session, user, password)
+
+    @_BaseManager._optional_session
+    async def update_user_login_time(self, session: AsyncSession, user: User) -> None:
+        """
+        Update a user's `last_login` time.
+
+        :param AsyncSession session: _description_
+        :param User user: _description_
+        """
+        statement = (
+            update(User).where(User.id == user.id).values(last_login=datetime.now())
+        )
+
+        await session.execute(statement)
+        await session.flush()

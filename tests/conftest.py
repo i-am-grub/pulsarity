@@ -1,4 +1,3 @@
-import asyncio
 import pytest_asyncio
 
 from prophazard.webserver import generate_app
@@ -8,9 +7,18 @@ from prophazard.extensions import RHApplication
 
 
 @pytest_asyncio.fixture()
-async def user_database():
+async def default_user_creds():
+    username = "admin"
+    password = "test_password"
+
+    return username, password
+
+
+@pytest_asyncio.fixture()
+async def user_database(default_user_creds):
     user_database: UserDatabaseManager = UserDatabaseManager()
     await user_database.setup()
+    await user_database.verify_persistant_objects(*default_user_creds)
     yield user_database
     await user_database.shutdown()
 
@@ -36,8 +44,3 @@ async def app(user_database: UserDatabaseManager, race_database: RaceDatabaseMan
 @pytest_asyncio.fixture()
 async def client(app: RHApplication):
     return app.test_client()
-
-
-@pytest_asyncio.fixture()
-async def client_pair(app: RHApplication):
-    return app, app.test_client()
