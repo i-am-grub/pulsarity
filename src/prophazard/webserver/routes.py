@@ -7,7 +7,6 @@ from uuid import UUID
 from quart import render_template_string, request
 from quart_auth import login_user, logout_user
 
-from ..database.user import User
 from ..extensions import RHBlueprint, RHUser, current_user, current_app
 from ..auth._authorizer import permission_required
 from ..auth._permissions import UserPermission
@@ -72,5 +71,10 @@ async def reset_password():
 @routes.get("/pilots")
 @permission_required(UserPermission.READ_PILOTS)
 async def get_pilots():
-    database = await current_app.get_user_database()
-    return {"status": True}
+    database = await current_app.get_race_database()
+
+    async def stream_pilots():
+        async for pilot in database.pilots.get_all_as_stream(None):
+            yield pilot.to_bytes()
+
+    return stream_pilots()

@@ -1,4 +1,5 @@
 import pytest
+import pickle
 
 from quart.typing import TestClientProtocol
 from quart_auth import authenticated_client
@@ -70,3 +71,24 @@ async def test_password_reset_valid(app: RHApplication, default_user_creds: tupl
 
     new_creds = (default_user_creds[0], new_password)
     await test_webserver_login(client, new_creds)
+
+
+async def test_pilot_stream(app: RHApplication, default_user_creds: tuple[str]):
+    client: TestClientProtocol = app.test_client()
+
+    race_database = await app.get_race_database()
+    await race_database.pilots.add_many(None, 1)
+
+    user_database = await app.get_user_database()
+    user = await user_database.users.get_by_username(None, default_user_creds[0])
+    assert user is not None
+
+    async with authenticated_client(client, user.auth_id.hex):
+        async with client.request("/pilots") as connection:
+
+            data = await connection.receive()
+            data_ = pickle.loads(data)
+            assert data_ is not None
+            assert connection.status_code == 200
+
+            await connection.disconnect()

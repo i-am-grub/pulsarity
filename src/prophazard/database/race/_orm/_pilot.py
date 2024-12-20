@@ -2,6 +2,8 @@
 ORM classes for Pilot data
 """
 
+import pickle
+
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -86,3 +88,11 @@ class Pilot(_RaceBase):
 
     def __repr__(self):
         return "<Pilot %r>" % self.id
+
+    def to_bytes(self) -> bytes:
+        data: dict[str, str | int] = {}
+        data["id"] = self.id
+        data["callsign"] = self.callsign
+        data["name"] = self.name
+
+        return pickle.dumps(data)
