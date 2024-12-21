@@ -20,7 +20,7 @@ from argon2.exceptions import (
 
 from ..._base import _UserBase
 from .role import Role
-from ....auth._permissions import UserPermission
+from .._enums import UserPermission
 
 
 logger = logging.Logger(__name__)
@@ -77,8 +77,8 @@ class User(_UserBase):
         self.reset_required = True
 
     @property
-    async def permissions(self) -> set[UserPermission]:
-        permissions: set[UserPermission] = set()
+    async def permissions(self) -> set[str]:
+        permissions: set[str] = set()
 
         roles: set[Role] = await self.awaitable_attrs._roles
         for role in roles:

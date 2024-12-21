@@ -9,7 +9,7 @@ from quart_auth import current_user as _current_user
 from .database.user import UserDatabaseManager, User
 from .database.race import RaceDatabaseManager
 
-from .auth._permissions import UserPermission
+from .database.user._enums import UserPermission
 
 
 class RHApplication(Quart):

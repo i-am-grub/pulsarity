@@ -5,9 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..._base._basemanager import _BaseManager
 from .._orm import Permission
-from ....auth._permissions import UserPermission
-
-from ....auth._permissions import UserPermission
+from .._enums import UserPermission, SystemDefaults
 
 
 class PermissionManager(_BaseManager[Permission]):
@@ -23,7 +21,7 @@ class PermissionManager(_BaseManager[Permission]):
         return Permission
 
     @_BaseManager._optional_session
-    async def get_user_permissions(self, session: AsyncSession) -> set[UserPermission]:
+    async def get_user_permissions(self, session: AsyncSession) -> set[str]:
         """
         Get all permission values from the database
 
@@ -33,7 +31,7 @@ class PermissionManager(_BaseManager[Permission]):
         """
         statement = select(self._table_class.value)
 
-        permissions: set[UserPermission] = set()
+        permissions: set[str] = set()
 
         result = await session.stream_scalars(statement)
         async for scalar in result:
@@ -45,13 +43,17 @@ class PermissionManager(_BaseManager[Permission]):
         """
         Verify all nessessary permissions are in the user database.
         """
-
         permissions = await self.get_user_permissions(None)
 
         permissions_add = []
 
-        for permission in UserPermission:
-            if permission not in permissions:
-                permissions_add.append(Permission(permission, persistent=True))
+        for permission_class in UserPermission.__subclasses__():
+
+            persistent = True if permission_class is SystemDefaults else False
+
+            for enum in permission_class:
+
+                if enum not in permissions:
+                    permissions_add.append(Permission(enum, persistent=persistent))
 
         await self.add_many(None, 0, *permissions_add)

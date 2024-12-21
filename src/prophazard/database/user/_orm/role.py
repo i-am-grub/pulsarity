@@ -3,7 +3,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..._base import _UserBase
 from .permission import Permission
-from ....auth._permissions import UserPermission
 
 role_permission_association = Table(
     "role_permission_mapping",
@@ -38,7 +37,7 @@ class Role(_UserBase):
         self._permissions = permissions
         self._persistent = persistent
 
-    async def get_permissions(self) -> set[UserPermission]:
+    async def get_permissions(self) -> set[str]:
         permissions = set()
         permissions_: set[Permission] = await self.awaitable_attrs._permissions
 
