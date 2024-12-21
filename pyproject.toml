@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "PropHazard"
-version = "0.1.0"
+version = "0.1.0-dev1"
 description = "A demonstrator project for a RotorHazard variant"
 authors = ["Bryce Gruber <dev@brycegruber.com>"]
 readme = "README.md"

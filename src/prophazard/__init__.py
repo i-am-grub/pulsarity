@@ -3,6 +3,7 @@ A demonstrator project for an asynchronous RotorHazard framework
 """
 
 import os
+import importlib.metadata
 from collections.abc import Coroutine
 
 from hypercorn.asyncio import serve
@@ -12,6 +13,8 @@ from .extensions import RHApplication
 from .webserver import generate_app
 from .config import get_config
 from .utils.crypto import generate_self_signed_cert
+
+__version__ = importlib.metadata.version(__name__)
 
 
 def prophazard_webserver(
