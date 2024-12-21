@@ -8,8 +8,8 @@ from quart import render_template_string, request
 from quart_auth import login_user, logout_user
 
 from ..extensions import RHBlueprint, RHUser, current_user, current_app
-from ..auth._authorizer import permission_required
-from ..auth._permissions import UserPermission
+from .auth import permission_required
+from ..database.user import SystemDefaults
 
 routes = RHBlueprint("routes", __name__)
 
@@ -50,7 +50,7 @@ async def logout():
 
 
 @routes.post("/reset-password")
-@permission_required(UserPermission.RESET_PASSWORD)
+@permission_required(SystemDefaults.RESET_PASSWORD)
 async def reset_password():
     data: dict[str, str] = await request.get_json()
 
@@ -74,7 +74,7 @@ async def reset_password():
 
 
 @routes.get("/pilots")
-@permission_required(UserPermission.READ_PILOTS)
+@permission_required(SystemDefaults.READ_PILOTS)
 async def get_pilots():
     database = await current_app.get_race_database()
 

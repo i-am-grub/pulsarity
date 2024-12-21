@@ -1,7 +1,7 @@
 from quart import redirect, url_for
 from quart_auth import Unauthorized
 
-from ..auth._authorizer import InvalidPermissions
+from .auth import InvalidPermissions
 
 from ..extensions import RHBlueprint, current_app
 

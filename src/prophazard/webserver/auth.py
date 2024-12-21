@@ -6,7 +6,7 @@ from quart_auth import Unauthorized
 
 from ..extensions import current_app, current_user
 
-from ._permissions import UserPermission
+from ..database.user._enums import UserPermission
 
 T = TypeVar("T")
 P = ParamSpec("P")
