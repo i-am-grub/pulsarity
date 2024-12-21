@@ -1,3 +1,7 @@
+"""
+System event distribution to clients
+"""
+
 from asyncio import PriorityQueue, TaskGroup
 from collections.abc import AsyncGenerator
 from dataclasses import astuple
@@ -38,7 +42,8 @@ class EventBroker:
         """
         As a client, subscribe to recieve server events.
 
-        :yield AsyncGenerator[tuple[_EvtPriority, UserPermission, str, UUID, dict], None]: Event data
+        :yield AsyncGenerator[tuple[_EvtPriority, UserPermission, str, UUID, dict], None]:
+        Event data
         """
         connection: PriorityQueue = PriorityQueue()
         self._connections.add(connection)

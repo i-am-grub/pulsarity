@@ -1,3 +1,7 @@
+"""
+ORM classes for Role data
+"""
+
 from sqlalchemy import Table, Column, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,6 +21,8 @@ class Role(_UserBase):
     Role for the application
     """
 
+    # pylint: disable=W0212
+
     __tablename__ = "role"
 
     name: Mapped[str] = mapped_column(unique=True)
@@ -30,14 +36,30 @@ class Role(_UserBase):
         self,
         name: str,
         *,
-        permissions: set[Permission] = set(),
+        permissions: set[Permission] | None = None,
         persistent: bool = False
     ):
-        self.name = name
-        self._permissions = permissions
-        self._persistent = persistent
+        """
+        Class initalization
+
+        :param str name: Name of the role. It should be unique from all other
+        roles in the system. Saves an uppercase version of the string provided.
+        :param set[Permission] | None permissions: The permissions for the
+        role, defaults to None
+        :param bool persistent: When set to `True` prevents the object
+        from being deleted from the database, defaults to False
+        """
+        self.name = name.upper()
+        self._permissions = set() if permissions is None else permissions
+        self.persistent = persistent
 
     async def get_permissions(self) -> set[str]:
+        """
+        Gets the permissions for the role. Should be ran while the database
+        session is still active.
+
+        :return set[str]: The set of permissions
+        """
         permissions = set()
         permissions_: set[Permission] = await self.awaitable_attrs._permissions
 
@@ -47,4 +69,10 @@ class Role(_UserBase):
         return permissions
 
     def set_permissions(self, value: set[Permission]) -> None:
+        """
+        Set the permissions for a role. Overwrites any previous values
+
+        :param set[Permission] value: The permissions to set
+        """
+
         self._permissions = value

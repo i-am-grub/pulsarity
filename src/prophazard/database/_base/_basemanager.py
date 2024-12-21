@@ -1,3 +1,7 @@
+"""
+Abstract management of `_RaceBase` and `_UserBase` classes
+"""
+
 from typing import TypeVar, Generic, ParamSpec, Concatenate, Self
 from abc import ABCMeta, abstractmethod
 from collections.abc import Callable, AsyncGenerator, Coroutine
@@ -40,8 +44,8 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         """
         raise NotImplementedError("This is an abstract method and should not be used")
 
-    def _optional_session(  # type: ignore
-        func: Callable[Concatenate[Self, AsyncSession, P], Coroutine[None, None, R]]
+    def optional_session(  # type: ignore
+        function: Callable[Concatenate[Self, AsyncSession, P], Coroutine[None, None, R]]
     ) -> Callable[Concatenate[Self, AsyncSession | None, P], Coroutine[None, None, R]]:
         """
         Decorator to ensure there is a valid session for the async method
@@ -50,24 +54,25 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         When using this decorator, the transaction will not be automatically
         commited when a session is provided.
         """
-        wraps(func)
+        # pylint: disable=E1102,E0213,W0212
+
+        wraps(function)
 
         async def wrapper(self, *args: P.args, **kwargs: P.kwargs) -> R:
             session: AsyncSession = args[0]  # type: ignore
             if session is not None:
-                return await func(self, *args, **kwargs)  # type: ignore
+                return await function(self, *args, **kwargs)  # type: ignore
 
-            else:
-                async with self._session_maker() as session:
-                    args = (session, *args[1:])
-                    results = await func(self, *args, **kwargs)
-                    await session.commit()
-                    return results
+            async with self._session_maker() as session:
+                args_: tuple[AsyncSession, P.args] = (session, *args[1:])  # type: ignore
+                results = await function(self, *args_, **kwargs)
+                await session.commit()
+                return results
 
         return wrapper  # type: ignore
 
-    def _optional_session_generator(  # type: ignore
-        func: Callable[Concatenate[Self, AsyncSession, P], AsyncGenerator[R, U]]
+    def optional_session_generator(  # type: ignore
+        function: Callable[Concatenate[Self, AsyncSession, P], AsyncGenerator[R, U]]
     ) -> Callable[Concatenate[Self, AsyncSession | None, P], AsyncGenerator[R, U]]:
         """
         Decorator that mimics ensure_session for methods that create
@@ -76,26 +81,28 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         When using this decorator, the transaction will not be automatically
         commited when a session is provided.
         """
-        wraps(func)
+        # pylint: disable=E1102,E0213,W0212
+
+        wraps(function)
 
         async def wrapper(
             self, *args: P.args, **kwargs: P.kwargs
         ) -> AsyncGenerator[R, U]:
             session: AsyncSession = args[0]  # type: ignore
             if session is not None:
-                async for value in func(self, *args, **kwargs):  # type: ignore
+                async for value in function(self, *args, **kwargs):  # type: ignore
                     yield value
 
             else:
                 async with self._session_maker() as session:
-                    args = (session, *args[1:])
-                    async for value in func(self, *args, **kwargs):
+                    args_: tuple[AsyncSession, P.args] = (session, *args[1:])  # type: ignore
+                    async for value in function(self, *args_, **kwargs):
                         yield value
                     await session.commit()
 
         return wrapper  # type: ignore
 
-    @_optional_session
+    @optional_session
     async def num_entries(self, session: AsyncSession) -> int:
         """
         The number of entries in the table.
@@ -104,12 +111,13 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         When providing a session, transactions **will not** be automatically commited.
         :return int: The number of objects in the database table
         """
+        # pylint: disable=E1102
         statement = func.count(self._table_class.id)
         result = await session.scalar(statement)
         return 0 if result is None else result
 
-    @_optional_session
-    async def get_by_id(self, session: AsyncSession, id: int) -> T | None:
+    @optional_session
+    async def get_by_id(self, session: AsyncSession, obj_id: int) -> T | None:
         """
         Get an object from the database by id.
 
@@ -118,10 +126,10 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         :param int id: Id of the object to retreive
         :return T | None: Object from the database
         """
-        statement = select(self._table_class).where(self._table_class.id == id)
+        statement = select(self._table_class).where(self._table_class.id == obj_id)
         return await session.scalar(statement)
 
-    @_optional_session
+    @optional_session
     async def get_all(self, session: AsyncSession) -> ScalarResult[T]:
         """
         Get all objects in the table from the database.
@@ -133,7 +141,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         statement = select(self._table_class)
         return await session.scalars(statement)
 
-    @_optional_session_generator
+    @optional_session_generator
     async def get_all_as_stream(self, session: AsyncSession) -> AsyncGenerator[T, None]:
         """
         Streams all objects in the tables from the database.
@@ -147,7 +155,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         async for scalar in result:
             yield scalar
 
-    @_optional_session
+    @optional_session
     async def add(self, session: AsyncSession, db_object: T | None = None) -> int:
         """
         Adds an object to the database. Adds a default object if one is not provided.
@@ -167,7 +175,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
 
         return db_object_.id
 
-    @_optional_session
+    @optional_session
     async def add_many(
         self, session: AsyncSession, num_defaults: int, *db_objects: T
     ) -> list[int]:
@@ -205,7 +213,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
 
         return await self.add(session, db_object)
 
-    @_optional_session
+    @optional_session
     async def delete(self, session: AsyncSession, db_object: T) -> None:
         """
         Delete an object from the database. Persistent objects are not removed
@@ -215,13 +223,13 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         :param T db_object: Object to delete from the database.
         """
 
-        if issubclass(self._table_class, _UserBase) and self._table_class._persistent:
+        if isinstance(db_object, _UserBase) and db_object.persistent:
             return
-        else:
-            await session.delete(db_object)
-            await session.flush()
 
-    @_optional_session
+        await session.delete(db_object)
+        await session.flush()
+
+    @optional_session
     async def clear_table(self, session: AsyncSession) -> None:
         """
         Clear all entries from the table. Persistent objects are not removed
@@ -229,9 +237,11 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         :param AsyncSession | None session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
         """
+        # pylint: disable=C0121
+
         if issubclass(self._table_class, _UserBase):
             statement = delete(self._table_class).where(
-                self._table_class._persistent == False
+                self._table_class.persistent == False
             )
         else:
             statement = delete(self._table_class)

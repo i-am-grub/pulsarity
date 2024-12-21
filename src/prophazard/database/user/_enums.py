@@ -13,8 +13,6 @@ class UserPermission(StrEnum):
     and use custom permissions.
     """
 
-    ...
-
 
 class SystemDefaults(UserPermission):
     """

@@ -20,6 +20,7 @@ def set_executor() -> None:
     to allow at a time. Ideally, this should prevent the webserver from
     being blocked while running parallel computations.
     """
+    # pylint: disable=E1101,W0212,W0603
 
     global _executor
 

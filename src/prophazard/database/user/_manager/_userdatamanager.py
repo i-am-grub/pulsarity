@@ -1,16 +1,19 @@
 """
-asdf
+User objects management
 """
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from ..._base import _UserBase
-from ._usermanager import UserManager
-from ._rolemanager import RoleManager
-from ._permissionmanager import PermissionManager
+from ._usermanager import _UserManager
+from ._rolemanager import _RoleManager
+from ._permissionmanager import _PermissionManager
 
 
 class UserDatabaseManager:
+    """
+    Database manager for user related objects
+    """
 
     def __init__(self, *, filename: str = ":memory:"):
         """
@@ -22,9 +25,9 @@ class UserDatabaseManager:
         self.engine = create_async_engine(f"sqlite+aiosqlite:///{filename}", echo=False)
         default_session_maker = self.new_session_maker()
 
-        self.users = UserManager(default_session_maker)
-        self.roles = RoleManager(default_session_maker)
-        self.permissions = PermissionManager(default_session_maker)
+        self.users = _UserManager(default_session_maker)
+        self.roles = _RoleManager(default_session_maker)
+        self.permissions = _PermissionManager(default_session_maker)
 
     async def setup(self) -> None:
         """

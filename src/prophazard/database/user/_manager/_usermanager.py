@@ -1,6 +1,11 @@
-from typing_extensions import override
+"""
+`User` management
+"""
+
 from uuid import UUID
 from datetime import datetime
+
+from typing_extensions import override
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
@@ -9,7 +14,10 @@ from ..._base._basemanager import _BaseManager
 from .._orm.user import User, Role
 
 
-class UserManager(_BaseManager[User]):
+class _UserManager(_BaseManager[User]):
+    """
+    Databse manager for the `User` class
+    """
 
     @property
     @override
@@ -21,7 +29,7 @@ class UserManager(_BaseManager[User]):
         """
         return User
 
-    @_BaseManager._optional_session
+    @_BaseManager.optional_session
     async def get_by_uuid(self, session: AsyncSession, uuid: UUID) -> User | None:
         """
         Attempt to retrieve a user by uuid
@@ -33,7 +41,7 @@ class UserManager(_BaseManager[User]):
         statement = select(self._table_class).where(self._table_class.auth_id == uuid)
         return await session.scalar(statement)
 
-    @_BaseManager._optional_session
+    @_BaseManager.optional_session
     async def get_by_username(
         self, session: AsyncSession, username: str
     ) -> User | None:
@@ -49,7 +57,7 @@ class UserManager(_BaseManager[User]):
         )
         return await session.scalar(statement)
 
-    @_BaseManager._optional_session
+    @_BaseManager.optional_session
     async def update_user_password(
         self, session: AsyncSession, user: User, password: str
     ) -> None:
@@ -71,7 +79,7 @@ class UserManager(_BaseManager[User]):
         await session.execute(statement)
         await session.flush()
 
-    @_BaseManager._optional_session
+    @_BaseManager.optional_session
     async def verify_persistant_user(
         self, session: AsyncSession, username: str, password: str, roles: set[Role]
     ) -> None:
@@ -84,12 +92,12 @@ class UserManager(_BaseManager[User]):
         :param set[Permission] permissions: Set of permissions to apply
         """
         if await self.get_by_username(session, username) is None:
-            user = User(username, roles, persistent=True)
+            user = User(username, roles=roles, persistent=True)
             await self.add(session, user)
             await session.flush()
             await self.update_user_password(session, user, password)
 
-    @_BaseManager._optional_session
+    @_BaseManager.optional_session
     async def check_for_rehash(
         self, session: AsyncSession, user: User, password: str
     ) -> None:
@@ -103,7 +111,7 @@ class UserManager(_BaseManager[User]):
         if await user.check_password_rehash():
             await self.update_user_password(session, user, password)
 
-    @_BaseManager._optional_session
+    @_BaseManager.optional_session
     async def update_user_login_time(self, session: AsyncSession, user: User) -> None:
         """
         Update a user's `last_login` time.
@@ -118,7 +126,7 @@ class UserManager(_BaseManager[User]):
         await session.execute(statement)
         await session.flush()
 
-    @_BaseManager._optional_session
+    @_BaseManager.optional_session
     async def update_password_required(
         self, session: AsyncSession, user: User, status: bool
     ) -> None:

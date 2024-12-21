@@ -1,3 +1,7 @@
+"""
+Authorization and permission enforcement
+"""
+
 from typing import TypeVar, ParamSpec
 from collections.abc import Callable, Awaitable
 from functools import wraps
@@ -16,8 +20,6 @@ class InvalidPermissions(Unauthorized):
     """
     Raised when a user attempts to reach a resource without proper permissions.
     """
-
-    ...
 
 
 def permission_required(permission: UserPermission):
@@ -48,10 +50,11 @@ def permission_required(permission: UserPermission):
 
             if not await current_user.is_authenticated:
                 raise Unauthorized()
-            elif not await current_user.has_permission(permission):
+
+            if not await current_user.has_permission(permission):
                 raise InvalidPermissions()
-            else:
-                return await current_app.ensure_async(func)(*args, **kwargs)
+
+            return await current_app.ensure_async(func)(*args, **kwargs)
 
         return wrapper
 

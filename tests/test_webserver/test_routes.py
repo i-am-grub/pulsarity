@@ -1,5 +1,5 @@
+import json
 import pytest
-import pickle
 
 from quart.typing import TestClientProtocol
 from quart_auth import authenticated_client
@@ -105,7 +105,7 @@ async def test_pilot_stream(app: RHApplication, default_user_creds: tuple[str]):
         async with client.request("/pilots") as connection:
 
             data = await connection.receive()
-            data_ = pickle.loads(data)
+            data_ = json.loads(data.decode())
             assert data_ is not None
             assert connection.status_code == 200
 

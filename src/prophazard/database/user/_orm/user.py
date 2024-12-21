@@ -1,5 +1,5 @@
 """
-ORM classes for Pilot data
+ORM classes for User data
 """
 
 import logging
@@ -20,7 +20,6 @@ from argon2.exceptions import (
 
 from ..._base import _UserBase
 from .role import Role
-from .._enums import UserPermission
 
 
 logger = logging.Logger(__name__)
@@ -39,6 +38,8 @@ class User(_UserBase):
     """
     User for the application
     """
+
+    # pylint: disable=W0212
 
     __tablename__ = "user"
 
@@ -62,22 +63,43 @@ class User(_UserBase):
     def __init__(
         self,
         username: str,
-        roles: set[Role],
         *,
+        roles: set[Role] | None = None,
         first_name: str | None = None,
         last_name: str | None = None,
         persistent: bool = False,
     ):
+        """
+        Class initialization
+
+        :param str username: The username to set for the user
+        :param set[Role] | None roles: The roles to designate to
+        the user, defaults to None
+        :param str | None first_name: The first name of the user
+        , defaults to None
+        :param str | None last_name: The last name of the user,
+        defaults to None
+        :param bool persistent: When set to `True` prevents the object
+        from being deleted from the database, defaults to False
+        """
+        # pylint: disable=R0913
+
         self.username = username
-        self._roles = roles
+        self._roles = set() if roles is None else roles
 
         self.first_name = first_name if first_name is not None else None
         self.last_name = last_name if last_name is not None else None
-        self._persistent = persistent
+        self.persistent = persistent
         self.reset_required = True
 
     @property
     async def permissions(self) -> set[str]:
+        """
+        Gets the permissions for the user. Can only be used when a
+        session to the database has not been closed
+
+        :return set[str]: The set of permissions
+        """
         permissions: set[str] = set()
 
         roles: set[Role] = await self.awaitable_attrs._roles
@@ -116,16 +138,16 @@ class User(_UserBase):
         try:
             result = await asyncio.to_thread(_ph.verify, self._password_hash, password)
         except VerifyMismatchError:
-            logger.warning(f"Failed login attempt for {self.username}")
+            logger.warning("Failed login attempt for %s", self.username)
             return False
         except VerificationError:
-            logger.error(f"Failed verification error for {self.username}")
+            logger.error("Failed verification error for %s", self.username)
             return False
         except InvalidHashError:
-            logger.warning(f"Invalid hash error for {self.username}")
+            logger.warning("Invalid hash error for %s", self.username)
             return False
-        else:
-            return result
+
+        return result
 
     async def check_password_rehash(self) -> bool:
         """

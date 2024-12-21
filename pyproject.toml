@@ -29,6 +29,9 @@ argon2-cffi = "^23.1.0"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.poetry.scripts]
+start-prophazard = "prophazard.__main__:main"
+
 [tool.poetry.group.dev]
 optional = true
 
@@ -40,6 +43,7 @@ black = "^24.10.0"
 mypy = "^1.13.0"
 tox = "^4.23.2"
 tox-gh-actions = "^3.2.0"
+pylint = "^3.3.2"
 
 [tool.poetry.group.docs]
 optional = true
@@ -58,9 +62,12 @@ asyncio_default_fixture_loop_scope = "session"
 asyncio_mode = "auto"
 testpaths = ["tests"]
 
+[tool.pylint]
+ignore = "tests"
+
 [tool.tox]
 requires = ["tox>=4"]
-env_list = ["style", "type", "3.13", "3.12", "3.11"]
+env_list = ["pylint", "black", "mypy", "3.13", "3.12", "3.11"]
 
 [tool.tox.env_run_base]
 description = "run unit tests"
@@ -72,12 +79,17 @@ deps = [
 commands = [["pytest", {cov="src",  replace = "posargs", default = ["tests"], extend = true }]]
 
 [tool.tox.env.style]
-description = "run linters"
+description = "run black"
 skip_install = true
 deps = ["black"]
 commands = [["black", { replace = "posargs", default = ["."], extend = true} ]]
 
-[tool.tox.env.type]
-description = "run type checks"
+[tool.tox.env.mypy]
+description = "run mypy"
 deps = ["mypy"]
 commands = [["mypy", { replace = "posargs", default = ["src"], extend = true} ]]
+
+[tool.tox.env.pylint]
+description = "run pylint"
+deps = ["pylint"]
+commands = [["pylint", "--recursive=y", { replace = "posargs", default = ["src"], extend = true} ]]
