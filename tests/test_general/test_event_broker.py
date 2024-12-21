@@ -10,7 +10,7 @@ async def broker_subscriber(event: Event, broker: EventBroker, check_values: lis
     async for message in broker.subscribe():
         await event.wait()
 
-        assert message[3] == check_values[count]
+        assert message[4] == check_values[count]
         count += 1
 
         if count >= len(check_values):
