@@ -117,3 +117,19 @@ class UserManager(_BaseManager[User]):
 
         await session.execute(statement)
         await session.flush()
+
+    @_BaseManager._optional_session
+    async def update_password_required(
+        self, session: AsyncSession, user: User, status: bool
+    ) -> None:
+        """
+        Change the status of the `reset_required` attribute for a user
+
+        :param AsyncSession session: _description_
+        :param User user: _description_
+        :param bool status: _description_
+        """
+        statement = update(User).where(User.id == user.id).values(reset_required=status)
+
+        await session.execute(statement)
+        await session.flush()

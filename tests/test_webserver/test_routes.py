@@ -14,7 +14,7 @@ async def test_webserver_index(client: TestClientProtocol):
 
 
 @pytest.mark.asyncio
-async def test_webserver_login(
+async def test_webserver_login_valid(
     client: TestClientProtocol, default_user_creds: tuple[str]
 ):
     login_data = {"username": default_user_creds[0], "password": default_user_creds[1]}
@@ -22,7 +22,25 @@ async def test_webserver_login(
     assert response.status_code == 200
 
     data = await response.get_json()
-    assert data == {"success": True}
+
+    assert data["success"] is True
+    assert "reset_required" in data
+
+
+@pytest.mark.asyncio
+async def test_webserver_login_invalid(
+    client: TestClientProtocol, default_user_creds: tuple[str]
+):
+
+    fake_password = "fake_password"
+    login_data = {"username": default_user_creds[0], "password": fake_password}
+    response = await client.post("/login", json=login_data)
+    assert response.status_code == 200
+
+    data = await response.get_json()
+
+    assert data["success"] is False
+    assert "reset_required" not in data
 
 
 @pytest.mark.asyncio
@@ -45,7 +63,7 @@ async def test_password_reset_invalid(
         assert response.status_code == 200
 
         data = await response.get_json()
-        assert data == {"success": False}
+        assert data["success"] is False
 
 
 @pytest.mark.asyncio
@@ -57,7 +75,7 @@ async def test_password_reset_valid(app: RHApplication, default_user_creds: tupl
     user = await database.users.get_by_username(None, default_user_creds[0])
     assert user is not None
 
-    await test_webserver_login(client, default_user_creds)
+    await test_webserver_login_valid(client, default_user_creds)
 
     async with authenticated_client(client, user.auth_id.hex):
 
@@ -67,10 +85,10 @@ async def test_password_reset_valid(app: RHApplication, default_user_creds: tupl
         assert response.status_code == 200
 
         data = await response.get_json()
-        assert data == {"success": True}
+        assert data["success"] is True
 
     new_creds = (default_user_creds[0], new_password)
-    await test_webserver_login(client, new_creds)
+    await test_webserver_login_valid(client, new_creds)
 
 
 async def test_pilot_stream(app: RHApplication, default_user_creds: tuple[str]):

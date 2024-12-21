@@ -38,7 +38,7 @@ async def login():
                 database.users.check_for_rehash(None, user, data["password"])
             )
 
-            return {"success": True}
+            return {"success": True, "reset_required": user.reset_required}
 
     return {"success": False}
 
@@ -63,6 +63,11 @@ async def reset_password():
 
         if user is not None and await user.verify_password(data["password"]):
             await database.users.update_user_password(None, user, data["new_password"])
+
+            current_app.add_background_task(
+                database.users.update_password_required(None, user, False)
+            )
+
             return {"success": True}
 
     return {"success": False}

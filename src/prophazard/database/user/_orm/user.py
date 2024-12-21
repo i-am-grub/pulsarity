@@ -56,6 +56,8 @@ class User(_UserBase):
     """The role of the user"""
     last_login: Mapped[datetime | None] = mapped_column()
     """Time of last authenication"""
+    reset_required: Mapped[bool] = mapped_column()
+    """A flag signaling the user's password should be reset"""
 
     def __init__(
         self,
@@ -72,6 +74,7 @@ class User(_UserBase):
         self.first_name = first_name if first_name is not None else None
         self.last_name = last_name if last_name is not None else None
         self._persistent = persistent
+        self.reset_required = True
 
     @property
     async def permissions(self) -> set[UserPermission]:
