@@ -6,6 +6,8 @@ import sys
 import multiprocessing
 from . import prophazard_webserver
 
+# pylint: disable=E0401
+
 if sys.platform == "linux":
     multiprocessing.set_start_method("forkserver")
     from uvloop import run

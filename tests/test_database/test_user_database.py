@@ -1,6 +1,6 @@
 import pytest
 
-from prophazard.database.user import UserDatabaseManager, User
+from prophazard.database.user import UserDatabaseManager
 
 
 @pytest.mark.asyncio

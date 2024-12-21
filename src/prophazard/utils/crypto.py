@@ -1,3 +1,7 @@
+"""
+Cryptography for the application
+"""
+
 import datetime
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes, serialization
@@ -9,13 +13,11 @@ def generate_self_signed_cert(key_filename: str, cert_filename: str) -> None:
     """
     Generates a simple self signed cert to enable HTTPS on the webserver.
 
-    The generated files will be saved as `key.pem` and `cert.pem`.
-
     ***NOTE***: It is the responsibility of the user to replace any generated certs
     with ones signed by a reputable certificate authority.
 
-    :param str key_filename: Location to save the `key_file`
-    :param str cert_filename: Location to save the `cert_file`
+    :param str key_filename: Filename to use for the `key_file`
+    :param str cert_filename: Filename to user for the `cert_file`
     """
 
     key = ec.generate_private_key(ec.SECP256R1())

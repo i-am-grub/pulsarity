@@ -35,7 +35,7 @@ async def test_single_event_handling():
     events = [EventSetup.PILOT_ADD]
     values = [{"id": 1}]
 
-    event_values = zip(events, values)
+    event_values = tuple(zip(events, values))
 
     async with TaskGroup() as tg:
         tg.create_task(broker_subscriber(event, broker, values))
@@ -55,7 +55,7 @@ async def test_multi_event_handling():
     events.append(RaceSequence.RACE_START)
     values.append({"id": 5})
 
-    event_values = zip(events, values)
+    event_values = tuple(zip(events, values))
 
     # Expect the first value to be grabbed before sorted by priority
     test_order = [{"id": 1}, {"id": 5}, {"id": 1}, {"id": 1}]

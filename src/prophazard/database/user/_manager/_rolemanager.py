@@ -1,13 +1,20 @@
+"""
+`Role` management
+"""
+
 from typing_extensions import override
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..._base._basemanager import _BaseManager
 from .._orm import Role, Permission
 
 
-class RoleManager(_BaseManager[Role]):
+class _RoleManager(_BaseManager[Role]):
+    """
+    Databse manager for the `Role` class
+    """
 
     @property
     @override
@@ -19,7 +26,7 @@ class RoleManager(_BaseManager[Role]):
         """
         return Role
 
-    @_BaseManager._optional_session
+    @_BaseManager.optional_session
     async def role_by_name(self, session: AsyncSession, name: str) -> Role | None:
         """
         Get a role by name.
@@ -31,7 +38,7 @@ class RoleManager(_BaseManager[Role]):
         statement = select(Role).where(Role.name == name)
         return await session.scalar(statement)
 
-    @_BaseManager._optional_session
+    @_BaseManager.optional_session
     async def verify_persistant_role(
         self, session: AsyncSession, name: str, permissions: set[Permission]
     ) -> None:

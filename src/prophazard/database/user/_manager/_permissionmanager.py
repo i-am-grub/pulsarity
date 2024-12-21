@@ -1,3 +1,7 @@
+"""
+`Permission` management
+"""
+
 from typing_extensions import override
 
 from sqlalchemy import select
@@ -8,7 +12,10 @@ from .._orm import Permission
 from .._enums import UserPermission, SystemDefaults
 
 
-class PermissionManager(_BaseManager[Permission]):
+class _PermissionManager(_BaseManager[Permission]):
+    """
+    Databse manager for the `Permission` class
+    """
 
     @property
     @override
@@ -20,7 +27,7 @@ class PermissionManager(_BaseManager[Permission]):
         """
         return Permission
 
-    @_BaseManager._optional_session
+    @_BaseManager.optional_session
     async def get_user_permissions(self, session: AsyncSession) -> set[str]:
         """
         Get all permission values from the database
@@ -49,7 +56,7 @@ class PermissionManager(_BaseManager[Permission]):
 
         for permission_class in UserPermission.__subclasses__():
 
-            persistent = True if permission_class is SystemDefaults else False
+            persistent = permission_class is SystemDefaults
 
             for enum in permission_class:
 

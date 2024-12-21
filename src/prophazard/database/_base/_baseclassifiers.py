@@ -1,6 +1,12 @@
+"""
+Abstract definition of database classes
+"""
+
 from sqlalchemy import UniqueConstraint, String, PickleType
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+# pylint: disable=R0903
 
 
 class _UserBase(AsyncAttrs, DeclarativeBase):
@@ -10,7 +16,7 @@ class _UserBase(AsyncAttrs, DeclarativeBase):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     """Internal identifier"""
-    _persistent: Mapped[bool] = mapped_column(name="persistent")
+    persistent: Mapped[bool] = mapped_column()
     """Entry is persistent in database"""
 
 

@@ -4,12 +4,12 @@ Global configurations
 
 import logging
 import json
-import anyio
 import asyncio
 import datetime
 from secrets import token_urlsafe
-
 from typing import Literal
+
+import anyio
 
 _DEFAULT_CONFIG_FILE_NAME = "config.json"
 
@@ -37,6 +37,8 @@ def _get_configs_defaults() -> dict[_SECTIONS, dict]:
 
     :return dict[_SECTIONS, dict]: The server defaults
     """
+
+    # pylint: disable=R0915
 
     # secret configuration:
     secrets: dict = {}
@@ -188,7 +190,7 @@ def _write_file_config(
     """
     configs["GENERAL"]["LAST_MODIFIED_TIME"] = datetime.datetime.now().isoformat()
 
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         f.write(json.dumps(configs, indent=2))
 
 
@@ -205,7 +207,7 @@ async def _write_file_config_async(
     configs["GENERAL"]["LAST_MODIFIED_TIME"] = datetime.datetime.now().isoformat()
 
     async with _file_lock:
-        async with await anyio.open_file(filename, "w") as f:
+        async with await anyio.open_file(filename, "w", encoding="utf-8") as f:
             await f.write(json.dumps(configs, indent=2))
 
 
@@ -220,7 +222,7 @@ def _load_config_from_file(
     :return dict[_SECTIONS, dict]: The configuration settings
     """
     try:
-        with open(filename, "r") as f:
+        with open(filename, "r", encoding="utf-8") as f:
             external_config = json.load(f)
 
     except IOError:
@@ -230,13 +232,12 @@ def _load_config_from_file(
         return configs
 
     except ValueError as ex:
-        _logger.error(f"Configuration file invalid, using defaults; error is: {ex}")
+        _logger.error("Configuration file invalid, using defaults; error is: %s", ex)
         configs = _get_configs_defaults()
         _write_file_config(configs)
         return configs
 
-    else:
-        return external_config
+    return external_config
 
 
 async def _load_config_from_file_async(
@@ -251,7 +252,7 @@ async def _load_config_from_file_async(
     """
     try:
         async with _file_lock:
-            async with await anyio.open_file(filename, "r") as f:
+            async with await anyio.open_file(filename, "r", encoding="utf-8") as f:
                 content = await f.read()
                 external_config = json.loads(content)
 
@@ -262,13 +263,12 @@ async def _load_config_from_file_async(
         return configs
 
     except ValueError as ex:
-        _logger.error(f"Configuration file invalid, using defaults; error is: {ex}")
+        _logger.error("Configuration file invalid, using defaults; error is: %s", ex)
         configs = _get_configs_defaults()
         await _write_file_config_async(configs)
         return configs
 
-    else:
-        return external_config
+    return external_config
 
 
 def get_config(
@@ -290,8 +290,8 @@ def get_config(
         item = configs[section][key]
     except KeyError:
         return None
-    else:
-        return item
+
+    return item
 
 
 async def get_config_async(
@@ -312,8 +312,8 @@ async def get_config_async(
         item = configs[section][key]
     except KeyError:
         return None
-    else:
-        return item
+
+    return item
 
 
 async def set_config_async(section: _SECTIONS, key: str, value) -> None:
