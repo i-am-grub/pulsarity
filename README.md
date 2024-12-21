@@ -57,5 +57,9 @@ please follow any guidelines/practices recommended by the following projects:
 To start the webserver use
 
 ```
+poetry run start-prophazard
+```
+or
+```
 python -m prophazard
 ```

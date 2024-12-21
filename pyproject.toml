@@ -29,6 +29,9 @@ argon2-cffi = "^23.1.0"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.poetry.scripts]
+start-prophazard = "prophazard.__main__:main"
+
 [tool.poetry.group.dev]
 optional = true
 

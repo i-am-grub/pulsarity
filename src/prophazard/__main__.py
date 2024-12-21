@@ -21,4 +21,13 @@ else:
     multiprocessing.set_start_method("spawn")
     from asyncio import run
 
-run(prophazard_webserver())
+
+def main() -> None:
+    """
+    Run the PropHazard server
+    """
+    run(prophazard_webserver())
+
+
+if __name__ == "__main__":
+    main()
