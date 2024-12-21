@@ -6,10 +6,9 @@ from quart import current_app as _current_app
 from quart_auth import AuthUser
 from quart_auth import current_user as _current_user
 
-from .database.user import UserDatabaseManager, User
+from .events import EventBroker
+from .database.user import UserDatabaseManager, User, UserPermission
 from .database.race import RaceDatabaseManager
-
-from .database.user._enums import UserPermission
 
 
 class RHApplication(Quart):
@@ -17,6 +16,7 @@ class RHApplication(Quart):
     RotorHazard web application based on Quart
     """
 
+    event_broker: EventBroker = EventBroker()
     _user_database: Future[UserDatabaseManager] | None = None
     _race_database: Future[RaceDatabaseManager] | None = None
 
