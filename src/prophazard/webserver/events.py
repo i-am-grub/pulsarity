@@ -2,7 +2,7 @@
 Webserver event handling
 """
 
-from quart import Response, redirect, url_for
+from quart import ResponseReturnValue, redirect, url_for
 from quart_auth import Unauthorized
 
 from .auth import InvalidPermissions
@@ -20,25 +20,25 @@ events = RHBlueprint("events", __name__)
 
 
 @events.errorhandler(Unauthorized)
-async def redirect_to_index(*_) -> Response:
+async def redirect_to_index(*_) -> ResponseReturnValue:
     """
     Redirects the user when `Unauthorized` to access
     a route or websocket
 
     :return Response: The server response
     """
-    return redirect(url_for("index"))  # type: ignore
+    return redirect(url_for("index"))
 
 
 @events.errorhandler(InvalidPermissions)
-async def invalid_permissions(*_) -> Response:
+async def invalid_permissions(*_) -> ResponseReturnValue:
     """
     Redirects the user when has `InvalidPermissions`
     to access a route or websocket
 
     :return Response: _description_
     """
-    return redirect(url_for("index"))  # type: ignore
+    return redirect(url_for("index"))
 
 
 @events.before_app_serving

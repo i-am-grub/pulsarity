@@ -2,10 +2,9 @@
 ORM classes for Pilot data
 """
 
-import json
-
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from pydantic import BaseModel
 
 from ..._base import _RaceAttribute, _RaceBase
 
@@ -25,6 +24,17 @@ class PilotAttribute(_RaceAttribute, _RaceBase):
         ForeignKey("pilot.id"), nullable=False, primary_key=True
     )
     """ID of pilot to which this attribute is assigned"""
+
+
+class PilotData(BaseModel):
+    """
+    A model to use for sending and recieving pilot data
+    """
+
+    id: int | None = None
+    callsign: str
+    name: str = ""
+    phonetic: str = ""
 
 
 class Pilot(_RaceBase):
@@ -125,10 +135,13 @@ class Pilot(_RaceBase):
         :return bytes: JSON object as bytes
         """
 
-        data: dict[str, str | int] = {}
-        data["id"] = self.id
-        data["callsign"] = self.display_callsign
-        data["name"] = self.display_name
-        data["phonetic"] = self.spoken_callsign
+        model = PilotData(
+            id=self.id,
+            callsign=self.display_callsign,
+            name=self.display_name,
+            phonetic=self.spoken_callsign,
+        )
 
-        return json.dumps(data).encode()
+        PilotData.model_validate(model)
+
+        return model.model_dump_json().encode()
