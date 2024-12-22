@@ -27,7 +27,7 @@ class LoginResponse(BaseResponse):
     Request to login to the server
     """
 
-    password_reset: bool | None = None
+    password_reset_required: bool | None = None
 
 
 class ResetPasswordRequest(BaseModel):

@@ -43,9 +43,10 @@ async def login(data: LoginRequest) -> LoginResponse:
     user = await database.users.get_by_username(None, data.username)
 
     if user is not None and await user.verify_password(data.password):
-        login_user(RHUser(user.auth_id.hex))
+        auth_user = RHUser(user.auth_id.hex)
+        login_user(auth_user)
 
-        logger.info("%s has been logged into the server", user.username)
+        logger.info("%s has been logged into the server", auth_user.auth_id)
 
         current_app.add_background_task(
             database.users.update_user_login_time, None, user
@@ -55,7 +56,7 @@ async def login(data: LoginRequest) -> LoginResponse:
             database.users.check_for_rehash, None, user, data.password
         )
 
-        return LoginResponse(status=False, password_reset=user.reset_required)
+        return LoginResponse(status=True, password_reset_required=user.reset_required)
 
     return LoginResponse(status=False)
 
@@ -69,7 +70,7 @@ async def logout() -> BaseResponse:
     :return dict: JSON containing the status of the request
     """
     logout_user()
-    logger.info("Logged user out of the server")
+    logger.info("Logged user (%s) out of the server", current_user.auth_id)
     return BaseResponse(status=True)
 
 
