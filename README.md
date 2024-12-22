@@ -1,7 +1,7 @@
 # PropHazard
 A demonstrator project for a RotorHazard variant
 
-> [!WARNING]  
+> [!CAUTION]  
 > This project is currently in a development only stage. Do not attempt to use it
 > in a deployment setting.
 
@@ -50,6 +50,8 @@ please follow any guidelines/practices recommended by the following projects:
 - Black - code formating
 - pytest - unit testing
 - pytest-cov - coverage testing
+- pylint - more static type analysis
+- tox - automated testing
 - sphinx - documentation
 
 ## Starting the Webserver
