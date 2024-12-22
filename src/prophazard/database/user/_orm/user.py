@@ -109,18 +109,57 @@ class User(_UserBase):
         return permissions
 
     @staticmethod
-    async def generate_hash(password: str) -> str:
+    def _generate_hash(password: str) -> str | None:
         """
-        Generates a hash of the provided password.
+        Generates a hash of the provided password. Thread
+        safely.
 
         :param str password: The password to hash.
         :return str: The hashed password
         """
         try:
-            result = await asyncio.to_thread(_ph.hash, password)
+            result = _ph.hash(password)
         except HashingError:
             logger.error("Failed to hash password")
-            raise
+            result = None
+
+        return result
+
+    async def generate_hash(self, password: str) -> str:
+        """
+        Generates a hash of the provided password without blocking.
+
+        :param str password: The password to hash.
+        :return str: The hashed password
+        """
+        result = await asyncio.to_thread(self._generate_hash, password)
+
+        if result is None:
+            raise HashingError()
+
+        return result
+
+    @staticmethod
+    def _verify_password(password_hash: str, password: str, username: str) -> bool:
+        """
+        Checks a hash of the provided password against a provided hash.
+
+        The function is setup to be ran thread safe
+
+        :param str password: The password to hash.
+        :return bool: Whether the comparsion of the hash was sucessful or not.
+        """
+        try:
+            result = _ph.verify(password_hash, password)
+        except VerifyMismatchError:
+            logger.warning("Failed password attempt for %s", username)
+            return False
+        except VerificationError:
+            logger.error("Failed verification error for %s", username)
+            return False
+        except InvalidHashError:
+            logger.warning("Invalid hash error for %s", username)
+            return False
 
         return result
 
@@ -135,17 +174,9 @@ class User(_UserBase):
         if self._password_hash is None:
             return False
 
-        try:
-            result = await asyncio.to_thread(_ph.verify, self._password_hash, password)
-        except VerifyMismatchError:
-            logger.warning("Failed login attempt for %s", self.username)
-            return False
-        except VerificationError:
-            logger.error("Failed verification error for %s", self.username)
-            return False
-        except InvalidHashError:
-            logger.warning("Invalid hash error for %s", self.username)
-            return False
+        result = await asyncio.to_thread(
+            self._verify_password, self._password_hash, password, self.username
+        )
 
         return result
 

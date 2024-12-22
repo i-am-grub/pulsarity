@@ -4,19 +4,24 @@ HTTP Rest API Routes
 
 from uuid import UUID
 from collections.abc import AsyncGenerator
+import logging
 
-from quart import render_template_string, request
+from quart import ResponseReturnValue, render_template_string
 from quart_auth import login_user, logout_user
+from quart_schema import validate_request, validate_response
 
 from ..extensions import RHBlueprint, RHUser, current_user, current_app
 from .auth import permission_required
 from ..database.user import SystemDefaults
+from .validation import BaseResponse, LoginRequest, LoginResponse, ResetPasswordRequest
+
+logger = logging.Logger(__name__)
 
 routes = RHBlueprint("routes", __name__)
 
 
 @routes.get("/")
-async def index() -> str:
+async def index() -> ResponseReturnValue:
     """
     Serves the web application to the client
 
@@ -26,72 +31,75 @@ async def index() -> str:
 
 
 @routes.post("/login")
-async def login() -> dict:
+@validate_request(LoginRequest)
+@validate_response(LoginResponse)
+async def login(data: LoginRequest) -> LoginResponse:
     """
     Pass the user credentials to log the user into the server
 
     :return dict: JSON containing the status of the request
     """
-    data: dict[str, str] = await request.get_json()
+    database = await current_app.get_user_database()
+    user = await database.users.get_by_username(None, data.username)
 
-    if "username" in data and "password" in data:
-        database = await current_app.get_user_database()
-        user = await database.users.get_by_username(None, data["username"])
+    if user is not None and await user.verify_password(data.password):
+        login_user(RHUser(user.auth_id.hex))
 
-        if user is not None and await user.verify_password(data["password"]):
-            login_user(RHUser(user.auth_id.hex))
+        logger.info("%s has been logged into the server", user.username)
 
-            current_app.add_background_task(
-                database.users.update_user_login_time(None, user)  # type: ignore
-            )
+        current_app.add_background_task(
+            database.users.update_user_login_time, None, user
+        )
 
-            current_app.add_background_task(
-                database.users.check_for_rehash(None, user, data["password"])  # type: ignore
-            )
+        current_app.add_background_task(
+            database.users.check_for_rehash, None, user, data.password
+        )
 
-            return {"success": True, "reset_required": user.reset_required}
+        return LoginResponse(status=False, password_reset=user.reset_required)
 
-    return {"success": False}
+    return LoginResponse(status=False)
 
 
 @routes.get("/logout")
-async def logout() -> dict:
+@validate_response(BaseResponse)
+async def logout() -> BaseResponse:
     """
     Logout the currently connected client
 
     :return dict: JSON containing the status of the request
     """
     logout_user()
-    return {"success": True}
+    logger.info("Logged user out of the server")
+    return BaseResponse(status=True)
 
 
 @routes.post("/reset-password")
 @permission_required(SystemDefaults.RESET_PASSWORD)
-async def reset_password() -> dict:
+@validate_request(ResetPasswordRequest)
+@validate_response(BaseResponse)
+async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
     """
     Resets the password for the client user
 
     :return dict: JSON containing the status of the request
     """
-    data: dict[str, str] = await request.get_json()
+    uuid = UUID(hex=current_user.auth_id)
 
-    if all(["password" in data, "new_password" in data]):
+    database = await current_app.get_user_database()
+    user = await database.users.get_by_uuid(None, uuid)
 
-        uuid = UUID(hex=current_user.auth_id)
+    if user is not None and await user.verify_password(data.old_password):
+        await database.users.update_user_password(None, user, data.new_password)
 
-        database = await current_app.get_user_database()
-        user = await database.users.get_by_uuid(None, uuid)
+        logger.info("Password reset for %s completed", user.username)
 
-        if user is not None and await user.verify_password(data["password"]):
-            await database.users.update_user_password(None, user, data["new_password"])
+        current_app.add_background_task(
+            database.users.update_password_required, None, user, False
+        )
 
-            current_app.add_background_task(
-                database.users.update_password_required(None, user, False)  # type: ignore
-            )
+        return BaseResponse(status=True)
 
-            return {"success": True}
-
-    return {"success": False}
+    return BaseResponse(status=False)
 
 
 @routes.get("/pilots")

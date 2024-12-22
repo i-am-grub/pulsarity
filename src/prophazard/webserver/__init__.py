@@ -3,6 +3,7 @@ Webserver Components
 """
 
 from quart_auth import QuartAuth
+from quart_schema import QuartSchema
 
 from ..extensions import RHApplication, RHBlueprint, RHUser
 from .events import p_events as _p_events
@@ -33,6 +34,8 @@ def generate_app(*, test_mode: bool = False) -> RHApplication:
         mode="cookie",
     )
     auth_manager.user_class = RHUser
+
+    QuartSchema(app, swagger_ui_path="/api/docs", redoc_ui_path="/api/redocs")
 
     for blueprint in (_events, _routes, _tasks, _websockets):
         app.register_blueprint(blueprint)
