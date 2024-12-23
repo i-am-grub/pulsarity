@@ -5,9 +5,12 @@ Executor for Parallel Processing
 import sys
 import os
 import asyncio
+from asyncio import Future
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
-_executor: ThreadPoolExecutor | ProcessPoolExecutor | None = None
+# pylint: disable=W0603
+
+_executor: Future[ThreadPoolExecutor | ProcessPoolExecutor] | None = None
 """The serverwide executor pool to use for parallel computations"""
 
 
@@ -20,9 +23,12 @@ def set_executor() -> None:
     to allow at a time. Ideally, this should prevent the webserver from
     being blocked while running parallel computations.
     """
-    # pylint: disable=E1101,W0212,W0603
+    # pylint: disable=E1101,W0212
 
     global _executor
+
+    if _executor is None:
+        _executor = asyncio.get_running_loop().create_future()
 
     if sys.version_info >= (3, 13):
         count = os.process_cpu_count()
@@ -31,17 +37,19 @@ def set_executor() -> None:
 
     if sys.version_info >= (3, 13) and not sys._is_gil_enabled():
         if count is None or count <= 2:
-            _executor = ThreadPoolExecutor(1)
+            pool_exec = ThreadPoolExecutor(1)
         else:
-            _executor = ThreadPoolExecutor(count - 1)
+            pool_exec = ThreadPoolExecutor(count - 1)
     else:
         if count is None or count <= 2:
-            _executor = ProcessPoolExecutor(1)
+            pool_exec = ProcessPoolExecutor(1)
         else:
-            _executor = ProcessPoolExecutor(count - 1)
+            pool_exec = ProcessPoolExecutor(count - 1)
+
+    _executor.set_result(pool_exec)
 
 
-def get_executor() -> ThreadPoolExecutor | ProcessPoolExecutor | None:
+async def get_executor() -> ThreadPoolExecutor | ProcessPoolExecutor:
     """
     Get an executor to enable parallel processing for computationally
     intensive tasks. If the task to schedule in the executor is IO bound,
@@ -60,7 +68,12 @@ def get_executor() -> ThreadPoolExecutor | ProcessPoolExecutor | None:
 
     :return ThreadPoolExecutor | ProcessPoolExecutor: The instace of the pool executor
     """
-    return _executor
+    global _executor
+
+    if _executor is None:
+        _executor = asyncio.get_running_loop().create_future()
+
+    return await _executor
 
 
 async def shutdown_executor() -> None:
@@ -68,4 +81,5 @@ async def shutdown_executor() -> None:
     Wait for the executor to finish all tasks and shutdown.
     """
     if _executor is not None:
-        await asyncio.to_thread(_executor.shutdown)
+        pool_exec = await _executor
+        await asyncio.to_thread(pool_exec.shutdown)

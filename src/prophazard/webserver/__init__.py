@@ -8,6 +8,7 @@ from quart_schema import QuartSchema
 from ..extensions import RHApplication, RHBlueprint, RHUser
 from .events import p_events as _p_events
 from .events import events as _events
+from .routes import templates as _templates
 from .routes import routes as _routes
 from .tasks import tasks as _tasks
 from .websockets import websockets as _websockets
@@ -45,7 +46,7 @@ def generate_app(*, test_mode: bool = False) -> RHApplication:
         swagger_ui_path="/api/docs" if generate_api_docs else None,
     )
 
-    for blueprint in (_events, _routes, _tasks, _websockets):
+    for blueprint in (_templates, _events, _routes, _tasks, _websockets):
         app.register_blueprint(blueprint)
 
     if not test_mode:

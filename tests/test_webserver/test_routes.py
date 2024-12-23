@@ -18,7 +18,7 @@ async def test_webserver_login_valid(
     client: TestClientProtocol, default_user_creds: tuple[str]
 ):
     login_data = {"username": default_user_creds[0], "password": default_user_creds[1]}
-    response = await client.post("/login", json=login_data)
+    response = await client.post("/api/login", json=login_data)
     assert response.status_code == 200
 
     data = await response.get_json()
@@ -36,7 +36,7 @@ async def test_webserver_login_invalid(
 
     fake_password = "fake_password"
     login_data = {"username": default_user_creds[0], "password": fake_password}
-    response = await client.post("/login", json=login_data)
+    response = await client.post("/api/login", json=login_data)
     assert response.status_code == 200
 
     data = await response.get_json()
@@ -61,7 +61,7 @@ async def test_password_reset_invalid(
 
         data = {"old_password": password, "new_password": "new_password"}
 
-        response = await client.post("/reset-password", json=data)
+        response = await client.post("/api/reset-password", json=data)
         assert response.status_code == 200
 
         data = await response.get_json()
@@ -87,7 +87,7 @@ async def test_password_reset_valid(app: RHApplication, default_user_creds: tupl
             "new_password": new_password,
         }
 
-        response = await client.post("/reset-password", json=reset_data)
+        response = await client.post("/api/reset-password", json=reset_data)
         assert response.status_code == 200
 
         data = await response.get_json()
@@ -109,7 +109,7 @@ async def test_pilot_stream(app: RHApplication, default_user_creds: tuple[str]):
     assert user is not None
 
     async with authenticated_client(client, user.auth_id.hex):
-        async with client.request("/pilots") as connection:
+        async with client.request("/api/pilot/all") as connection:
 
             data = await connection.receive()
             data_ = json.loads(data.decode())

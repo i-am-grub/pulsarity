@@ -2,9 +2,13 @@
 Abstract definition of database classes
 """
 
+from abc import abstractmethod
+
 from sqlalchemy import UniqueConstraint, String, PickleType
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from pydantic import BaseModel
+
 
 # pylint: disable=R0903
 
@@ -20,6 +24,14 @@ class _UserBase(AsyncAttrs, DeclarativeBase):
     """Entry is persistent in database"""
 
 
+class _RaceData(BaseModel):
+    """
+    A model to use for validating data
+    """
+
+    id: int | None = None
+
+
 class _RaceBase(AsyncAttrs, DeclarativeBase):
     """
     Base ORM Class with asynchronous attributes enabled for the race database
@@ -27,6 +39,18 @@ class _RaceBase(AsyncAttrs, DeclarativeBase):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     """Internal identifier"""
+
+    @abstractmethod
+    def to_data_model(self) -> _RaceData:
+        """
+        Convert the object to a defined datamodel
+        """
+
+    @abstractmethod
+    def to_bytes(self) -> bytes:
+        """
+        Convert the object to a encoded JSON object
+        """
 
 
 class _RaceAttribute:

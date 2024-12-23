@@ -11,7 +11,7 @@ from prophazard.database.user import User, Role, Permission
 
 @pytest.mark.asyncio
 async def test_webserver_unauthorized(client: TestClientProtocol):
-    response = await client.get("/pilots")
+    response = await client.get("/api/pilot/all")
     assert response.status_code == 401
 
 
@@ -39,8 +39,8 @@ async def test_webserver_lack_permissions(app: RHApplication):
         await database.users.add(session, user)
 
     async with authenticated_client(client, user.auth_id.hex):
-        response = await client.get("/pilots")
-        assert response.status_code == 401
+        response = await client.get("/api/pilot/all")
+        assert response.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -52,5 +52,5 @@ async def test_webserver_authorized(app: RHApplication, default_user_creds: tupl
     assert user is not None
 
     async with authenticated_client(client, user.auth_id.hex):
-        response = await client.get("/pilots")
+        response = await client.get("/api/pilot/all")
         assert response.status_code == 200

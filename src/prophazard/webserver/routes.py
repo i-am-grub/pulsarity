@@ -8,19 +8,23 @@ import logging
 
 from quart import ResponseReturnValue, render_template_string
 from quart_auth import login_user, logout_user
-from quart_schema import validate_request, validate_response
+from quart_schema import validate_request, validate_response, hide
+from werkzeug.exceptions import NotFound
 
 from ..extensions import RHBlueprint, RHUser, current_user, current_app
 from .auth import permission_required
 from ..database.user import SystemDefaults
 from .validation import BaseResponse, LoginRequest, LoginResponse, ResetPasswordRequest
+from ..database.race._orm import _PilotData
 
 logger = logging.Logger(__name__)
 
-routes = RHBlueprint("routes", __name__)
+templates = RHBlueprint("templates", __name__)
+routes = RHBlueprint("routes", __name__, url_prefix="/api")
 
 
-@routes.get("/")
+@templates.get("/")
+@hide
 async def index() -> ResponseReturnValue:
     """
     Serves the web application to the client
@@ -103,7 +107,25 @@ async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
     return BaseResponse(status=False)
 
 
-@routes.get("/pilots")
+@routes.get("/pilot/<int:pilot_id>")
+@permission_required(SystemDefaults.READ_PILOTS)
+@validate_response(_PilotData)
+async def get_pilot(pilot_id: int) -> _PilotData:
+    """
+    Get the pilot by id
+
+    :return: Pilot data.
+    """
+    database = await current_app.get_race_database()
+    pilot = await database.pilots.get_by_id(None, pilot_id)
+
+    if pilot is None:
+        raise NotFound()
+
+    return pilot.to_data_model()
+
+
+@routes.get("/pilot/all")
 @permission_required(SystemDefaults.READ_PILOTS)
 async def get_pilots() -> AsyncGenerator[bytes, None]:
     """

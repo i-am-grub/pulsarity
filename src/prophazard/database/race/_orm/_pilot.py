@@ -4,9 +4,8 @@ ORM classes for Pilot data
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from pydantic import BaseModel
 
-from ..._base import _RaceAttribute, _RaceBase
+from ..._base import _RaceAttribute, _RaceBase, _RaceData
 
 # pylint: disable=E1136
 
@@ -26,13 +25,12 @@ class PilotAttribute(_RaceAttribute, _RaceBase):
     """ID of pilot to which this attribute is assigned"""
 
 
-class PilotData(BaseModel):
+class PilotData(_RaceData):
     """
-    A model to use for sending and recieving pilot data
+    A model to use for validating pilot data
     """
 
-    id: int | None = None
-    callsign: str
+    callsign: str = ""
     name: str = ""
     phonetic: str = ""
 
@@ -127,12 +125,11 @@ class Pilot(_RaceBase):
     def __repr__(self):
         return f"<Pilot {self.id}>"
 
-    def to_bytes(self) -> bytes:
+    def to_data_model(self) -> PilotData:
         """
-        Generates a JSON object from the pilot and encodes
-        it for sending.
+        Generate a validation model for the pilot
 
-        :return bytes: JSON object as bytes
+        :return: The generated model
         """
 
         model = PilotData(
@@ -144,4 +141,15 @@ class Pilot(_RaceBase):
 
         PilotData.model_validate(model)
 
+        return model
+
+    def to_bytes(self) -> bytes:
+        """
+        Generates a JSON object from a pilot model and encodes
+        it for sending.
+
+        :return: JSON object as bytes
+        """
+
+        model = self.to_data_model()
         return model.model_dump_json().encode()

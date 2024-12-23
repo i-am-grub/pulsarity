@@ -5,8 +5,6 @@ Webserver event handling
 from quart import ResponseReturnValue, redirect, url_for
 from quart_auth import Unauthorized
 
-from .auth import InvalidPermissions
-
 from ..extensions import RHBlueprint, current_app
 
 from ..database.user import UserDatabaseManager
@@ -26,17 +24,6 @@ async def redirect_to_index(*_) -> ResponseReturnValue:
     a route or websocket
 
     :return Response: The server response
-    """
-    return redirect(url_for("index"))
-
-
-@events.errorhandler(InvalidPermissions)
-async def invalid_permissions(*_) -> ResponseReturnValue:
-    """
-    Redirects the user when has `InvalidPermissions`
-    to access a route or websocket
-
-    :return Response: _description_
     """
     return redirect(url_for("index"))
 
