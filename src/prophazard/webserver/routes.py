@@ -13,7 +13,7 @@ from werkzeug.exceptions import NotFound
 
 from ..extensions import RHBlueprint, RHUser, current_user, current_app
 from .auth import permission_required
-from ..database.user import SystemDefaults
+from ..database.user import SystemDefaultPerms
 from .validation import BaseResponse, LoginRequest, LoginResponse, ResetPasswordRequest
 from ..database.race._orm import _PilotData
 
@@ -79,7 +79,7 @@ async def logout() -> BaseResponse:
 
 
 @routes.post("/reset-password")
-@permission_required(SystemDefaults.RESET_PASSWORD)
+@permission_required(SystemDefaultPerms.RESET_PASSWORD)
 @validate_request(ResetPasswordRequest)
 @validate_response(BaseResponse)
 async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
@@ -108,7 +108,7 @@ async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
 
 
 @routes.get("/pilot/<int:pilot_id>")
-@permission_required(SystemDefaults.READ_PILOTS)
+@permission_required(SystemDefaultPerms.READ_PILOTS)
 @validate_response(_PilotData)
 async def get_pilot(pilot_id: int) -> _PilotData:
     """
@@ -126,7 +126,7 @@ async def get_pilot(pilot_id: int) -> _PilotData:
 
 
 @routes.get("/pilot/all")
-@permission_required(SystemDefaults.READ_PILOTS)
+@permission_required(SystemDefaultPerms.READ_PILOTS)
 async def get_pilots() -> AsyncGenerator[bytes, None]:
     """
     A streaming route for getting all pilots currently stored in the

@@ -14,7 +14,7 @@ class UserPermission(StrEnum):
     """
 
 
-class SystemDefaults(UserPermission):
+class SystemDefaultPerms(UserPermission):
     """
     Default user permissions for the system
     """

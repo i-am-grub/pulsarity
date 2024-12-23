@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..._base._basemanager import _BaseManager
 from .._orm import Permission
-from .._enums import UserPermission, SystemDefaults
+from .._enums import UserPermission, SystemDefaultPerms
 
 
 class _PermissionManager(_BaseManager[Permission]):
@@ -56,7 +56,7 @@ class _PermissionManager(_BaseManager[Permission]):
 
         for permission_class in UserPermission.__subclasses__():
 
-            persistent = permission_class is SystemDefaults
+            persistent = permission_class is SystemDefaultPerms
 
             for enum in permission_class:
 

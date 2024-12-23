@@ -5,7 +5,7 @@ Enums for system events
 from dataclasses import dataclass
 from enum import IntEnum, Enum, auto
 
-from ..database.user import UserPermission, SystemDefaults
+from ..database.user import UserPermission, SystemDefaultPerms
 
 
 class _EvtPriority(IntEnum):
@@ -52,22 +52,22 @@ class _ApplicationEvt(_EvtData, Enum):
         return name.lower()
 
 
-class EventSetup(_ApplicationEvt):
+class EventSetupEvt(_ApplicationEvt):
     """
     Events associated with modification to race objects
     """
 
-    PILOT_ADD = _EvtPriority.MEDUIUM, SystemDefaults.READ_PILOTS, auto()
-    PILOT_ALTER = _EvtPriority.MEDUIUM, SystemDefaults.READ_PILOTS, auto()
-    PILOT_DELETE = _EvtPriority.MEDUIUM, SystemDefaults.READ_PILOTS, auto()
+    PILOT_ADD = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
+    PILOT_ALTER = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
+    PILOT_DELETE = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
 
 
-class RaceSequence(_ApplicationEvt):
+class RaceSequenceEvt(_ApplicationEvt):
     """
     Events associated with live race sequence
     """
 
-    RACE_STAGE = _EvtPriority.HIGH, SystemDefaults.RACE_EVENTS, auto()
-    RACE_START = _EvtPriority.INSTANT, SystemDefaults.RACE_EVENTS, auto()
-    RACE_FINISH = _EvtPriority.HIGH, SystemDefaults.RACE_EVENTS, auto()
-    RACE_STOP = _EvtPriority.INSTANT, SystemDefaults.RACE_EVENTS, auto()
+    RACE_STAGE = _EvtPriority.HIGH, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_START = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_FINISH = _EvtPriority.HIGH, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_STOP = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS, auto()
