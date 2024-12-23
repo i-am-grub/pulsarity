@@ -2,8 +2,6 @@
 Abstract definition of database classes
 """
 
-from abc import abstractmethod
-
 from sqlalchemy import UniqueConstraint, String, PickleType
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -39,18 +37,6 @@ class _RaceBase(AsyncAttrs, DeclarativeBase):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     """Internal identifier"""
-
-    @abstractmethod
-    def to_data_model(self) -> _RaceData:
-        """
-        Convert the object to a defined datamodel
-        """
-
-    @abstractmethod
-    def to_bytes(self) -> bytes:
-        """
-        Convert the object to a encoded JSON object
-        """
 
 
 class _RaceAttribute:

@@ -5,7 +5,7 @@ from quart.typing import TestClientProtocol
 from quart_auth import authenticated_client
 
 from prophazard.extensions import RHApplication
-from prophazard.database.user._enums import SystemDefaults
+from prophazard.database.user._enums import SystemDefaultPerms
 from prophazard.database.user import User, Role, Permission
 
 
@@ -26,7 +26,7 @@ async def test_webserver_lack_permissions(app: RHApplication):
     async with session_maker() as session:
         permissions = database.permissions.get_all_as_stream(session)
         async for permission in permissions:
-            if permission.value != SystemDefaults.READ_PILOTS:
+            if permission.value != SystemDefaultPerms.READ_PILOTS:
                 permissions_.add(permission)
                 break
 
