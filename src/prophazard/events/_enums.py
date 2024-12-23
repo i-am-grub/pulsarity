@@ -52,6 +52,18 @@ class _ApplicationEvt(_EvtData, Enum):
         return name.lower()
 
 
+class SpecialEvt(_ApplicationEvt):
+    """
+    Special Events
+    """
+
+    PERMISSIONS_UPDATE = (
+        _EvtPriority.HIGH,
+        SystemDefaultPerms.EVENT_WEBSOCKET,
+        auto(),
+    )
+
+
 class EventSetupEvt(_ApplicationEvt):
     """
     Events associated with modification to race objects
@@ -67,7 +79,7 @@ class RaceSequenceEvt(_ApplicationEvt):
     Events associated with live race sequence
     """
 
-    RACE_STAGE = _EvtPriority.HIGH, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_STAGE = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS, auto()
     RACE_START = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS, auto()
-    RACE_FINISH = _EvtPriority.HIGH, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_FINISH = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS, auto()
     RACE_STOP = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS, auto()

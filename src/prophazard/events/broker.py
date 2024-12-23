@@ -21,7 +21,7 @@ class EventBroker:
     _connections: set[PriorityQueue] = set()
 
     async def publish(
-        self, event: _ApplicationEvt, data: dict, *, uuid: UUID = uuid4()
+        self, event: _ApplicationEvt, data: dict, *, uuid: UUID | None = None
     ) -> None:
         """
         Push the event data to all subscribed clients
@@ -30,9 +30,10 @@ class EventBroker:
         :param dict data: Event data
         :param UUID uuid: Message uuid
         """
+        uuid_ = uuid4() if uuid is None else uuid
 
         async with TaskGroup() as tg:
-            payload = (*astuple(event), uuid, data)
+            payload = (*astuple(event), uuid_, data)
             for connection in self._connections:
                 tg.create_task(connection.put(payload))
 
