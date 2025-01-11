@@ -7,22 +7,22 @@ from prophazard.events import EventBroker, EventSetupEvt, RaceSequenceEvt
 
 async def broker_subscriber(event: Event, broker: EventBroker, check_values: list):
 
-    count = 0
+    assert len(check_values) != 0
+
     async for message in broker.subscribe():
         await event.wait()
 
-        assert message[4] == check_values[count]
-        count += 1
+        assert message[4] == check_values.pop(0)
 
-        if count >= len(check_values):
+        if len(check_values) == 0:
             break
 
+    assert len(check_values) == 0
 
-async def broker_publisher(
-    event: Event, broker: EventBroker, event_values: tuple[tuple]
-):
+
+def broker_publisher(event: Event, broker: EventBroker, event_values: tuple[tuple]):
     for value in event_values:
-        await broker.publish(*value)
+        broker.publish(*value)
 
     event.set()
 
@@ -40,7 +40,7 @@ async def test_single_event_handling(app: RHApplication):
 
     async with app.test_app():
         app.add_background_task(broker_subscriber(event, broker, values))
-        app.add_background_task(broker_publisher(event, broker, event_values))
+        broker_publisher(event, broker, event_values)
 
 
 @pytest.mark.asyncio
@@ -63,4 +63,4 @@ async def test_multi_event_handling(app: RHApplication):
 
     async with app.test_app():
         app.add_background_task(broker_subscriber(event, broker, test_order))
-        app.add_background_task(broker_publisher(event, broker, event_values))
+        broker_publisher(event, broker, event_values)
