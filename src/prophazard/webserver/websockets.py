@@ -85,7 +85,7 @@ async def server_ws() -> None:
                 await websocket.send_json(evt_data.model_dump_json())
 
     @copy_current_websocket_context
-    async def server_receiving():
+    async def server_receiving() -> None:
         while True:
             data = await websocket.receive_json()
 
