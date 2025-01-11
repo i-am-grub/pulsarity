@@ -1,6 +1,7 @@
 import pytest
-from asyncio import TaskGroup, Event
+from asyncio import Event
 
+from prophazard.extensions import RHApplication
 from prophazard.events import EventBroker, EventSetupEvt, RaceSequenceEvt
 
 
@@ -27,7 +28,7 @@ async def broker_publisher(
 
 
 @pytest.mark.asyncio
-async def test_single_event_handling():
+async def test_single_event_handling(app: RHApplication):
     event = Event()
     broker = EventBroker()
     event.clear()
@@ -37,13 +38,13 @@ async def test_single_event_handling():
 
     event_values = tuple(zip(events, values))
 
-    async with TaskGroup() as tg:
-        tg.create_task(broker_subscriber(event, broker, values))
-        tg.create_task(broker_publisher(event, broker, event_values))
+    async with app.test_app():
+        app.add_background_task(broker_subscriber(event, broker, values))
+        app.add_background_task(broker_publisher(event, broker, event_values))
 
 
 @pytest.mark.asyncio
-async def test_multi_event_handling():
+async def test_multi_event_handling(app: RHApplication):
     event = Event()
     broker = EventBroker()
     event.clear()
@@ -60,6 +61,6 @@ async def test_multi_event_handling():
     # Expect the first value to be grabbed before sorted by priority
     test_order = [{"id": 1}, {"id": 5}, {"id": 1}, {"id": 1}]
 
-    async with TaskGroup() as tg:
-        tg.create_task(broker_subscriber(event, broker, test_order))
-        tg.create_task(broker_publisher(event, broker, event_values))
+    async with app.test_app():
+        app.add_background_task(broker_subscriber(event, broker, test_order))
+        app.add_background_task(broker_publisher(event, broker, event_values))

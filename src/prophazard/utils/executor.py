@@ -46,7 +46,8 @@ def set_executor() -> None:
         else:
             pool_exec = ProcessPoolExecutor(count - 1)
 
-    _executor.set_result(pool_exec)
+    if not _executor.done():
+        _executor.set_result(pool_exec)
 
 
 async def get_executor() -> ThreadPoolExecutor | ProcessPoolExecutor:
