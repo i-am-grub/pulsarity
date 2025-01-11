@@ -10,7 +10,7 @@ from quart_auth import Unauthorized
 from pydantic import BaseModel, UUID4, ValidationError
 
 from .auth import permission_required
-from ..database.user import UserPermission, SystemDefaultPerms
+from ..database.user import SystemDefaultPerms
 from ..extensions import current_app, current_user
 from ..events import SpecialEvt, RaceSequenceEvt
 
@@ -27,7 +27,7 @@ class EventWSData(BaseModel):
     data: dict
 
 
-async def _get_user_permissions() -> set[UserPermission]:
+async def _get_user_permissions() -> set[str]:
     """
     Gets the permissions for a given UUID
 
@@ -56,6 +56,7 @@ def _process_recieved_event_data(data: EventWSData) -> None:
 
     :param data: Event data
     """
+    # pylint: disable=W0511
 
     if data.event_id == RaceSequenceEvt.RACE_START.id:
         # TODO: Define all background tasks

@@ -33,7 +33,7 @@ class _EvtData:
     """The priority associated with the event"""
     permission: UserPermission
     """The permission the event is associated with"""
-    id: str = auto()
+    id: str = auto()  # type: ignore
     """Identifier for the event"""
 
 
