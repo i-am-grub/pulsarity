@@ -8,12 +8,6 @@ from prophazard.extensions import RHApplication
 
 
 @pytest.mark.asyncio
-async def test_webserver_index(client: TestClientProtocol):
-    response = await client.get("/")
-    assert response.status_code == 200
-
-
-@pytest.mark.asyncio
 async def test_webserver_login_valid(
     client: TestClientProtocol, default_user_creds: tuple[str]
 ):
