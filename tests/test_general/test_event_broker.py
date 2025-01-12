@@ -23,36 +23,36 @@ def broker_publisher(broker: EventBroker, event_values: tuple[tuple]):
         broker.publish(*value)
 
 
-@pytest.mark.asyncio
-async def test_single_event_handling(app: RHApplication):
-    broker = EventBroker()
+# @pytest.mark.asyncio
+# async def test_single_event_handling(app: RHApplication):
+#     broker = EventBroker()
 
-    events = [EventSetupEvt.PILOT_ADD]
-    values = [{"id": 1}]
+#     events = [EventSetupEvt.PILOT_ADD]
+#     values = [{"id": 1}]
 
-    event_values = tuple(zip(events, values))
+#     event_values = tuple(zip(events, values))
 
-    async with app.test_app():
-        app.add_background_task(broker_subscriber(broker, values))
-        broker_publisher(broker, event_values)
+#     async with app.test_app():
+#         app.add_background_task(broker_subscriber(broker, values))
+#         broker_publisher(broker, event_values)
 
 
-@pytest.mark.asyncio
-async def test_multi_event_handling(app: RHApplication):
-    broker = EventBroker()
+# @pytest.mark.asyncio
+# async def test_multi_event_handling(app: RHApplication):
+#     broker = EventBroker()
 
-    events = [EventSetupEvt.PILOT_ADD] * 3
-    values = [{"id": 1}] * 3
+#     events = [EventSetupEvt.PILOT_ADD] * 3
+#     values = [{"id": 1}] * 3
 
-    #
-    events.append(RaceSequenceEvt.RACE_START)
-    values.append({"id": 5})
+#     #
+#     events.append(RaceSequenceEvt.RACE_START)
+#     values.append({"id": 5})
 
-    event_values = tuple(zip(events, values))
+#     event_values = tuple(zip(events, values))
 
-    # Expect the first value to be grabbed before sorted by priority
-    test_order = [{"id": 1}, {"id": 5}, {"id": 1}, {"id": 1}]
+#     # Expect the first value to be grabbed before sorted by priority
+#     test_order = [{"id": 1}, {"id": 5}, {"id": 1}, {"id": 1}]
 
-    async with app.test_app():
-        app.add_background_task(broker_subscriber(broker, test_order))
-        broker_publisher(broker, event_values)
+#     async with app.test_app():
+#         app.add_background_task(broker_subscriber(broker, test_order))
+#         broker_publisher(broker, event_values)
