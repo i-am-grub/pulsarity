@@ -4,19 +4,28 @@ HTTP Rest API Routes
 
 from uuid import UUID
 from collections.abc import AsyncGenerator
+import logging
 
-from quart import render_template_string, request
+from quart import ResponseReturnValue, render_template_string
 from quart_auth import login_user, logout_user
+from quart_schema import validate_request, validate_response, hide
+from werkzeug.exceptions import NotFound
 
 from ..extensions import RHBlueprint, RHUser, current_user, current_app
 from .auth import permission_required
-from ..database.user import SystemDefaults
+from ..database.user import SystemDefaultPerms
+from .validation import BaseResponse, LoginRequest, LoginResponse, ResetPasswordRequest
+from ..database.race._orm import _PilotData
 
-routes = RHBlueprint("routes", __name__)
+logger = logging.Logger(__name__)
+
+templates = RHBlueprint("templates", __name__)
+routes = RHBlueprint("routes", __name__, url_prefix="/api")
 
 
-@routes.get("/")
-async def index() -> str:
+@templates.get("/")
+@hide
+async def index() -> ResponseReturnValue:
     """
     Serves the web application to the client
 
@@ -26,76 +35,98 @@ async def index() -> str:
 
 
 @routes.post("/login")
-async def login() -> dict:
+@validate_request(LoginRequest)
+@validate_response(LoginResponse)
+async def login(data: LoginRequest) -> LoginResponse:
     """
     Pass the user credentials to log the user into the server
 
     :return dict: JSON containing the status of the request
     """
-    data: dict[str, str] = await request.get_json()
+    database = await current_app.get_user_database()
+    user = await database.users.get_by_username(None, data.username)
 
-    if "username" in data and "password" in data:
-        database = await current_app.get_user_database()
-        user = await database.users.get_by_username(None, data["username"])
+    if user is not None and await user.verify_password(data.password):
+        auth_user = RHUser(user.auth_id.hex)
+        login_user(auth_user)
 
-        if user is not None and await user.verify_password(data["password"]):
-            login_user(RHUser(user.auth_id.hex))
+        logger.info("%s has been logged into the server", auth_user.auth_id)
 
-            current_app.add_background_task(
-                database.users.update_user_login_time(None, user)  # type: ignore
-            )
+        current_app.add_background_task(
+            database.users.update_user_login_time, None, user
+        )
 
-            current_app.add_background_task(
-                database.users.check_for_rehash(None, user, data["password"])  # type: ignore
-            )
+        current_app.add_background_task(
+            database.users.check_for_rehash, None, user, data.password
+        )
 
-            return {"success": True, "reset_required": user.reset_required}
+        return LoginResponse(status=True, password_reset_required=user.reset_required)
 
-    return {"success": False}
+    return LoginResponse(status=False)
 
 
 @routes.get("/logout")
-async def logout() -> dict:
+@validate_response(BaseResponse)
+async def logout() -> BaseResponse:
     """
     Logout the currently connected client
 
     :return dict: JSON containing the status of the request
     """
     logout_user()
-    return {"success": True}
+    logger.info("Logged user (%s) out of the server", current_user.auth_id)
+    return BaseResponse(status=True)
 
 
 @routes.post("/reset-password")
-@permission_required(SystemDefaults.RESET_PASSWORD)
-async def reset_password() -> dict:
+@permission_required(SystemDefaultPerms.RESET_PASSWORD)
+@validate_request(ResetPasswordRequest)
+@validate_response(BaseResponse)
+async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
     """
     Resets the password for the client user
 
     :return dict: JSON containing the status of the request
     """
-    data: dict[str, str] = await request.get_json()
+    uuid = UUID(hex=current_user.auth_id)
 
-    if all(["password" in data, "new_password" in data]):
+    database = await current_app.get_user_database()
+    user = await database.users.get_by_uuid(None, uuid)
 
-        uuid = UUID(hex=current_user.auth_id)
+    if user is not None and await user.verify_password(data.old_password):
+        await database.users.update_user_password(None, user, data.new_password)
 
-        database = await current_app.get_user_database()
-        user = await database.users.get_by_uuid(None, uuid)
+        logger.info("Password reset for %s completed", user.username)
 
-        if user is not None and await user.verify_password(data["password"]):
-            await database.users.update_user_password(None, user, data["new_password"])
+        current_app.add_background_task(
+            database.users.update_password_required, None, user, False
+        )
 
-            current_app.add_background_task(
-                database.users.update_password_required(None, user, False)  # type: ignore
-            )
+        return BaseResponse(status=True)
 
-            return {"success": True}
-
-    return {"success": False}
+    return BaseResponse(status=False)
 
 
-@routes.get("/pilots")
-@permission_required(SystemDefaults.READ_PILOTS)
+@routes.get("/pilot/<int:pilot_id>")
+@permission_required(SystemDefaultPerms.READ_PILOTS)
+@validate_response(_PilotData)
+async def get_pilot(pilot_id: int) -> _PilotData:
+    """
+    Get the pilot by id
+
+    :return: Pilot data.
+    """
+    database = await current_app.get_race_database()
+    pilot = await database.pilots.get_by_id(None, pilot_id)
+
+    if pilot is None:
+        raise NotFound()
+
+    return pilot.to_data_model()
+
+
+@routes.get("/pilot/all")
+@permission_required(SystemDefaultPerms.READ_PILOTS)
 async def get_pilots() -> AsyncGenerator[bytes, None]:
     """
     A streaming route for getting all pilots currently stored in the

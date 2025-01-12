@@ -1,32 +1,45 @@
-[tool.poetry]
+[project]
 name = "PropHazard"
 version = "0.1.0-dev1"
 description = "A demonstrator project for a RotorHazard variant"
-authors = ["Bryce Gruber <dev@brycegruber.com>"]
+authors = [
+    { name = "Bryce Gruber", email = "dev@brycegruber.com"}
+]
 readme = "README.md"
-license = "MIT"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+classifiers = [
+    "Framework :: AsyncIO",
+    "License :: OSI Approved :: MIT License"
+]
+
+dependencies = [
+    "quart (>=0.20.0,<0.21.0)",
+    "quart-auth (>=0.11.0,<0.12.0)",
+    "quart-tasks (>=0.3.0,<0.4.0)",
+    "quart-schema[pydantic] (>=0.21.0,<0.22.0)",
+    "sqlalchemy[asyncio] (>=2.0.37,<3.0.0)",
+    "aiosqlite (>=0.20.0,<0.21.0)",
+    "hypercorn (>=0.17.3,<0.18.0)",
+    "uvloop (>=0.21.0,<0.22.0) ; sys_platform == \"linux\" or sys_platform == \"darwin\"",
+    "winloop (>=0.1.7,<0.2.0) ; sys_platform == \"win32\"",
+    "cryptography (>=44.0.0,<45.0.0)",
+    "anyio (>=4.8.0,<5.0.0)",
+    "argon2-cffi (>=23.1.0,<24.0.0)",
+    "werkzeug (>=3.1.3,<4.0.0)"
+]
+
+[project.urls]
 repository = "https://github.com/i-am-grub/PropHazard"
 
-[tool.poetry.dependencies]
-python = "^3.11"
-quart = "^0.19.9"
-quart-auth = "^0.10.1"
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.36"}
-aiosqlite = "^0.20.0"
-hypercorn = "^0.17.3"
-uvloop = [
-    {version = "^0.21.0", platform = "linux"}, 
-    {version = "^0.21.0", platform = "darwin"}
-]
-winloop = {version = "^0.1.7", platform = "win32"}
-httpx = "^0.28.0"
-cryptography = "^44.0.0"
-anyio = "^4.6.2.post1"
-quart-tasks = "^0.2.2"
-argon2-cffi = "^23.1.0"
+[project.optional-dependencies]
+pgsql = [ "asyncpg>=0.30,<0.31" ]
+
+[tool.poetry]
+package-mode = true
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]

@@ -14,11 +14,12 @@ class UserPermission(StrEnum):
     """
 
 
-class SystemDefaults(UserPermission):
+class SystemDefaultPerms(UserPermission):
     """
     Default user permissions for the system
     """
 
+    EVENT_WEBSOCKET = auto()
     RESET_PASSWORD = auto()
     READ_PILOTS = auto()
     WRITE_PILOTS = auto()

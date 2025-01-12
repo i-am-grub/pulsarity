@@ -7,6 +7,7 @@ from collections.abc import Callable, Awaitable
 from functools import wraps
 
 from quart_auth import Unauthorized
+from werkzeug.exceptions import Forbidden
 
 from ..extensions import current_app, current_user
 
@@ -14,12 +15,6 @@ from ..database.user._enums import UserPermission
 
 T = TypeVar("T")
 P = ParamSpec("P")
-
-
-class InvalidPermissions(Unauthorized):
-    """
-    Raised when a user attempts to reach a resource without proper permissions.
-    """
 
 
 def permission_required(permission: UserPermission):
@@ -52,7 +47,7 @@ def permission_required(permission: UserPermission):
                 raise Unauthorized()
 
             if not await current_user.has_permission(permission):
-                raise InvalidPermissions()
+                raise Forbidden()
 
             return await current_app.ensure_async(func)(*args, **kwargs)
 

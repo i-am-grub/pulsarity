@@ -5,6 +5,8 @@ Abstract definition of database classes
 from sqlalchemy import UniqueConstraint, String, PickleType
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from pydantic import BaseModel
+
 
 # pylint: disable=R0903
 
@@ -18,6 +20,14 @@ class _UserBase(AsyncAttrs, DeclarativeBase):
     """Internal identifier"""
     persistent: Mapped[bool] = mapped_column()
     """Entry is persistent in database"""
+
+
+class _RaceData(BaseModel):
+    """
+    A model to use for validating data
+    """
+
+    id: int | None = None
 
 
 class _RaceBase(AsyncAttrs, DeclarativeBase):

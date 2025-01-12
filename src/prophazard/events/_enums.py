@@ -5,7 +5,7 @@ Enums for system events
 from dataclasses import dataclass
 from enum import IntEnum, Enum, auto
 
-from ..database.user import UserPermission, SystemDefaults
+from ..database.user import UserPermission, SystemDefaultPerms
 
 
 class _EvtPriority(IntEnum):
@@ -33,7 +33,7 @@ class _EvtData:
     """The priority associated with the event"""
     permission: UserPermission
     """The permission the event is associated with"""
-    id: str
+    id: str = auto()  # type: ignore
     """Identifier for the event"""
 
 
@@ -52,22 +52,31 @@ class _ApplicationEvt(_EvtData, Enum):
         return name.lower()
 
 
-class EventSetup(_ApplicationEvt):
+class SpecialEvt(_ApplicationEvt):
+    """
+    Special Events
+    """
+
+    HEARTBEAT = _EvtPriority.LOW, SystemDefaultPerms.EVENT_WEBSOCKET
+    PERMISSIONS_UPDATE = _EvtPriority.HIGH, SystemDefaultPerms.EVENT_WEBSOCKET
+
+
+class EventSetupEvt(_ApplicationEvt):
     """
     Events associated with modification to race objects
     """
 
-    PILOT_ADD = _EvtPriority.MEDUIUM, SystemDefaults.READ_PILOTS, auto()
-    PILOT_ALTER = _EvtPriority.MEDUIUM, SystemDefaults.READ_PILOTS, auto()
-    PILOT_DELETE = _EvtPriority.MEDUIUM, SystemDefaults.READ_PILOTS, auto()
+    PILOT_ADD = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS
+    PILOT_ALTER = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS
+    PILOT_DELETE = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS
 
 
-class RaceSequence(_ApplicationEvt):
+class RaceSequenceEvt(_ApplicationEvt):
     """
     Events associated with live race sequence
     """
 
-    RACE_STAGE = _EvtPriority.HIGH, SystemDefaults.RACE_EVENTS, auto()
-    RACE_START = _EvtPriority.INSTANT, SystemDefaults.RACE_EVENTS, auto()
-    RACE_FINISH = _EvtPriority.HIGH, SystemDefaults.RACE_EVENTS, auto()
-    RACE_STOP = _EvtPriority.INSTANT, SystemDefaults.RACE_EVENTS, auto()
+    RACE_STAGE = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS
+    RACE_START = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS
+    RACE_FINISH = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS
+    RACE_STOP = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS

@@ -2,12 +2,10 @@
 ORM classes for Pilot data
 """
 
-import json
-
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..._base import _RaceAttribute, _RaceBase
+from ..._base import _RaceAttribute, _RaceBase, _RaceData
 
 # pylint: disable=E1136
 
@@ -25,6 +23,16 @@ class PilotAttribute(_RaceAttribute, _RaceBase):
         ForeignKey("pilot.id"), nullable=False, primary_key=True
     )
     """ID of pilot to which this attribute is assigned"""
+
+
+class PilotData(_RaceData):
+    """
+    A model to use for validating pilot data
+    """
+
+    callsign: str = ""
+    name: str = ""
+    phonetic: str = ""
 
 
 class Pilot(_RaceBase):
@@ -117,18 +125,31 @@ class Pilot(_RaceBase):
     def __repr__(self):
         return f"<Pilot {self.id}>"
 
+    def to_data_model(self) -> PilotData:
+        """
+        Generate a validation model for the pilot
+
+        :return: The generated model
+        """
+
+        model = PilotData(
+            id=self.id,
+            callsign=self.display_callsign,
+            name=self.display_name,
+            phonetic=self.spoken_callsign,
+        )
+
+        PilotData.model_validate(model)
+
+        return model
+
     def to_bytes(self) -> bytes:
         """
-        Generates a JSON object from the pilot and encodes
+        Generates a JSON object from a pilot model and encodes
         it for sending.
 
-        :return bytes: JSON object as bytes
+        :return: JSON object as bytes
         """
 
-        data: dict[str, str | int] = {}
-        data["id"] = self.id
-        data["callsign"] = self.display_callsign
-        data["name"] = self.display_name
-        data["phonetic"] = self.spoken_callsign
-
-        return json.dumps(data).encode()
+        model = self.to_data_model()
+        return model.model_dump_json().encode()
