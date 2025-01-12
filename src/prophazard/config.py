@@ -95,8 +95,9 @@ def _get_configs_defaults() -> dict[_SECTIONS, dict]:
     # webserver settings
     webserver: dict = {}
     webserver["HOST"] = "localhost"
-    webserver["PORT"] = 5000
-    webserver["USE_HTTPS"] = False
+    webserver["HTTP_PORT"] = 5000
+    webserver["HTTPS_PORT"] = 5443
+    webserver["FORCE_REDIRECTS"] = True
     webserver["KEY_FILE"] = "key.pem"
     webserver["KEY_PASSWORD"] = None
     webserver["CERT_FILE"] = "cert.pem"

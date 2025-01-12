@@ -2,11 +2,12 @@
 HTTP Rest API Routes
 """
 
+import os
 from uuid import UUID
 from collections.abc import AsyncGenerator
 import logging
 
-from quart import ResponseReturnValue, render_template_string
+from quart import ResponseReturnValue, render_template, send_from_directory
 from quart_auth import login_user, logout_user
 from quart_schema import validate_request, validate_response, hide
 from werkzeug.exceptions import NotFound
@@ -19,8 +20,27 @@ from ..database.race._orm import _PilotData
 
 logger = logging.Logger(__name__)
 
-templates = RHBlueprint("templates", __name__)
-routes = RHBlueprint("routes", __name__, url_prefix="/api")
+
+def _get_webapp_filepath() -> str:
+    current_location = __file__
+    for _ in range(3):
+        current_location = os.path.split(current_location)[0]
+
+    target_location = os.path.join(
+        current_location, "frontend", "dist", "prophazard-frontend", "browser"
+    )
+
+    return target_location
+
+
+_app_folder = _get_webapp_filepath()
+
+templates = RHBlueprint("templates", __name__, template_folder=_app_folder)
+routes = RHBlueprint(
+    "routes",
+    __name__,
+    url_prefix="/api",
+)
 
 
 @templates.get("/")
@@ -31,7 +51,20 @@ async def index() -> ResponseReturnValue:
 
     :return str: The rendered web page
     """
-    return await render_template_string("<body><h1>Hello World!</h1></body>")
+    return await render_template("index.html")
+
+
+@templates.route("/<path:path>", methods=["GET"])
+@hide
+async def static_proxy(path) -> ResponseReturnValue:
+    """
+    Serves the static files for the web application
+    to the client
+
+    :param path: _description_
+    :return: _description_
+    """
+    return await send_from_directory(_app_folder, path)
 
 
 @routes.post("/login")

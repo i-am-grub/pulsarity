@@ -8,6 +8,7 @@ from collections.abc import Coroutine
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
+from hypercorn.middleware import HTTPToHTTPSRedirectMiddleware
 
 from .extensions import RHApplication
 from .webserver import generate_app
@@ -33,35 +34,39 @@ def prophazard_webserver(
 
     host = str(get_config("WEBSERVER", "HOST"))
 
-    _port = get_config("WEBSERVER", "PORT")
+    _port = get_config("WEBSERVER", "HTTP_PORT")
     port = _port if isinstance(_port, int) else 5000
+    webserver_config.insecure_bind = [f"{host}:{port}"]
 
-    webserver_config.bind = [f"{host}:{port}"]
+    _s_port = get_config("WEBSERVER", "HTTPS_PORT")
+    s_port = _s_port if isinstance(_s_port, int) else 5443
+    secure_bind = [f"{host}:{s_port}"]
+    webserver_config.bind = secure_bind
 
-    if bool(get_config("WEBSERVER", "USE_HTTPS")):
+    key_file = str(get_config("WEBSERVER", "KEY_FILE"))
+    cert_file = str(get_config("WEBSERVER", "CERT_FILE"))
 
-        key_file = str(get_config("WEBSERVER", "KEY_FILE"))
-        cert_file = str(get_config("WEBSERVER", "CERT_FILE"))
+    if not (os.path.isfile(key_file) and os.path.isfile(cert_file)):
+        generate_self_signed_cert(key_file, cert_file)
 
-        if not (os.path.isfile(key_file) and os.path.isfile(cert_file)):
-            generate_self_signed_cert(key_file, cert_file)
+    webserver_config.keyfile = key_file
+    webserver_config.certfile = cert_file
 
-        webserver_config.keyfile = key_file
-        webserver_config.certfile = cert_file
+    ca_cert_file = get_config("WEBSERVER", "CA_CERT_FILE")
+    webserver_config.ca_certs = ca_cert_file if isinstance(ca_cert_file, str) else None
 
-        ca_cert_file = get_config("WEBSERVER", "CA_CERT_FILE")
-        webserver_config.ca_certs = (
-            ca_cert_file if isinstance(ca_cert_file, str) else None
-        )
-
-        key_file_password = get_config("WEBSERVER", "KEY_PASSWORD")
-        webserver_config.keyfile_password = (
-            key_file_password if isinstance(key_file_password, str) else None
-        )
+    key_file_password = get_config("WEBSERVER", "KEY_PASSWORD")
+    webserver_config.keyfile_password = (
+        key_file_password if isinstance(key_file_password, str) else None
+    )
 
     webserver_config.debug = bool(get_config("GENERAL", "DEBUG"))
 
     if app is None:
         app = generate_app()
+
+    redirects = get_config("WEBSERVER", "FORCE_REDIRECTS")
+    if redirects:
+        app = HTTPToHTTPSRedirectMiddleware(app, secure_bind[0])  # type: ignore
 
     return serve(app, webserver_config)
