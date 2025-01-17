@@ -92,6 +92,7 @@ async def test_password_reset_invalid(
 #     assert reset_required is False
 
 
+@pytest.mark.asyncio
 async def test_pilot_stream(app: RHApplication, default_user_creds: tuple[str]):
     client: TestClientProtocol = app.test_client()
 

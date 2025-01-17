@@ -8,7 +8,7 @@ from collections.abc import AsyncGenerator
 import logging
 
 from quart import ResponseReturnValue, render_template, send_from_directory
-from quart_auth import login_user, logout_user
+from quart_auth import login_user, logout_user, login_required
 from quart_schema import validate_request, validate_response, hide
 from werkzeug.exceptions import NotFound
 
@@ -22,6 +22,12 @@ logger = logging.Logger(__name__)
 
 
 def _get_webapp_filepath() -> str:
+    """
+    Navigate to location of frontend artifacts
+
+    :return: The path of the frontent build folder
+    """
+
     current_location = __file__
     for _ in range(3):
         current_location = os.path.split(current_location)[0]
@@ -34,16 +40,10 @@ def _get_webapp_filepath() -> str:
 
 
 _app_folder = _get_webapp_filepath()
-
-templates = RHBlueprint("templates", __name__, template_folder=_app_folder)
-routes = RHBlueprint(
-    "routes",
-    __name__,
-    url_prefix="/api",
-)
+files = RHBlueprint("files", __name__, template_folder=_app_folder)
 
 
-@templates.get("/")
+@files.get("/")
 @hide
 async def index() -> ResponseReturnValue:
     """
@@ -54,20 +54,39 @@ async def index() -> ResponseReturnValue:
     return await render_template("index.html")
 
 
-@templates.route("/<path:path>", methods=["GET"])
+@files.get("/<path:path>")
 @hide
 async def static_proxy(path) -> ResponseReturnValue:
     """
     Serves the static files for the web application
     to the client
 
-    :param path: _description_
-    :return: _description_
+    :param path: The requested path for a file
+    :return: The requested file
     """
     return await send_from_directory(_app_folder, path)
 
 
-@routes.post("/login")
+auth = RHBlueprint(
+    "auth",
+    __name__,
+    url_prefix="/auth",
+)
+
+
+@auth.post("/")
+@validate_response(BaseResponse)
+async def check_auth() -> BaseResponse:
+    """
+    Check if a user is authenticated
+
+    :return: The user's authentication status
+    """
+    status = await current_user.is_authenticated
+    return BaseResponse(status=status)
+
+
+@auth.post("/login")
 @validate_request(LoginRequest)
 @validate_response(LoginResponse)
 async def login(data: LoginRequest) -> LoginResponse:
@@ -81,7 +100,7 @@ async def login(data: LoginRequest) -> LoginResponse:
 
     if user is not None and await user.verify_password(data.password):
         auth_user = RHUser(user.auth_id.hex)
-        login_user(auth_user)
+        login_user(auth_user, True)
 
         logger.info("%s has been logged into the server", auth_user.auth_id)
 
@@ -98,7 +117,8 @@ async def login(data: LoginRequest) -> LoginResponse:
     return LoginResponse(status=False)
 
 
-@routes.get("/logout")
+@auth.get("/logout")
+@login_required
 @validate_response(BaseResponse)
 async def logout() -> BaseResponse:
     """
@@ -111,8 +131,8 @@ async def logout() -> BaseResponse:
     return BaseResponse(status=True)
 
 
-@routes.post("/reset-password")
-@permission_required(SystemDefaultPerms.RESET_PASSWORD)
+@auth.post("/reset-password")
+@login_required
 @validate_request(ResetPasswordRequest)
 @validate_response(BaseResponse)
 async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
@@ -140,7 +160,14 @@ async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
     return BaseResponse(status=False)
 
 
-@routes.get("/pilot/<int:pilot_id>")
+api = RHBlueprint(
+    "api",
+    __name__,
+    url_prefix="/api",
+)
+
+
+@api.get("/pilot/<int:pilot_id>")
 @permission_required(SystemDefaultPerms.READ_PILOTS)
 @validate_response(_PilotData)
 async def get_pilot(pilot_id: int) -> _PilotData:
@@ -158,7 +185,7 @@ async def get_pilot(pilot_id: int) -> _PilotData:
     return pilot.to_data_model()
 
 
-@routes.get("/pilot/all")
+@api.get("/pilot/all")
 @permission_required(SystemDefaultPerms.READ_PILOTS)
 async def get_pilots() -> AsyncGenerator[bytes, None]:
     """

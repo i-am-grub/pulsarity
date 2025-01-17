@@ -20,7 +20,7 @@ class SystemDefaultPerms(UserPermission):
     """
 
     EVENT_WEBSOCKET = auto()
-    RESET_PASSWORD = auto()
+
     READ_PILOTS = auto()
     WRITE_PILOTS = auto()
     RACE_EVENTS = auto()
