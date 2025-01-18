@@ -93,7 +93,7 @@ async def login(data: LoginRequest) -> LoginResponse:
     """
     Pass the user credentials to log the user into the server
 
-    :return dict: JSON containing the status of the request
+    :return: JSON containing the status of the request
     """
     database = await current_app.get_user_database()
     user = await database.users.get_by_username(None, data.username)
@@ -124,7 +124,7 @@ async def logout() -> BaseResponse:
     """
     Logout the currently connected client
 
-    :return dict: JSON containing the status of the request
+    :return: JSON containing the status of the request
     """
     logout_user()
     logger.info("Logged user (%s) out of the server", current_user.auth_id)
@@ -139,7 +139,7 @@ async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
     """
     Resets the password for the client user
 
-    :return dict: JSON containing the status of the request
+    :return: JSON containing the status of the request
     """
     uuid = UUID(hex=current_user.auth_id)
 
@@ -192,7 +192,7 @@ async def get_pilots() -> AsyncGenerator[bytes, None]:
     A streaming route for getting all pilots currently stored in the
     database.
 
-    :yield AsyncGenerator[bytes, None]: A generator yielding pilots converted
+    :yield: A generator yielding pilots converted
     to a encoded JSON object.
     """
     database = await current_app.get_race_database()

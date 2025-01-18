@@ -28,7 +28,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         """
         Class Initalization
 
-        :param async_sessionmaker[AsyncSession] session_maker: The default session
+        :param session_maker: The default session
         maker to use for the manager.
         """
         self._session_maker: async_sessionmaker[AsyncSession] = session_maker
@@ -40,7 +40,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         Property holding the respective class type for the database object
 
         :raises NotImplementedError: Error flagging the property as abstract
-        :return Type[T]: Return type to use when overriding this method
+        :return: Return type to use when overriding this method
         """
         raise NotImplementedError("This is an abstract method and should not be used")
 
@@ -107,7 +107,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         """
         The number of entries in the table.
 
-        :param AsyncSession | None session: Session to use for database transaction.
+        :param session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
         :return int: The number of objects in the database table
         """
@@ -121,10 +121,10 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         """
         Get an object from the database by id.
 
-        :param AsyncSession | None session: Session to use for database transaction.
+        :param session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
-        :param int id: Id of the object to retreive
-        :return T | None: Object from the database
+        :param id: Id of the object to retreive
+        :return: Object from the database
         """
         statement = select(self._table_class).where(self._table_class.id == obj_id)
         return await session.scalar(statement)
@@ -134,9 +134,9 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         """
         Get all objects in the table from the database.
 
-        :param AsyncSession | None session: Session to use for database transaction.
+        :param session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
-        :return ScalarResult[T]: List of objects from the database
+        :return: List of objects from the database
         """
         statement = select(self._table_class)
         return await session.scalars(statement)
@@ -146,9 +146,9 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         """
         Streams all objects in the tables from the database.
 
-        :param AsyncSession | None session: Session to use for database transaction.
+        :param session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
-        :yield AsyncGenerator[T,None]: Stream of objects from the database
+        :yield: Stream of objects from the database
         """
         statement = select(self._table_class)
         result = await session.stream_scalars(statement)
@@ -160,10 +160,10 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         """
         Adds an object to the database. Adds a default object if one is not provided.
 
-        :param AsyncSession | None session: Session to use for database transaction
+        :param session: Session to use for database transaction
         When providing a session, transactions **will not** be automatically commited.
-        :param T | None db_object: _description_, defaults to None
-        :return int: Id of the new
+        :param db_object: _description_, defaults to None
+        :return: Id of the new
         """
         if db_object is None:
             db_object_ = self._table_class()
@@ -182,11 +182,11 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         """
         Adds multiple objects to the database in a single transaction.
 
-        :param AsyncSession | None session: Session to use for database transaction
+        :param session: Session to use for database transaction
         When providing a session, transactions **will not** be automatically commited.
-        :param int num_defaults: The number of defaults to add
-        :param T *db_objects: Predefined objects to add to the database
-        :return list[int]: List of ids of the newly added objects
+        :param num_defaults: The number of defaults to add
+        :param *db_objects: Predefined objects to add to the database
+        :return: List of ids of the newly added objects
         """
 
         db_objects_ = db_objects + tuple(
@@ -203,9 +203,9 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         Duplicates an instance of T. Must occur within the same session as when the
         original is pulled from the database.
 
-        :param AsyncSession session: Session to use for database transaction
-        :param T db_object: Object to duplicate
-        :return int: Id of the newly created object
+        :param session: Session to use for database transaction
+        :param db_object: Object to duplicate
+        :return: Id of the newly created object
         """
         session.expunge(db_object)
         make_transient(db_object)
@@ -218,9 +218,9 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         """
         Delete an object from the database. Persistent objects are not removed
 
-        :param AsyncSession | None session: Session to use for database transaction.
+        :param session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
-        :param T db_object: Object to delete from the database.
+        :param db_object: Object to delete from the database.
         """
 
         if isinstance(db_object, _UserBase) and db_object.persistent:
@@ -234,7 +234,7 @@ class _BaseManager(Generic[T], metaclass=ABCMeta):
         """
         Clear all entries from the table. Persistent objects are not removed
 
-        :param AsyncSession | None session: Session to use for database transaction.
+        :param session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
         """
         # pylint: disable=C0121

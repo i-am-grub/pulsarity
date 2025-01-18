@@ -72,14 +72,14 @@ class User(_UserBase):
         """
         Class initialization
 
-        :param str username: The username to set for the user
-        :param set[Role] | None roles: The roles to designate to
+        :param username: The username to set for the user
+        :param roles: The roles to designate to
         the user, defaults to None
-        :param str | None first_name: The first name of the user
+        :param first_name: The first name of the user
         , defaults to None
-        :param str | None last_name: The last name of the user,
+        :param last_name: The last name of the user,
         defaults to None
-        :param bool persistent: When set to `True` prevents the object
+        :param persistent: When set to `True` prevents the object
         from being deleted from the database, defaults to False
         """
         # pylint: disable=R0913
@@ -98,7 +98,7 @@ class User(_UserBase):
         Gets the permissions for the user. Can only be used when a
         session to the database has not been closed
 
-        :return set[str]: The set of permissions
+        :return: The set of permissions
         """
         permissions: set[str] = set()
 
@@ -114,8 +114,8 @@ class User(_UserBase):
         Generates a hash of the provided password. Thread
         safely.
 
-        :param str password: The password to hash.
-        :return str: The hashed password
+        :param password: The password to hash.
+        :return: The hashed password
         """
         try:
             result = _ph.hash(password)
@@ -129,8 +129,8 @@ class User(_UserBase):
         """
         Generates a hash of the provided password without blocking.
 
-        :param str password: The password to hash.
-        :return str: The hashed password
+        :param password: The password to hash.
+        :return: The hashed password
         """
         result = await asyncio.to_thread(self._generate_hash, password)
 
@@ -146,8 +146,8 @@ class User(_UserBase):
 
         The function is setup to be ran thread safe
 
-        :param str password: The password to hash.
-        :return bool: Whether the comparsion of the hash was sucessful or not.
+        :param password: The password to hash.
+        :return: Whether the comparsion of the hash was sucessful or not.
         """
         try:
             result = _ph.verify(password_hash, password)
@@ -167,8 +167,8 @@ class User(_UserBase):
         """
         Checks a hash of the provided password against the hash in the database.
 
-        :param str password: The password to hash.
-        :return bool: Whether the comparsion of the hash was sucessful or not.
+        :param password: The password to hash.
+        :return: Whether the comparsion of the hash was sucessful or not.
         """
 
         if self._password_hash is None:
@@ -184,6 +184,8 @@ class User(_UserBase):
         """
         Checks if the user's password needs to be rehashed due to a
         configuration change.
+
+        :return: The status of the check
         """
         if self._password_hash is None:
             return True

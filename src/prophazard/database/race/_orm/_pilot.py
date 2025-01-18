@@ -65,9 +65,9 @@ class Pilot(_RaceBase):
         """
         Class initalizer
 
-        :param str name: _description_, defaults to ""
-        :param str callsign: _description_, defaults to ""
-        :param str phonetic: _description_, defaults to ""
+        :param name: _description_, defaults to ""
+        :param callsign: _description_, defaults to ""
+        :param phonetic: _description_, defaults to ""
         """
         self.name = name
         self.callsign = callsign
@@ -78,7 +78,7 @@ class Pilot(_RaceBase):
         """
         Generates the displayed callsign for the user.
 
-        :return str: The user's displayed callsign
+        :return: The user's displayed callsign
         """
 
         if self.callsign:
@@ -94,7 +94,7 @@ class Pilot(_RaceBase):
         """
         Generates the displayed name for the user
 
-        :return str: The user's display name
+        :return: The user's display name
         """
         if self.name:
             return self.name
@@ -109,7 +109,7 @@ class Pilot(_RaceBase):
         """
         Generates the spoken callsign for the user
 
-        :return str: The user's spoken callsign
+        :return: The user's spoken callsign
         """
         if self.phonetic:
             return self.phonetic

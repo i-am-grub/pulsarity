@@ -19,7 +19,7 @@ class UserDatabaseManager:
         """
         Class initialization
 
-        :param str filename: Filename for the database, defaults to ":memory:"
+        :param filename: Filename for the database, defaults to ":memory:"
         """
 
         self.engine = create_async_engine(f"sqlite+aiosqlite:///{filename}", echo=False)
@@ -43,8 +43,8 @@ class UserDatabaseManager:
         """
         Verify that the default object are in the database.
 
-        :param str defualt_username: Default username to use for the admin user
-        :param str default_password: Default password to use for the admin user
+        :param defualt_username: Default username to use for the admin user
+        :param default_password: Default password to use for the admin user
         """
         await self.permissions.verify_persistant()
         permissions = await self.permissions.get_all(None)
@@ -70,7 +70,6 @@ class UserDatabaseManager:
         `expire_on_commit` set to `False`
 
         :param expire_on_commit: _description_, defaults to False
-        :type expire_on_commit: bool, optional
         :return: _description_
         :rtype: async_sessionmaker
         """

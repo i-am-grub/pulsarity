@@ -30,7 +30,7 @@ class RHApplication(Quart):
         Gets the user database for the application. Waits for
         it to be set if needed.
 
-        :return UserDatabaseManager: The user database
+        :return: The user database
         """
         if self._user_database is None:
             loop = get_running_loop()
@@ -42,7 +42,7 @@ class RHApplication(Quart):
         """
         Sets the user database.
 
-        :param UserDatabaseManager manager: The user database to set
+        :param manager: The user database to set
         """
         if self._user_database is None:
             loop = get_running_loop()
@@ -55,7 +55,7 @@ class RHApplication(Quart):
         Gets the race database for the application. Waits for
         it to be set if needed.
 
-        :return RaceDatabaseManager: The race database
+        :return: The race database
         """
         if self._race_database is None:
             loop = get_running_loop()
@@ -67,7 +67,7 @@ class RHApplication(Quart):
         """
         Sets the race database.
 
-        :param RaceDatabaseManager manager: The race database to set
+        :param manager: The race database to set
         """
         if self._race_database is None:
             loop = get_running_loop()
@@ -95,8 +95,8 @@ class RHUser(AuthUser):
         """
         Check a user for valid permissions
 
-        :param UserPermission permission: The user permission to check for
-        :return bool: Status of the user have the permission. Returning
+        :param permission: The user permission to check for
+        :return: Status of the user have the permission. Returning
         True verifies that the permission has been granted.
         """
 

@@ -16,8 +16,8 @@ def generate_self_signed_cert(key_filename: str, cert_filename: str) -> None:
     ***NOTE***: It is the responsibility of the user to replace any generated certs
     with ones signed by a reputable certificate authority.
 
-    :param str key_filename: Filename to use for the `key_file`
-    :param str cert_filename: Filename to user for the `cert_file`
+    :param key_filename: Filename to use for the `key_file`
+    :param cert_filename: Filename to user for the `cert_file`
     """
 
     key = ec.generate_private_key(ec.SECP256R1())

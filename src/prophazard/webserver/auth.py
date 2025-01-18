@@ -18,7 +18,8 @@ P = ParamSpec("P")
 
 
 def permission_required(permission: UserPermission):
-    """A decorator to restrict route access to authenticated users
+    """
+    A decorator to restrict route access to authenticated users
     with granted permissions.
 
     This should be used to wrap a route handler (or view function) to
@@ -36,6 +37,7 @@ def permission_required(permission: UserPermission):
     If the request is not authenticated or permissions not granted a
     `quart.exceptions.Unauthorized` exception will be raised.
 
+    :param permission: The persmission needed for access
     """
 
     def inner(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:

@@ -22,7 +22,7 @@ class _RoleManager(_BaseManager[Role]):
         """
         Property holding the respective class type for the database object
 
-        :return Type[User]: Returns the User class
+        :return: Returns the User class
         """
         return Role
 
@@ -31,9 +31,9 @@ class _RoleManager(_BaseManager[Role]):
         """
         Get a role by name.
 
-        :param AsyncSession session: _description_
-        :param str name: Role name
-        :return Role | None: The retrieved role object.
+        :param session: _description_
+        :param name: Role name
+        :return: The retrieved role object.
         """
         statement = select(Role).where(Role.name == name)
         return await session.scalar(statement)
@@ -45,9 +45,9 @@ class _RoleManager(_BaseManager[Role]):
         """
         Verify permissions are setup for a role.
 
-        :param AsyncSession session: _description_
-        :param str name: Name of role to check
-        :param set[Permission] permissions: Set of permissions to apply
+        :param session: _description_
+        :param name: Name of role to check
+        :param permissions: Set of permissions to apply
         """
         if await self.role_by_name(session, name) is None:
             role = Role(name=name, permissions=permissions, persistent=True)

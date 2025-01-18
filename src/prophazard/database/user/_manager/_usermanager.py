@@ -25,7 +25,7 @@ class _UserManager(_BaseManager[User]):
         """
         Property holding the respective class type for the database object
 
-        :return Type[User]: Returns the User class
+        :return: Returns the User class
         """
         return User
 
@@ -34,9 +34,9 @@ class _UserManager(_BaseManager[User]):
         """
         Attempt to retrieve a user by uuid
 
-        :param AsyncSession session: _description_
-        :param str uuid: _description_
-        :return User | None: _description_
+        :param session: _description_
+        :param uuid: _description_
+        :return: _description_
         """
         statement = select(self._table_class).where(self._table_class.auth_id == uuid)
         return await session.scalar(statement)
@@ -48,9 +48,9 @@ class _UserManager(_BaseManager[User]):
         """
         Attempt to retrieve a user by username
 
-        :param AsyncSession session: _description_
-        :param str username: _description_
-        :return User | None: _description_
+        :param session: _description_
+        :param username: _description_
+        :return: _description_
         """
         statement = select(self._table_class).where(
             self._table_class.username == username
@@ -64,9 +64,9 @@ class _UserManager(_BaseManager[User]):
         """
         Updates a user's password hash in the database.
 
-        :param AsyncSession session: _description_
-        :param User user: _description_
-        :param str password: The password to hash and store
+        :param session: _description_
+        :param user: _description_
+        :param password: The password to hash and store
         """
         hashed_passwrod = await user.generate_hash(password)
 
@@ -86,10 +86,10 @@ class _UserManager(_BaseManager[User]):
         """
         Verify permissions are setup for a role.
 
-        :param AsyncSession session: _description_
-        :param str username: Username of role to check
-        :param str password: Password to set if the user doesn't exist yet.
-        :param set[Permission] permissions: Set of permissions to apply
+        :param session: _description_
+        :param username: Username of role to check
+        :param password: Password to set if the user doesn't exist yet.
+        :param roles: Set of roles to apply to user
         """
         if await self.get_by_username(session, username) is None:
             user = User(username, roles=roles, persistent=True)
@@ -104,9 +104,9 @@ class _UserManager(_BaseManager[User]):
         """
         Checks to see if a user's hash needs to be updated. Updates if it does.
 
-        :param AsyncSession session: _description_
-        :param User user: _description_
-        :param str password: The password to rehash
+        :param session: _description_
+        :param user: _description_
+        :param password: The password to rehash
         """
         if await user.check_password_rehash():
             await self.update_user_password(session, user, password)
@@ -116,8 +116,8 @@ class _UserManager(_BaseManager[User]):
         """
         Update a user's `last_login` time.
 
-        :param AsyncSession session: _description_
-        :param User user: _description_
+        :param session: _description_
+        :param user: _description_
         """
         statement = (
             update(User).where(User.id == user.id).values(last_login=datetime.now())
@@ -133,9 +133,9 @@ class _UserManager(_BaseManager[User]):
         """
         Change the status of the `reset_required` attribute for a user
 
-        :param AsyncSession session: _description_
-        :param User user: _description_
-        :param bool status: _description_
+        :param session: _description_
+        :param user: _description_
+        :param status: _description_
         """
         statement = update(User).where(User.id == user.id).values(reset_required=status)
 

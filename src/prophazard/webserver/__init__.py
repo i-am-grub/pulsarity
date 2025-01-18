@@ -21,9 +21,9 @@ def generate_app(*, test_mode: bool = False) -> RHApplication:
     """
     Generate a PropHazard webserver application
 
-    :param bool test_mode: Run in test mode. If set to True, the events blueprint
+    :param test_mode: Run in test mode. If set to True, the events blueprint
     will not be registered, defaults to False
-    :return RHApplication: _description_
+    :return: _description_
     """
 
     app = RHApplication(__name__)

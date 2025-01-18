@@ -26,8 +26,8 @@ def prophazard_webserver(
 
     This task is configured by reading parameters from the prophazard config file
 
-    :param RHApplication | None app: Application to use for the webserver, defaults to None
-    :return Coroutine[None, None, None]: Webserver coroutine
+    :param app: Application to use for the webserver, defaults to None
+    :return: Webserver coroutine
     """
 
     webserver_config = Config()

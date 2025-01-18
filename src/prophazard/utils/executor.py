@@ -29,6 +29,8 @@ def set_executor() -> None:
 
     if _executor is None:
         _executor = asyncio.get_running_loop().create_future()
+    else:
+        return
 
     if sys.version_info >= (3, 13):
         count = os.process_cpu_count()
@@ -58,7 +60,8 @@ async def get_executor() -> ThreadPoolExecutor | ProcessPoolExecutor:
 
     Returns a `ProcessPoolExecutor` under most circumstances. The exception
     providing an instance of ThreadPoolExecutor is when the python global
-    interpreter lock has been disabled (experimental in python 3.13t).
+    interpreter lock has been disabled (experimental in python 3.13t and
+    is not guaranteed to work in this context either).
 
     The executor should be used in the following way
 
@@ -67,7 +70,7 @@ async def get_executor() -> ThreadPoolExecutor | ProcessPoolExecutor:
         executor = get_executor()
         result = await loop.run_in_executor(executor, blocking_function)
 
-    :return ThreadPoolExecutor | ProcessPoolExecutor: The instace of the pool executor
+    :return: The instace of the pool executor
     """
     global _executor
 
@@ -81,6 +84,9 @@ async def shutdown_executor() -> None:
     """
     Wait for the executor to finish all tasks and shutdown.
     """
+    global _executor
+
     if _executor is not None:
         pool_exec = await _executor
         await asyncio.to_thread(pool_exec.shutdown)
+        _executor = None

@@ -17,7 +17,7 @@ class RaceDatabaseManager:
         """
         Class initializer
 
-        :param str filename: The filename to save the database as, defaults to ":memory:"
+        :param filename: The filename to save the database as, defaults to ":memory:"
         """
 
         self.engine = create_async_engine(f"sqlite+aiosqlite:///{filename}", echo=False)
@@ -46,7 +46,7 @@ class RaceDatabaseManager:
         A wrapper for async_sessionmaker with `autoflush`, `autocommit`, and
         `expire_on_commit` set to `False`. Automatically set the engine
 
-        :return async_sessionmaker[AsyncSession]: Session manager used for generating
+        :return: Session manager used for generating
         new database sessions.
         """
         defaults = {}

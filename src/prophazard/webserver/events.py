@@ -23,7 +23,7 @@ async def redirect_to_index(*_) -> ResponseReturnValue:
     Redirects the user when `Unauthorized` to access
     a route or websocket
 
-    :return Response: The server response
+    :return: The server response
     """
     return redirect(url_for("index"))
 

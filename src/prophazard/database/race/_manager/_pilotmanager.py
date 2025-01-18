@@ -16,6 +16,6 @@ class _PilotManager(_BaseManager[Pilot]):
         """
         Property holding the respective class type for the database object
 
-        :return Type[Pilot]: Returns the Pilot class
+        :return: Returns the Pilot class
         """
         return Pilot

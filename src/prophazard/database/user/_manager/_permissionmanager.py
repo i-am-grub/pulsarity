@@ -23,7 +23,7 @@ class _PermissionManager(_BaseManager[Permission]):
         """
         Property holding the respective class type for the database object
 
-        :return Type[User]: Returns the User class
+        :return: Returns the User class
         """
         return Permission
 
@@ -32,9 +32,9 @@ class _PermissionManager(_BaseManager[Permission]):
         """
         Get all permission values from the database
 
-        :param AsyncSession session: Session to use for database transaction.
+        :param session: Session to use for database transaction.
         When providing a session, transactions **will not** be automatically commited.
-        :return ScalarResult[UserPermission]: User
+        :return: User
         """
         statement = select(self._table_class.value)
 

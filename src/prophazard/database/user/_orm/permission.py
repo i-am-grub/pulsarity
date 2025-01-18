@@ -24,8 +24,8 @@ class Permission(_UserBase):
         """
         Class initialization
 
-        :param UserPermission value: The string to map the value to
-        :param bool persistent: When set to `True` prevents the object
+        :param value: The string to map the value to
+        :param persistent: When set to `True` prevents the object
         from being deleted from the database, defaults to False
         """
         self.value = value

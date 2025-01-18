@@ -35,7 +35,7 @@ def _get_configs_defaults() -> dict[_SECTIONS, dict]:
     """
     Provides the server default configurations
 
-    :return dict[_SECTIONS, dict]: The server defaults
+    :return: The server defaults
     """
 
     # pylint: disable=R0915
@@ -186,8 +186,8 @@ def _write_file_config(
     Writes configs to a file synchronously. This should only be used before the
     webserver has been started.
 
-    :param dict configs: Config dictionary to write
-    :param str filename: The file to save config to, defaults to _DEFAULT_CONFIG_FILE_NAME
+    :param configs: Config dictionary to write
+    :param filename: The file to save config to, defaults to _DEFAULT_CONFIG_FILE_NAME
     """
     configs["GENERAL"]["LAST_MODIFIED_TIME"] = datetime.datetime.now().isoformat()
 
@@ -202,8 +202,8 @@ async def _write_file_config_async(
     Writes configs to a file asynchronously. This should only be used after
     the webserver has started.
 
-    :param dict[_SECTIONS, dict] configs: Config dictionary to write
-    :param str filename: The file to save config to, defaults to _DEFAULT_CONFIG_FILE_NAME
+    :param configs: Config dictionary to write
+    :param filename: The file to save config to, defaults to _DEFAULT_CONFIG_FILE_NAME
     """
     configs["GENERAL"]["LAST_MODIFIED_TIME"] = datetime.datetime.now().isoformat()
 
@@ -219,8 +219,8 @@ def _load_config_from_file(
     Loads configs to a file synchronously. This should only be used before the
     webserver has been started.
 
-    :param str filename: The file to load the config from, defaults to _DEFAULT_CONFIG_FILE_NAME
-    :return dict[_SECTIONS, dict]: The configuration settings
+    :param filename: The file to load the config from, defaults to _DEFAULT_CONFIG_FILE_NAME
+    :return: The configuration settings
     """
     try:
         with open(filename, "r", encoding="utf-8") as f:
@@ -248,8 +248,8 @@ async def _load_config_from_file_async(
     Loads configs to a file asynchronously. This should be used after the
     webserver has started.
 
-    :param str filename: The file to load the config from, defaults to _DEFAULT_CONFIG_FILE_NAME
-    :return dict[_SECTIONS, dict]: The configuration settings
+    :param filename: The file to load the config from, defaults to _DEFAULT_CONFIG_FILE_NAME
+    :return: The configuration settings
     """
     try:
         async with _file_lock:
@@ -281,9 +281,9 @@ def get_config(
     of getting settings from the config file should be prefered
     before the webserver has started
 
-    :param _SECTIONS section: The section in the config file for the setting
-    :param str key: The setting name
-    :return str | bool | int | float | None: The setting value
+    :param section: The section in the config file for the setting
+    :param key: The setting name
+    :return: The setting value
     """
 
     configs = _load_config_from_file()
@@ -304,9 +304,9 @@ async def get_config_async(
     of getting settings from the config file should be prefered
     once the webserver has started.
 
-    :param _SECTIONS section: The section in the config file for the setting
-    :param str key: The setting name
-    :return str | bool | int | float | None: The setting value
+    :param section: The section in the config file for the setting
+    :param key: The setting name
+    :return: The setting value
     """
     configs = await _load_config_from_file_async()
     try:
@@ -321,9 +321,9 @@ async def set_config_async(section: _SECTIONS, key: str, value) -> None:
     """
     Sets a setting from the config file asynchronously.
 
-    :param _SECTIONS section: The section in the config file for the setting
-    :param str key: The setting name
-    :param _type_ value: The value to change the setting to
+    :param section: The section in the config file for the setting
+    :param key: The setting name
+    :param value: The value to change the setting to
     """
     configs = await _load_config_from_file_async()
     configs[section][key] = value
@@ -335,7 +335,7 @@ async def get_sharable_config() -> dict[_SECTIONS, dict]:
     Generates a copy of the config file with the `SECRETS`
     section cleared
 
-    :return dict[_SECTIONS, dict]: An object storing the object configs
+    :return: An object storing the object configs
     """
 
     sharable_config = await _load_config_from_file_async()

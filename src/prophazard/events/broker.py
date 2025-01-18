@@ -28,9 +28,9 @@ class EventBroker:
         """
         Push the event data to all subscribed clients
 
-        :param _ApplicationEvt event: Event type
-        :param dict data: Event data
-        :param UUID uuid: Message uuid, defaults to None
+        :param event: Event type
+        :param data: Event data
+        :param uuid: Message uuid, defaults to None
         """
         uuid_ = uuid4() if uuid is None else uuid
 
@@ -45,9 +45,9 @@ class EventBroker:
         Publishes data to all subscribed clients and triggers
         all registered callbacks for the event
 
-        :param _ApplicationEvt event: Event type
-        :param dict data: Event data
-        :param UUID uuid: Message uuid, defaults to None
+        :param event: Event type
+        :param data: Event data
+        :param uuid: Message uuid, defaults to None
         """
         self.publish(event, data, uuid=uuid)
 
@@ -73,8 +73,7 @@ class EventBroker:
         """
         As a client, subscribe to recieve server events.
 
-        :yield AsyncGenerator[tuple[_EvtPriority, UserPermission, str, UUID, dict], None]:
-        Event data
+        :yield: Event data
         """
         connection: PriorityQueue = PriorityQueue()
         self._connections.add(connection)
