@@ -30,7 +30,7 @@ async def test_webserver_login_invalid(
 
     fake_password = "fake_password"
     login_data = {"username": default_user_creds[0], "password": fake_password}
-    response = await client.post("/api/login", json=login_data)
+    response = await client.post("/auth/login", json=login_data)
     assert response.status_code == 200
 
     data = await response.get_json()
@@ -55,7 +55,7 @@ async def test_password_reset_invalid(
 
         data = {"old_password": password, "new_password": "new_password"}
 
-        response = await client.post("/api/reset-password", json=data)
+        response = await client.post("/auth/reset-password", json=data)
         assert response.status_code == 200
 
         data = await response.get_json()
