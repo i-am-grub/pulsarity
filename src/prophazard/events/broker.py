@@ -6,11 +6,15 @@ from asyncio import PriorityQueue
 from collections.abc import AsyncGenerator, Callable
 from dataclasses import astuple
 from uuid import UUID, uuid4
-
-from quart import current_app
+from typing import TYPE_CHECKING
 
 from ._enums import _EvtPriority, _ApplicationEvt
 from ..database.user import UserPermission
+
+if TYPE_CHECKING:
+    from ..extensions import current_app
+else:
+    from quart import current_app
 
 
 class EventBroker:
@@ -36,7 +40,7 @@ class EventBroker:
 
         payload = (*astuple(event), uuid_, data)
         for connection in self._connections:
-            current_app.add_background_task(connection.put, payload)
+            connection.put_nowait(payload)
 
     def trigger(
         self, event: _ApplicationEvt, data: dict, *, uuid: UUID | None = None
@@ -71,7 +75,7 @@ class EventBroker:
         self,
     ) -> AsyncGenerator[tuple[_EvtPriority, UserPermission, str, UUID, dict], None]:
         """
-        As a client, subscribe to recieve server events.
+        Subscribe to recieve server events. Typically used for client connections
 
         :yield AsyncGenerator[tuple[_EvtPriority, UserPermission, str, UUID, dict], None]:
         Event data
