@@ -19,8 +19,8 @@ else:
 
 class EventBroker:
     """
-    Manages distributing server side events to connect clients.
-    Primarily used with websockets or server sent events.
+    Manages distributing server side events to connect clients and
+    triggering server side event callbacks.
     """
 
     _connections: set[PriorityQueue] = set()
@@ -59,17 +59,29 @@ class EventBroker:
             for callback in callbacks:
                 current_app.add_background_task(callback, **data)
 
-    def register_event_callback(self, event_id: str, callback: Callable):
+    def register_event_callback(self, event: _ApplicationEvt, callback: Callable):
         """
-        Register a ballback to run when when an event is published
+        Register a callback to run when when an event is published
 
         :param event_id: The id of the event to register the callback against
         :param callback: The callback to run
         """
-        if event_id not in self._callbacks:
-            self._callbacks[event_id] = set()
+        if event.id not in self._callbacks:
+            self._callbacks[event.id] = set()
 
-        self._callbacks[event_id].add(callback)
+        self._callbacks[event.id].add(callback)
+
+    def unregister_event_callback(self, event: _ApplicationEvt, callback: Callable):
+        """
+        Unregister an event callback
+
+        :param event_id: The id of the event to register the callback against
+        :param callback: The callback to remove
+        """
+        if event.id not in self._callbacks:
+            return
+
+        self._callbacks[event.id].remove(callback)
 
     async def subscribe(
         self,
