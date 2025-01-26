@@ -42,15 +42,18 @@ class RaceManager:
         Schedule the sequence of events for the race
 
         :param format_: The race format to use
-        :param assigned_start: The start time of the race
+        :param assigned_start: The event loop start time of the race.
+        Currently equivalent to monotonic time
         """
 
         @copy_current_app_context
-        def _stage() -> None:
+        async def _stage() -> None:
             data: dict = {}
             current_app.event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
             self.status = RaceStatus.STAGING
-            self._program_handle = loop.call_at(assigned_start + start_delay, _start)
+            self._program_handle = loop.call_at(
+                assigned_start + start_delay, asyncio.create_task, _start()
+            )
 
             logger.debug(
                 "Staging completed at %s seconds after assigned start",
@@ -58,42 +61,48 @@ class RaceManager:
             )
 
         @copy_current_app_context
-        def _start() -> None:
+        async def _start() -> None:
             data: dict = {}
             current_app.event_broker.trigger(RaceSequenceEvt.RACE_START, data)
             self.status = RaceStatus.RACING
 
-            if not format_.unlimited_time:
-                self._program_handle = loop.call_later(format_.race_time_sec, _finish)
+            if not format_.schedule.unlimited_time:
+                self._program_handle = loop.call_later(
+                    format_.schedule.race_time_sec, asyncio.create_task, _finish()
+                )
             else:
                 self._program_handle = None
 
         @copy_current_app_context
-        def _finish() -> None:
+        async def _finish() -> None:
             data: dict = {}
             current_app.event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
             self.status = RaceStatus.OVERTIME
 
-            if format_.overtime_sec > 0:
-                self._program_handle = loop.call_later(format_.overtime_sec, _stop)
-            elif format_.overtime_sec == 0:
-                _stop()
+            if format_.schedule.overtime_sec > 0:
+                self._program_handle = loop.call_later(
+                    format_.schedule.overtime_sec, asyncio.create_task, _stop()
+                )
+            elif format_.schedule.overtime_sec == 0:
+                await _stop()
             else:
                 self._program_handle = None
 
         @copy_current_app_context
-        def _stop() -> None:
+        async def _stop() -> None:
             data: dict = {}
             current_app.event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
             self.status = RaceStatus.STOPPED
             self._program_handle = None
 
         loop = asyncio.get_running_loop()
-        _random_delay = format_.random_stage_delay * random() * 0.001
-        start_delay = format_.stage_time_sec + _random_delay
+        _random_delay = format_.schedule.random_stage_delay * random() * 0.001
+        start_delay = format_.schedule.stage_time_sec + _random_delay
 
         if all(self._staging_checks(assigned_start)):
-            self._program_handle = loop.call_at(assigned_start, _stage)
+            self._program_handle = loop.call_at(
+                assigned_start, asyncio.create_task, _stage()
+            )
             self.status = RaceStatus.SCHEDULED
         else:
             logger.warning("All conditions are not met to program race")

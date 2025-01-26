@@ -5,6 +5,8 @@ from prophazard.database.race import RaceDatabaseManager
 from prophazard.database.user import UserDatabaseManager
 from prophazard.extensions import RHApplication
 
+from prophazard.database.race._orm.raceformat import RaceFormat, RaceSchedule
+
 
 @pytest_asyncio.fixture()
 async def default_user_creds():
@@ -14,7 +16,7 @@ async def default_user_creds():
     return username, password
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(scope="function")
 async def user_database(default_user_creds):
     user_database: UserDatabaseManager = UserDatabaseManager()
     await user_database.setup()
@@ -23,7 +25,7 @@ async def user_database(default_user_creds):
     await user_database.shutdown()
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(scope="function")
 async def race_database():
     race_database: RaceDatabaseManager = RaceDatabaseManager()
     await race_database.setup()
@@ -31,7 +33,7 @@ async def race_database():
     await race_database.shutdown()
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(scope="function")
 async def app(user_database: UserDatabaseManager, race_database: RaceDatabaseManager):
     app = generate_app(test_mode=True)
 
@@ -41,6 +43,27 @@ async def app(user_database: UserDatabaseManager, race_database: RaceDatabaseMan
     yield app
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(scope="function")
 async def client(app: RHApplication):
-    return app.test_client()
+    yield app.test_client()
+
+
+@pytest_asyncio.fixture()
+async def limited_format():
+    schedule = RaceSchedule(3, 0, False, 5, 2)
+    format_ = RaceFormat(schedule)
+    yield format_
+
+
+@pytest_asyncio.fixture()
+async def limited_no_ot_format():
+    schedule = RaceSchedule(3, 0, False, 5, 0)
+    format_ = RaceFormat(schedule)
+    yield format_
+
+
+@pytest_asyncio.fixture()
+async def unlimited_format():
+    schedule = RaceSchedule(5, 1, True, 10, 5)
+    format_ = RaceFormat(schedule)
+    yield format_
