@@ -12,7 +12,7 @@ from quart import copy_current_app_context
 
 from .enums import RaceStatus
 from ..events import RaceSequenceEvt
-from ..database.race._orm.raceformat import RaceFormat
+from ..database.race._orm.raceformat import RaceSchedule
 
 if TYPE_CHECKING:
     from ..extensions import current_app
@@ -37,7 +37,7 @@ class RaceManager:
         loop = asyncio.get_running_loop()
         yield loop.time() < assigned_start
 
-    def schedule_race(self, format_: RaceFormat, assigned_start: float) -> None:
+    def schedule_race(self, schedule: RaceSchedule, assigned_start: float) -> None:
         """
         Schedule the sequence of events for the race
 
@@ -66,9 +66,9 @@ class RaceManager:
             current_app.event_broker.trigger(RaceSequenceEvt.RACE_START, data)
             self.status = RaceStatus.RACING
 
-            if not format_.schedule.unlimited_time:
+            if not schedule.unlimited_time:
                 self._program_handle = loop.call_later(
-                    format_.schedule.race_time_sec, asyncio.create_task, _finish()
+                    schedule.race_time_sec, asyncio.create_task, _finish()
                 )
             else:
                 self._program_handle = None
@@ -79,11 +79,11 @@ class RaceManager:
             current_app.event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
             self.status = RaceStatus.OVERTIME
 
-            if format_.schedule.overtime_sec > 0:
+            if schedule.overtime_sec > 0:
                 self._program_handle = loop.call_later(
-                    format_.schedule.overtime_sec, asyncio.create_task, _stop()
+                    schedule.overtime_sec, asyncio.create_task, _stop()
                 )
-            elif format_.schedule.overtime_sec == 0:
+            elif schedule.overtime_sec == 0:
                 await _stop()
             else:
                 self._program_handle = None
@@ -96,8 +96,8 @@ class RaceManager:
             self._program_handle = None
 
         loop = asyncio.get_running_loop()
-        _random_delay = format_.schedule.random_stage_delay * random() * 0.001
-        start_delay = format_.schedule.stage_time_sec + _random_delay
+        _random_delay = schedule.random_stage_delay * random() * 0.001
+        start_delay = schedule.stage_time_sec + _random_delay
 
         if all(self._staging_checks(assigned_start)):
             self._program_handle = loop.call_at(

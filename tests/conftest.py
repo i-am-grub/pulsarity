@@ -49,21 +49,15 @@ async def client(app: RHApplication):
 
 
 @pytest_asyncio.fixture()
-async def limited_format():
-    schedule = RaceSchedule(3, 0, False, 5, 2)
-    format_ = RaceFormat(schedule)
-    yield format_
+async def limited_schedule():
+    yield RaceSchedule(3, 0, False, 5, 2)
 
 
 @pytest_asyncio.fixture()
-async def limited_no_ot_format():
-    schedule = RaceSchedule(3, 0, False, 5, 0)
-    format_ = RaceFormat(schedule)
-    yield format_
+async def limited_no_ot_schedule():
+    yield RaceSchedule(3, 0, False, 5, 0)
 
 
 @pytest_asyncio.fixture()
-async def unlimited_format():
-    schedule = RaceSchedule(5, 1, True, 10, 5)
-    format_ = RaceFormat(schedule)
-    yield format_
+async def unlimited_schedule():
+    yield RaceSchedule(5, 1, True, 10, 5)
