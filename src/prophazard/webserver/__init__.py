@@ -14,7 +14,7 @@ from .routes import api as _api
 from .tasks import tasks as _tasks
 from .websockets import websockets as _websockets
 
-from ..config import configs
+from ..utils.config import configs
 
 
 def generate_app(*, test_mode: bool = False) -> RHApplication:

@@ -11,7 +11,7 @@ from ..database.user import UserDatabaseManager
 from ..database.race import RaceDatabaseManager
 
 from ..utils.executor import executor
-from ..config import configs
+from ..utils.config import configs
 
 p_events = RHBlueprint("private_events", __name__)
 events = RHBlueprint("events", __name__)

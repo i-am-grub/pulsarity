@@ -12,7 +12,7 @@ from hypercorn.middleware import HTTPToHTTPSRedirectMiddleware
 
 from .extensions import RHApplication
 from .webserver import generate_app
-from .config import configs
+from .utils.config import configs
 from .utils.crypto import generate_self_signed_cert
 
 __version__ = importlib.metadata.version(__name__)
