@@ -6,17 +6,21 @@ from asyncio import PriorityQueue
 from collections.abc import AsyncGenerator, Callable
 from dataclasses import astuple
 from uuid import UUID, uuid4
-
-from quart import current_app
+from typing import TYPE_CHECKING
 
 from ._enums import _EvtPriority, _ApplicationEvt
 from ..database.user import UserPermission
 
+if TYPE_CHECKING:
+    from ..extensions import current_app
+else:
+    from quart import current_app
+
 
 class EventBroker:
     """
-    Manages distributing server side events to connect clients.
-    Primarily used with websockets or server sent events.
+    Manages distributing server side events to connect clients and
+    triggering server side event callbacks.
     """
 
     _connections: set[PriorityQueue] = set()
@@ -36,7 +40,7 @@ class EventBroker:
 
         payload = (*astuple(event), uuid_, data)
         for connection in self._connections:
-            current_app.add_background_task(connection.put, payload)
+            connection.put_nowait(payload)
 
     def trigger(
         self, event: _ApplicationEvt, data: dict, *, uuid: UUID | None = None
@@ -55,23 +59,35 @@ class EventBroker:
             for callback in callbacks:
                 current_app.add_background_task(callback, **data)
 
-    def register_event_callback(self, event_id: str, callback: Callable):
+    def register_event_callback(self, event: _ApplicationEvt, callback: Callable):
         """
-        Register a ballback to run when when an event is published
+        Register a callback to run when when an event is published
 
         :param event_id: The id of the event to register the callback against
         :param callback: The callback to run
         """
-        if event_id not in self._callbacks:
-            self._callbacks[event_id] = set()
+        if event.id not in self._callbacks:
+            self._callbacks[event.id] = set()
 
-        self._callbacks[event_id].add(callback)
+        self._callbacks[event.id].add(callback)
+
+    def unregister_event_callback(self, event: _ApplicationEvt, callback: Callable):
+        """
+        Unregister an event callback
+
+        :param event_id: The id of the event to register the callback against
+        :param callback: The callback to remove
+        """
+        if event.id not in self._callbacks:
+            return
+
+        self._callbacks[event.id].remove(callback)
 
     async def subscribe(
         self,
     ) -> AsyncGenerator[tuple[_EvtPriority, UserPermission, str, UUID, dict], None]:
         """
-        As a client, subscribe to recieve server events.
+        Subscribe to recieve server events. Typically used for client connections
 
         :yield: Event data
         """

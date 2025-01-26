@@ -2,6 +2,7 @@
 Webserver Websocket Connections
 """
 
+import logging
 from asyncio import TaskGroup
 from uuid import UUID
 
@@ -13,6 +14,8 @@ from .auth import permission_required
 from ..database.user import SystemDefaultPerms
 from ..extensions import current_app, current_user
 from ..events import SpecialEvt, RaceSequenceEvt
+
+logger = logging.getLogger(__name__)
 
 websockets = Blueprint("websockets", __name__, url_prefix="/ws")
 
@@ -88,14 +91,15 @@ async def server_ws() -> None:
     @copy_current_websocket_context
     async def server_receiving() -> None:
         while True:
-            data = await websocket.receive_json()
+            data = await websocket.receive()
 
             try:
-                EventWSData.model_validate_json(data)
+                model = EventWSData.model_validate_json(data)
             except ValidationError:
+                logger.debug("Error validating websocket data: %s", data)
                 continue
 
-            _process_recieved_event_data(data)
+            _process_recieved_event_data(model)
 
     async with TaskGroup() as tg:
         tg.create_task(server_sending())

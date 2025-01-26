@@ -14,6 +14,7 @@ from quart_auth import current_user as _current_user
 from .events import EventBroker
 from .database.user import UserDatabaseManager, User, UserPermission
 from .database.race import RaceDatabaseManager
+from .race.manager import RaceManager
 
 
 class RHApplication(Quart):
@@ -22,6 +23,7 @@ class RHApplication(Quart):
     """
 
     event_broker: EventBroker = EventBroker()
+    race_manager: RaceManager = RaceManager()
     _user_database: Future[UserDatabaseManager] | None = None
     _race_database: Future[RaceDatabaseManager] | None = None
 
