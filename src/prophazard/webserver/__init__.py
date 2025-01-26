@@ -14,7 +14,7 @@ from .routes import api as _api
 from .tasks import tasks as _tasks
 from .websockets import websockets as _websockets
 
-from ..config import get_config
+from ..config import configs
 
 
 def generate_app(*, test_mode: bool = False) -> RHApplication:
@@ -28,11 +28,11 @@ def generate_app(*, test_mode: bool = False) -> RHApplication:
 
     app = RHApplication(__name__)
 
-    app.secret_key = str(get_config("SECRETS", "SECRET_KEY"))
+    app.secret_key = str(configs.get_config("SECRETS", "SECRET_KEY"))
 
     QuartAuth(
         app,
-        cookie_domain=str(get_config("WEBSERVER", "HOST")),
+        cookie_domain=str(configs.get_config("WEBSERVER", "HOST")),
         cookie_name="PROPHAZARD_AUTH",
         cookie_samesite="Strict",
         mode="cookie",
@@ -40,7 +40,7 @@ def generate_app(*, test_mode: bool = False) -> RHApplication:
         user_class=RHUser,
     )
 
-    generate_api_docs = bool(get_config("GENERAL", "DEBUG"))
+    generate_api_docs = bool(configs.get_config("GENERAL", "DEBUG"))
     QuartSchema(
         app,
         openapi_path="/api/openapi.json" if generate_api_docs else None,

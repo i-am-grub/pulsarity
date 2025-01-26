@@ -168,5 +168,6 @@ cython_debug/
 
 # PropHazard based files
 config.json
+config.toml
 *.db
 *.pem

@@ -10,8 +10,8 @@ from ..extensions import RHBlueprint, current_app
 from ..database.user import UserDatabaseManager
 from ..database.race import RaceDatabaseManager
 
-from ..utils.executor import set_executor, shutdown_executor
-from ..config import get_config_async
+from ..utils.executor import executor
+from ..config import configs
 
 p_events = RHBlueprint("private_events", __name__)
 events = RHBlueprint("events", __name__)
@@ -34,7 +34,7 @@ async def setup_global_executor() -> None:
     Sets executor to uses for computationally intestive
     processing.
     """
-    set_executor()
+    executor.set_executor()
 
 
 @p_events.before_app_serving
@@ -46,8 +46,8 @@ async def setup_user_database() -> None:
     database_manager = UserDatabaseManager(filename="user.db")
     await database_manager.setup()
 
-    default_username = str(await get_config_async("SECRETS", "DEFAULT_USERNAME"))
-    default_password = str(await get_config_async("SECRETS", "DEFAULT_PASSWORD"))
+    default_username = str(configs.get_config("SECRETS", "DEFAULT_USERNAME"))
+    default_password = str(configs.get_config("SECRETS", "DEFAULT_PASSWORD"))
 
     await database_manager.verify_persistant_objects(default_username, default_password)
 
@@ -88,4 +88,4 @@ async def await_executor() -> None:
     """
     Shuts down the server's executor
     """
-    await shutdown_executor()
+    await executor.shutdown_executor()
