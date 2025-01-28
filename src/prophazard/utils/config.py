@@ -5,6 +5,7 @@ Global configurations
 import logging
 import asyncio
 import datetime
+import copy
 from secrets import token_urlsafe
 from typing import Literal, Any
 
@@ -237,7 +238,7 @@ class ConfigManager:
         else:
             loop.create_task(self._write_file_config_async(self._configs))
 
-    async def get_sharable_config(self) -> dict[_SECTIONS, dict]:
+    def get_sharable_config(self) -> dict[_SECTIONS, dict]:
         """
         Generates a copy of the config file with the `SECRETS`
         section cleared
@@ -247,8 +248,10 @@ class ConfigManager:
         if self._configs is None:
             self._configs = self._load_config_from_file()
 
-        del self._configs["SECRETS"]
-        return self._configs
+        configs_ = copy.copy(self._configs)
+
+        del configs_["SECRETS"]
+        return configs_
 
 
 configs = ConfigManager(_DEFAULT_CONFIG_FILE_NAME)

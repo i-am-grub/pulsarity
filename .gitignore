@@ -171,3 +171,4 @@ config.json
 config.toml
 *.db
 *.pem
+logs/*
