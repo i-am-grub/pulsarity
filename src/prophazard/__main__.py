@@ -2,9 +2,15 @@
 PropHazard server entry point
 """
 
+import os
 import sys
 import multiprocessing
+import logging
+import logging.config
+import logging.handlers
+
 from . import prophazard_webserver
+from .utils.config import configs
 
 # pylint: disable=E0401
 
@@ -22,10 +28,26 @@ else:
     from asyncio import run
 
 
+def _setup_logging():
+    if not os.path.exists("logs"):
+        os.mkdir("logs")
+
+    logging_conf = configs.get_section("LOGGING")
+    if logging_conf is not None:
+        logging.config.dictConfig(logging_conf)
+
+        queue_handler = logging.getHandlerByName("queue_handler")
+        if queue_handler is not None and isinstance(
+            queue_handler, logging.handlers.QueueHandler
+        ):
+            queue_handler.listener.start()
+
+
 def main() -> None:
     """
     Run the PropHazard server
     """
+    _setup_logging()
     run(prophazard_webserver())
 
 

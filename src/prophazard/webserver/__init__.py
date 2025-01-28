@@ -40,7 +40,7 @@ def generate_app(*, test_mode: bool = False) -> RHApplication:
         user_class=RHUser,
     )
 
-    generate_api_docs = bool(configs.get_config("GENERAL", "DEBUG"))
+    generate_api_docs = bool(configs.get_config("WEBSERVER", "API_DOCS"))
     QuartSchema(
         app,
         openapi_path="/api/openapi.json" if generate_api_docs else None,

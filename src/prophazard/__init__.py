@@ -62,8 +62,6 @@ def prophazard_webserver(
         key_file_pass if isinstance(key_file_pass, str) and key_file_pass else None
     )
 
-    webserver_config.debug = bool(configs.get_config("GENERAL", "DEBUG"))
-
     if app is None:
         app = generate_app()
 

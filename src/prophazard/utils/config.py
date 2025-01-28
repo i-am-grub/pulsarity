@@ -6,7 +6,7 @@ import logging
 import asyncio
 import datetime
 from secrets import token_urlsafe
-from typing import Literal
+from typing import Literal, Any
 
 import anyio
 import tomlkit
@@ -17,6 +17,7 @@ _SECTIONS = Literal[
     "SECRETS",
     "WEBSERVER",
     "GENERAL",
+    "LOGGING",
 ]
 
 _logger = logging.getLogger(__name__)
@@ -48,16 +49,63 @@ def _get_configs_defaults() -> dict[_SECTIONS, dict]:
     webserver["KEY_PASSWORD"] = ""
     webserver["CERT_FILE"] = "cert.pem"
     webserver["CA_CERT_FILE"] = ""
+    webserver["API_DOCS"] = False
 
     # other default configurations
     general: dict = {}
-    general["DEBUG"] = False
     general["LAST_MODIFIED_TIME"] = 0
 
-    config: dict[_SECTIONS, dict] = {
+    logging_ = {
+        "version": 1,
+        "disable_existing_loggers": True,
+        "formatters": {
+            "standard": {"format": "%(asctime)s [%(levelname)s]: %(message)s"},
+            "detailed": {
+                "format": "%(asctime)s [%(levelname)s|%(module)s|L%(lineno)d]: %(message)s",
+                "datefmt": "%Y-%m%dT%H:%M:%S%z",
+            },
+        },
+        "handlers": {
+            "stderr": {
+                "level": "INFO",
+                "formatter": "standard",
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stdout",
+            },
+            "file": {
+                "level": "DEBUG",
+                "formatter": "detailed",
+                "class": "logging.handlers.TimedRotatingFileHandler",
+                "filename": "logs/prophazard.log",
+                "when": "midnight",
+                "interval": 1,
+                "backupCount": 10,
+            },
+            "queue_handler": {
+                "class": "logging.handlers.QueueHandler",
+                "handlers": ["stderr", "file"],
+                "respect_handler_level": True,
+            },
+        },
+        "loggers": {
+            "root": {
+                "handlers": ["queue_handler"],
+                "level": "WARNING",
+                "propagate": False,
+            },
+            "prophazard": {
+                "handlers": ["queue_handler"],
+                "level": "DEBUG",
+                "propagate": False,
+            },
+        },
+    }
+
+    config: dict[_SECTIONS, dict[str, Any]] = {
         "SECRETS": secrets,
         "WEBSERVER": webserver,
         "GENERAL": general,
+        "LOGGING": logging_,
     }
 
     return config
@@ -133,9 +181,7 @@ class ConfigManager:
         key: str,
     ) -> str | bool | int | float | None:
         """
-        Gets a setting from the config file synchronously. This method
-        of getting settings from the config file should be prefered
-        before the webserver has started
+        Gets a setting from the config file.
 
         :param section: The section in the config file for the setting
         :param key: The setting name
@@ -150,6 +196,26 @@ class ConfigManager:
             return None
 
         return item
+
+    def get_section(
+        self,
+        section: _SECTIONS,
+    ) -> dict[str, Any] | None:
+        """
+        Gets a section from the config file.
+
+        :param section: The section in the config file for the setting
+        :return: The setting value
+        """
+        if self._configs is None:
+            self._configs = self._load_config_from_file()
+
+        try:
+            section_ = self._configs[section]
+        except KeyError:
+            return None
+
+        return section_
 
     def set_config(self, section: _SECTIONS, key: str, value) -> None:
         """
