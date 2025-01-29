@@ -22,7 +22,6 @@ _SECTIONS = Literal[
 ]
 
 _logger = logging.getLogger(__name__)
-_file_lock = asyncio.Lock()
 
 
 def _get_configs_defaults() -> dict[_SECTIONS, dict]:
@@ -35,27 +34,29 @@ def _get_configs_defaults() -> dict[_SECTIONS, dict]:
     # pylint: disable=R0915
 
     # secret configuration:
-    secrets: dict = {}
-    secrets["DEFAULT_USERNAME"] = "admin"
-    secrets["DEFAULT_PASSWORD"] = "rotorhazard"
-    secrets["SECRET_KEY"] = token_urlsafe(32)
+    secrets = {
+        "DEFAULT_USERNAME": "admin",
+        "DEFAULT_PASSWORD": "rotorhazard",
+        "SECRET_KEY": token_urlsafe(32),
+    }
 
     # webserver settings
-    webserver: dict = {}
-    webserver["HOST"] = "localhost"
-    webserver["HTTP_PORT"] = 5000
-    webserver["HTTPS_PORT"] = 5443
-    webserver["FORCE_REDIRECTS"] = True
-    webserver["KEY_FILE"] = "key.pem"
-    webserver["KEY_PASSWORD"] = ""
-    webserver["CERT_FILE"] = "cert.pem"
-    webserver["CA_CERT_FILE"] = ""
-    webserver["API_DOCS"] = False
+    webserver = {
+        "HOST": "localhost",
+        "HTTP_PORT": 5000,
+        "HTTPS_PORT": 5443,
+        "FORCE_REDIRECTS": True,
+        "KEY_FILE": "key.pem",
+        "KEY_PASSWORD": "",
+        "CERT_FILE": "cert.pem",
+        "CA_CERT_FILE": "",
+        "API_DOCS": False,
+    }
 
     # other default configurations
-    general: dict = {}
-    general["LAST_MODIFIED_TIME"] = 0
+    general = {"LAST_MODIFIED_TIME": 0}
 
+    # logging settings
     logging_ = {
         "version": 1,
         "disable_existing_loggers": True,
@@ -113,6 +114,9 @@ def _get_configs_defaults() -> dict[_SECTIONS, dict]:
 
 
 class ConfigManager:
+    """
+    Manager for dealing with the application config file
+    """
 
     _configs: dict[_SECTIONS, dict] | None = None
 
@@ -142,11 +146,10 @@ class ConfigManager:
         """
         configs_["GENERAL"]["LAST_MODIFIED_TIME"] = datetime.datetime.now()
 
-        async with _file_lock:
-            async with await anyio.open_file(
-                self._config_filename, "w", encoding="utf-8"
-            ) as file:
-                await file.write(tomlkit.dumps(configs_))
+        async with await anyio.open_file(
+            self._config_filename, "w", encoding="utf-8"
+        ) as file:
+            await file.write(tomlkit.dumps(configs_))
 
     def _load_config_from_file(self) -> dict[_SECTIONS, dict]:
         """

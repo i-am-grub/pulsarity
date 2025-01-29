@@ -13,6 +13,7 @@ from quart import copy_current_app_context
 from .enums import RaceStatus
 from ..events import RaceSequenceEvt
 from ..database.race._orm.raceformat import RaceSchedule
+from ..utils.eager_task import schedule_eager_task, delay_eager_task
 
 if TYPE_CHECKING:
     from ..extensions import current_app
@@ -51,8 +52,8 @@ class RaceManager:
             data: dict = {}
             current_app.event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
             self.status = RaceStatus.STAGING
-            self._program_handle = loop.call_at(
-                assigned_start + start_delay, asyncio.create_task, _start()
+            self._program_handle = schedule_eager_task(
+                assigned_start + start_delay, _start(), loop=loop, block_duration=0.05
             )
 
             logger.debug(
@@ -67,8 +68,8 @@ class RaceManager:
             self.status = RaceStatus.RACING
 
             if not schedule.unlimited_time:
-                self._program_handle = loop.call_later(
-                    schedule.race_time_sec, asyncio.create_task, _finish()
+                self._program_handle = delay_eager_task(
+                    schedule.race_time_sec, _finish(), loop=loop, block_duration=0.05
                 )
             else:
                 self._program_handle = None
@@ -80,8 +81,8 @@ class RaceManager:
             self.status = RaceStatus.OVERTIME
 
             if schedule.overtime_sec > 0:
-                self._program_handle = loop.call_later(
-                    schedule.overtime_sec, asyncio.create_task, _stop()
+                self._program_handle = delay_eager_task(
+                    schedule.overtime_sec, _stop(), loop=loop, block_duration=0.05
                 )
             elif schedule.overtime_sec == 0:
                 await _stop()
@@ -100,10 +101,11 @@ class RaceManager:
         start_delay = schedule.stage_time_sec + _random_delay
 
         if all(self._staging_checks(assigned_start)):
-            self._program_handle = loop.call_at(
-                assigned_start, asyncio.create_task, _stage()
+            self._program_handle = schedule_eager_task(
+                assigned_start, _stage(), loop=loop, block_duration=0.05
             )
             self.status = RaceStatus.SCHEDULED
+
         else:
             logger.warning("All conditions are not met to program race")
 

@@ -2,7 +2,6 @@
 Webserver event handling
 """
 
-import asyncio
 import logging
 
 from quart import ResponseReturnValue, redirect, url_for
@@ -40,16 +39,6 @@ async def setup_global_executor() -> None:
     processing.
     """
     executor.set_executor()
-
-
-@events.before_app_serving
-async def setup_eager_loop() -> None:
-    """
-    If using a compatible python version, set the event
-    loop to use eager tasks by default.
-    """
-    loop = asyncio.get_running_loop()
-    loop.set_task_factory(asyncio.eager_task_factory)
 
 
 @p_events.before_app_serving

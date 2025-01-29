@@ -10,6 +10,9 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 
 class ExecutorManager:
+    """
+    Manager for the system pool executor
+    """
 
     _executor: Future[ThreadPoolExecutor | ProcessPoolExecutor] | None = None
     """The serverwide executor pool to use for parallel computations"""
