@@ -18,7 +18,7 @@ from ..database.user import SystemDefaultPerms
 from .validation import BaseResponse, LoginRequest, LoginResponse, ResetPasswordRequest
 from ..database.race._orm import _PilotData
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _get_webapp_filepath() -> str:

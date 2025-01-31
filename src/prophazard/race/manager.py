@@ -8,12 +8,9 @@ from typing import TYPE_CHECKING
 from random import random
 from collections.abc import Generator
 
-from quart import copy_current_app_context
-
 from .enums import RaceStatus
 from ..events import RaceSequenceEvt
 from ..database.race._orm.raceformat import RaceSchedule
-from ..utils.eager_task import schedule_eager_task, delay_eager_task
 
 if TYPE_CHECKING:
     from ..extensions import current_app
@@ -47,62 +44,13 @@ class RaceManager:
         Currently equivalent to monotonic time
         """
 
-        @copy_current_app_context
-        async def _stage() -> None:
-            data: dict = {}
-            current_app.event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
-            self.status = RaceStatus.STAGING
-            self._program_handle = schedule_eager_task(
-                assigned_start + start_delay, _start(), loop=loop, block_duration=0.05
-            )
-
-            logger.debug(
-                "Staging completed at %s seconds after assigned start",
-                loop.time() - assigned_start,
-            )
-
-        @copy_current_app_context
-        async def _start() -> None:
-            data: dict = {}
-            current_app.event_broker.trigger(RaceSequenceEvt.RACE_START, data)
-            self.status = RaceStatus.RACING
-
-            if not schedule.unlimited_time:
-                self._program_handle = delay_eager_task(
-                    schedule.race_time_sec, _finish(), loop=loop, block_duration=0.05
-                )
-            else:
-                self._program_handle = None
-
-        @copy_current_app_context
-        async def _finish() -> None:
-            data: dict = {}
-            current_app.event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
-            self.status = RaceStatus.OVERTIME
-
-            if schedule.overtime_sec > 0:
-                self._program_handle = delay_eager_task(
-                    schedule.overtime_sec, _stop(), loop=loop, block_duration=0.05
-                )
-            elif schedule.overtime_sec == 0:
-                await _stop()
-            else:
-                self._program_handle = None
-
-        @copy_current_app_context
-        async def _stop() -> None:
-            data: dict = {}
-            current_app.event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
-            self.status = RaceStatus.STOPPED
-            self._program_handle = None
-
-        loop = asyncio.get_running_loop()
         _random_delay = schedule.random_stage_delay * random() * 0.001
         start_delay = schedule.stage_time_sec + _random_delay
+        start_time = assigned_start + start_delay
 
         if all(self._staging_checks(assigned_start)):
-            self._program_handle = schedule_eager_task(
-                assigned_start, _stage(), loop=loop, block_duration=0.05
+            self._program_handle = current_app.schedule_background_task(
+                assigned_start, self._stage, start_time, schedule
             )
             self.status = RaceStatus.SCHEDULED
 
@@ -131,3 +79,70 @@ class RaceManager:
             data = {}
             current_app.event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
             self.status = RaceStatus.STOPPED
+
+    async def _stage(self, start_time: float, schedule: RaceSchedule) -> None:
+        """
+        Put the system into staging mode and schedules the start
+        state.
+
+        :param start_time: The time to start to schedule race start
+        :param schedule: The format's race schedule
+        """
+        data: dict = {}
+        current_app.event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
+        self.status = RaceStatus.STAGING
+
+        self._program_handle = current_app.schedule_background_task(
+            start_time, self._start, schedule
+        )
+
+    async def _start(self, schedule: RaceSchedule) -> None:
+        """
+        Put the system into race mode. Schedules the next
+        state if applicable.
+
+        :param schedule: The format's race schedule
+        """
+        data: dict = {}
+        current_app.event_broker.trigger(RaceSequenceEvt.RACE_START, data)
+        self.status = RaceStatus.RACING
+
+        if not schedule.unlimited_time:
+            self._program_handle = current_app.delay_background_task(
+                schedule.race_time_sec, self._finish, schedule
+            )
+
+        else:
+            self._program_handle = None
+
+    async def _finish(self, schedule: RaceSchedule) -> None:
+        """
+        Put the system into overtime mode. Schedules or runs the next
+        state if applicable.
+
+        :param schedule: The format's race schedule
+        """
+        data: dict = {}
+        current_app.event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
+        self.status = RaceStatus.OVERTIME
+
+        if schedule.overtime_sec > 0:
+            self._program_handle = current_app.delay_background_task(
+                schedule.overtime_sec, self._stop
+            )
+
+        elif schedule.overtime_sec == 0:
+            await self._stop()
+
+        else:
+            self._program_handle = None
+
+    async def _stop(self) -> None:
+        """
+        Put the system into race stop mode
+        """
+        data: dict = {}
+        current_app.event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+        self.status = RaceStatus.STOPPED
+
+        self._program_handle = None

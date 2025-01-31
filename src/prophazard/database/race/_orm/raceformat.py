@@ -35,6 +35,8 @@ class RaceFormat(_RaceBase):
     which forces RotorHazard to switch to that formatwhen running races within the class.
     """
 
+    # pylint: disable=R0903
+
     __tablename__ = "format"
 
     name: Mapped[str] = mapped_column(String(80), nullable=False)

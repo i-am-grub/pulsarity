@@ -7,7 +7,7 @@ authors = [
 ]
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 classifiers = [
     "Framework :: AsyncIO",
     "License :: OSI Approved :: MIT License"
@@ -99,14 +99,14 @@ commands = [["pytest", {cov="src",  replace = "posargs", default = ["tests"], ex
 description = "run black"
 skip_install = true
 deps = ["black"]
-commands = [["black", { replace = "posargs", default = ["."], extend = true} ]]
+commands = [["black", { replace = "posargs", default = ["src/prophazard"], extend = true} ]]
 
 [tool.tox.env.mypy]
 description = "run mypy"
 deps = ["mypy"]
-commands = [["mypy", { replace = "posargs", default = ["src"], extend = true} ]]
+commands = [["mypy", { replace = "posargs", default = ["src/prophazard"], extend = true} ]]
 
 [tool.tox.env.pylint]
 description = "run pylint"
 deps = ["pylint"]
-commands = [["pylint", "--recursive=y", { replace = "posargs", default = ["src"], extend = true} ]]
+commands = [["pylint", "--recursive=y", { replace = "posargs", default = ["src/prophazard"], extend = true} ]]

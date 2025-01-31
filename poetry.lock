@@ -1585,7 +1585,10 @@ files = [
 [package.dependencies]
 astroid = ">=3.3.8,<=3.4.0-dev0"
 colorama = {version = ">=0.4.5", markers = "sys_platform == \"win32\""}
-dill = {version = ">=0.3.7", markers = "python_version >= \"3.12\""}
+dill = [
+    {version = ">=0.3.7", markers = "python_version >= \"3.12\""},
+    {version = ">=0.3.6", markers = "python_version >= \"3.11\" and python_version < \"3.12\""},
+]
 isort = ">=4.2.5,<5.13.0 || >5.13.0,<6"
 mccabe = ">=0.6,<0.8"
 platformdirs = ">=2.2.0"
@@ -2476,5 +2479,5 @@ pgsql = ["asyncpg"]
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.12"
-content-hash = "f88587b2ed90675556d6ba01372cb6b63129388f06cbd37c8e7b533b2de67ac5"
+python-versions = ">=3.11"
+content-hash = "8ad944d42c718bfbb4c6df3ad8075ab986ed01ba779861ed1f69b6f65bc6f77f"

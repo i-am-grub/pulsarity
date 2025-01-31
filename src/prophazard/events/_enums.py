@@ -17,10 +17,10 @@ class _EvtPriority(IntEnum):
     action.
     """
 
-    INSTANT = 1
-    HIGH = 2
-    MEDUIUM = 3
-    LOW = 4
+    HIGHEST = auto()
+    HIGH = auto()
+    MEDUIUM = auto()
+    LOW = auto()
 
 
 @dataclass
@@ -76,7 +76,7 @@ class RaceSequenceEvt(_ApplicationEvt):
     Events associated with live race sequence
     """
 
-    RACE_STAGE = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS
-    RACE_START = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS
-    RACE_FINISH = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS
-    RACE_STOP = _EvtPriority.INSTANT, SystemDefaultPerms.RACE_EVENTS
+    RACE_STAGE = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS
+    RACE_START = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS
+    RACE_FINISH = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS
+    RACE_STOP = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS

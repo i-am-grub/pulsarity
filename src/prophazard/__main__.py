@@ -28,6 +28,16 @@ else:
     from asyncio import run
 
 
+class AutoQueueListener(logging.handlers.QueueListener):
+    """
+    Auto starting Queue listener
+    """
+
+    def __init__(self, queue, *handlers, respect_handler_level=True):
+        super().__init__(queue, *handlers, respect_handler_level=respect_handler_level)
+        self.start()
+
+
 def _setup_logging():
     if not os.path.exists("logs"):
         os.mkdir("logs")
@@ -35,12 +45,6 @@ def _setup_logging():
     logging_conf = configs.get_section("LOGGING")
     if logging_conf is not None:
         logging.config.dictConfig(logging_conf)
-
-        queue_handler = logging.getHandlerByName("queue_handler")
-        if queue_handler is not None and isinstance(
-            queue_handler, logging.handlers.QueueHandler
-        ):
-            queue_handler.listener.start()
 
 
 def main() -> None:

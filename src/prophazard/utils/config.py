@@ -75,7 +75,7 @@ def _get_configs_defaults() -> dict[_SECTIONS, dict]:
                 "stream": "ext://sys.stdout",
             },
             "file": {
-                "level": "DEBUG",
+                "level": "INFO",
                 "formatter": "detailed",
                 "class": "logging.handlers.TimedRotatingFileHandler",
                 "filename": "logs/prophazard.log",
@@ -85,6 +85,7 @@ def _get_configs_defaults() -> dict[_SECTIONS, dict]:
             },
             "queue_handler": {
                 "class": "logging.handlers.QueueHandler",
+                "listener": "prophazard.__main__.AutoQueueListener",
                 "handlers": ["stderr", "file"],
                 "respect_handler_level": True,
             },
@@ -97,7 +98,7 @@ def _get_configs_defaults() -> dict[_SECTIONS, dict]:
             },
             "prophazard": {
                 "handlers": ["queue_handler"],
-                "level": "DEBUG",
+                "level": "INFO",
                 "propagate": False,
             },
         },

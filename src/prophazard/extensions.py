@@ -3,8 +3,12 @@ Modules extended from Quart and some of its
 extentions.
 """
 
-from asyncio import Future, get_running_loop
+import sys
+import asyncio
+import logging
 from uuid import UUID
+from typing import Any
+from collections.abc import Callable
 
 from quart import Quart, Blueprint
 from quart import current_app as _current_app
@@ -16,6 +20,8 @@ from .database.user import UserDatabaseManager, User, UserPermission
 from .database.race import RaceDatabaseManager
 from .race.manager import RaceManager
 
+logger = logging.getLogger(__name__)
+
 
 class RHApplication(Quart):
     """
@@ -24,8 +30,8 @@ class RHApplication(Quart):
 
     event_broker: EventBroker = EventBroker()
     race_manager: RaceManager = RaceManager()
-    _user_database: Future[UserDatabaseManager] | None = None
-    _race_database: Future[RaceDatabaseManager] | None = None
+    _user_database: asyncio.Future[UserDatabaseManager] | None = None
+    _race_database: asyncio.Future[RaceDatabaseManager] | None = None
 
     async def get_user_database(self) -> UserDatabaseManager:
         """
@@ -35,7 +41,7 @@ class RHApplication(Quart):
         :return: The user database
         """
         if self._user_database is None:
-            loop = get_running_loop()
+            loop = asyncio.get_running_loop()
             self._user_database = loop.create_future()
 
         return await self._user_database
@@ -47,7 +53,7 @@ class RHApplication(Quart):
         :param manager: The user database to set
         """
         if self._user_database is None:
-            loop = get_running_loop()
+            loop = asyncio.get_running_loop()
             self._user_database = loop.create_future()
 
         self._user_database.set_result(manager)
@@ -60,7 +66,7 @@ class RHApplication(Quart):
         :return: The race database
         """
         if self._race_database is None:
-            loop = get_running_loop()
+            loop = asyncio.get_running_loop()
             self._race_database = loop.create_future()
 
         return await self._race_database
@@ -72,10 +78,72 @@ class RHApplication(Quart):
         :param manager: The race database to set
         """
         if self._race_database is None:
-            loop = get_running_loop()
+            loop = asyncio.get_running_loop()
             self._race_database = loop.create_future()
 
         self._race_database.set_result(manager)
+
+    def schedule_background_task(
+        self, time: float, func: Callable, *args: Any, **kwargs: Any
+    ) -> asyncio.TimerHandle:
+        """
+        Schedules a background task to occur at a specific time with
+        app context. The task will be generated as an eager task if
+        possible and block the event loop slightly before it is
+        scheduled to attempt to be as accurate as possible.
+
+        :param time: The event loop time to schedule the task for
+        :param func: The function to schedule
+
+        :return: The schedule timer handler
+        """
+        # pylint: disable= W0718
+
+        async def _wrapper() -> None:
+            try:
+                async with self.app_context():
+                    await self.ensure_async(func)(*args, **kwargs)
+            except Exception as error:
+                await self.handle_background_exception(error)
+
+        def _create_task() -> None:
+
+            while (time_ := loop.time() - time) < 0:
+                pass
+
+            if sys.version_info >= (3, 12):
+                task = asyncio.eager_task_factory(loop, _wrapper())
+            else:
+                task = asyncio.create_task(_wrapper())
+
+            self.background_tasks.add(task)
+            task.add_done_callback(self.background_tasks.discard)
+
+            logger.debug(
+                "Task scheduled for %s, running at %s", f"{time:.3f}", f"{time_:.3f}"
+            )
+
+        loop = asyncio.get_running_loop()
+
+        if time < loop.time():
+            raise ValueError("Scheduled time is in the past")
+
+        return loop.call_at(time - 0.05, _create_task)
+
+    def delay_background_task(
+        self, delay: float, func: Callable, *args: Any, **kwargs: Any
+    ) -> asyncio.TimerHandle:
+        """
+        Schedules a task to be ran x seconds in the future. See `schedule_background_task`
+        for more information.
+
+        :param delay: Amount of seconds in the future to schdule the task
+        :param fuction: The function to schedule
+        :return: The schedule timer handler
+        """
+        loop = asyncio.get_running_loop()
+        time = loop.time() + delay
+        return self.schedule_background_task(time, func, *args, **kwargs)
 
 
 class RHBlueprint(Blueprint):
