@@ -90,7 +90,7 @@ env_list = ["pylint", "black", "mypy", "3.13", "3.12", "3.11"]
 description = "run unit tests"
 deps = [
     "pytest>=8",
-    "pytest-asyncio==0.24.0",
+    "pytest-asyncio",
     "pytest-cov"
 ]
 commands = [["pytest", {cov="src",  replace = "posargs", default = ["tests"], extend = true }]]

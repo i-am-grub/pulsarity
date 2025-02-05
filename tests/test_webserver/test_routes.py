@@ -7,8 +7,7 @@ from quart_auth import authenticated_client
 from prophazard.extensions import RHApplication
 
 
-@pytest.mark.asyncio
-async def test_webserver_login_valid(
+async def webserver_login_valid(
     client: TestClientProtocol, default_user_creds: tuple[str]
 ):
     login_data = {"username": default_user_creds[0], "password": default_user_creds[1]}
@@ -21,6 +20,13 @@ async def test_webserver_login_valid(
     reset_required = data["password_reset_required"]
     assert reset_required is not None
     return reset_required
+
+
+@pytest.mark.asyncio
+async def test_webserver_login_valid(
+    client: TestClientProtocol, default_user_creds: tuple[str]
+):
+    await webserver_login_valid(client, default_user_creds)
 
 
 @pytest.mark.asyncio
@@ -71,7 +77,7 @@ async def test_password_reset_valid(app: RHApplication, default_user_creds: tupl
     user = await database.users.get_by_username(None, default_user_creds[0])
     assert user is not None
 
-    reset_required = await test_webserver_login_valid(client, default_user_creds)
+    reset_required = await webserver_login_valid(client, default_user_creds)
     assert reset_required is True
 
     async with authenticated_client(client, user.auth_id.hex):
@@ -88,7 +94,7 @@ async def test_password_reset_valid(app: RHApplication, default_user_creds: tupl
         assert data["status"] is True
 
     new_creds = (default_user_creds[0], new_password)
-    reset_required = await test_webserver_login_valid(client, new_creds)
+    reset_required = await webserver_login_valid(client, new_creds)
     assert reset_required is False
 
 
