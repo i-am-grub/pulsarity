@@ -8,8 +8,6 @@ from prophazard.database.race._orm.raceformat import RaceSchedule
 
 
 async def future_schedule(app_: RHApplication, limited_schedule_: RaceSchedule):
-    app_.race_manager.status = RaceStatus.READY  # Manually reset this for testing
-
     schedule_offset = 1
     schedule_time = time.monotonic() + schedule_offset
 

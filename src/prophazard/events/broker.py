@@ -23,8 +23,12 @@ class EventBroker:
     triggering server side event callbacks.
     """
 
-    _connections: set[PriorityQueue] = set()
-    _callbacks: dict[str, set[Callable]] = {}
+    def __init__(self) -> None:
+        """
+        Class initialization
+        """
+        self._connections: set[PriorityQueue] = set()
+        self._callbacks: dict[str, set[Callable]] = {}
 
     def publish(
         self, event: _ApplicationEvt, data: dict, *, uuid: UUID | None = None

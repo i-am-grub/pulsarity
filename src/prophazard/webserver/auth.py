@@ -2,16 +2,21 @@
 Authorization and permission enforcement
 """
 
-from typing import TypeVar, ParamSpec
+from typing import TypeVar, ParamSpec, TYPE_CHECKING
 from collections.abc import Callable, Awaitable
 from functools import wraps
 
 from quart_auth import Unauthorized
 from werkzeug.exceptions import Forbidden
 
-from ..extensions import current_app, current_user
-
 from ..database.user._enums import UserPermission
+
+if TYPE_CHECKING:
+    from ..extensions import current_app, current_user
+else:
+    from quart import current_app
+    from quart_auth import current_user
+
 
 T = TypeVar("T")
 P = ParamSpec("P")

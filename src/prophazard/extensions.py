@@ -28,10 +28,17 @@ class RHApplication(Quart):
     RotorHazard web application based on Quart
     """
 
-    event_broker: EventBroker = EventBroker()
-    race_manager: RaceManager = RaceManager()
+    # pylint: disable=W0106
+
     _user_database: asyncio.Future[UserDatabaseManager] | None = None
     _race_database: asyncio.Future[RaceDatabaseManager] | None = None
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__.__doc__
+        super().__init__(*args, **kwargs)
+
+        self.event_broker: EventBroker = EventBroker()
+        self.race_manager: RaceManager = RaceManager()
 
     async def get_user_database(self) -> UserDatabaseManager:
         """

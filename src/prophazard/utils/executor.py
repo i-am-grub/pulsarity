@@ -61,7 +61,7 @@ class ExecutorManager:
         Returns a `ProcessPoolExecutor` under most circumstances. The exception
         providing an instance of ThreadPoolExecutor is when the python global
         interpreter lock has been disabled (experimental in python 3.13t and
-        is not guaranteed to work in this context either).
+        does not currently work due to incompatible dependencies).
 
         The executor should be used in the following way
 
