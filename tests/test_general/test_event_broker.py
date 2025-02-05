@@ -33,7 +33,7 @@ async def test_single_event_handling(app: RHApplication):
     event_values = tuple(zip(events, values))
 
     async with app.test_app():
-        app.add_background_task(broker_subscriber(broker, values))
+        app.add_background_task(broker_subscriber, broker, values)
         broker_publisher(broker, event_values)
 
 
@@ -54,5 +54,5 @@ async def test_multi_event_handling(app: RHApplication):
     test_order = [{"id": 1}, {"id": 5}, {"id": 1}, {"id": 1}]
 
     async with app.test_app():
-        app.add_background_task(broker_subscriber(broker, test_order))
+        app.add_background_task(broker_subscriber, broker, test_order)
         broker_publisher(broker, event_values)

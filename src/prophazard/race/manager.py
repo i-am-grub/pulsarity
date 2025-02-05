@@ -35,7 +35,9 @@ class RaceManager:
         loop = asyncio.get_running_loop()
         yield loop.time() < assigned_start
 
-    def schedule_race(self, schedule: RaceSchedule, assigned_start: float) -> None:
+    def schedule_race(
+        self, schedule: RaceSchedule, *, assigned_start: float, **_kwargs
+    ) -> None:
         """
         Schedule the sequence of events for the race
 
@@ -43,6 +45,9 @@ class RaceManager:
         :param assigned_start: The event loop start time of the race.
         Currently equivalent to monotonic time
         """
+        loop = asyncio.get_running_loop()
+        if assigned_start < loop.time():
+            raise ValueError("Assigned start is in the past")
 
         _random_delay = schedule.random_stage_delay * random() * 0.001
         start_delay = schedule.stage_time_sec + _random_delay

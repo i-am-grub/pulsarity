@@ -3,7 +3,7 @@ Webserver Websocket Connections
 """
 
 import logging
-from asyncio import TaskGroup
+from asyncio import TaskGroup, CancelledError
 from uuid import UUID
 
 from quart import Blueprint, websocket, copy_current_websocket_context
@@ -12,6 +12,7 @@ from pydantic import BaseModel, UUID4, ValidationError
 
 from .auth import permission_required
 from ..database.user import SystemDefaultPerms
+from ..database.race._orm.raceformat import RaceSchedule
 from ..extensions import current_app, current_user
 from ..events import SpecialEvt, RaceSequenceEvt
 
@@ -53,19 +54,6 @@ async def _get_user_permissions() -> set[str]:
     return permissions
 
 
-def _process_recieved_event_data(data: EventWSData) -> None:
-    """
-    Process data recieved over the event websocket
-
-    :param data: Event data
-    """
-    # pylint: disable=W0511
-
-    if data.event_id == RaceSequenceEvt.RACE_START.id:
-        # TODO: Define all background tasks
-        pass
-
-
 @websockets.websocket("/server")
 @permission_required(SystemDefaultPerms.EVENT_WEBSOCKET)
 async def server_ws() -> None:
@@ -86,7 +74,7 @@ async def server_ws() -> None:
 
             elif permission in permissions:
                 evt_data = EventWSData(id=event_uuid, event_id=event_id, data=data)
-                await websocket.send_json(evt_data.model_dump_json())
+                await websocket.send_json(evt_data.model_dump())
 
     @copy_current_websocket_context
     async def server_receiving() -> None:
@@ -99,8 +87,40 @@ async def server_ws() -> None:
                 logger.debug("Error validating websocket data: %s", data)
                 continue
 
-            _process_recieved_event_data(model)
+            current_app.add_background_task(_process_recieved_event_data, model)
 
-    async with TaskGroup() as tg:
-        tg.create_task(server_sending())
-        tg.create_task(server_receiving())
+    try:
+        async with TaskGroup() as tg:
+            tg.create_task(server_sending())
+            tg.create_task(server_receiving())
+    except CancelledError:
+        pass
+
+
+async def _process_recieved_event_data(model: EventWSData) -> None:
+    """
+    Process data recieved over the event websocket
+
+    :param data: Event data
+    """
+    # pylint: disable=W0511
+
+    match model.event_id:
+
+        case RaceSequenceEvt.RACE_SCHEDULE.id:
+            schedule = RaceSchedule(
+                stage_time_sec=3,
+                random_stage_delay=0,
+                unlimited_time=False,
+                race_time_sec=60,
+                overtime_sec=0,
+            )
+            current_app.race_manager.schedule_race(schedule, **model.data)
+
+        case RaceSequenceEvt.RACE_STOP.id:
+            current_app.race_manager.stop_race()
+
+        case SpecialEvt.HEARTBEAT.id:
+            current_app.event_broker.publish(
+                SpecialEvt.HEARTBEAT, model.data, uuid=model.id
+            )
