@@ -34,10 +34,11 @@ async def test_default_status(app: RHApplication):
 async def test_past_schedule(app: RHApplication, limited_schedule: RaceSchedule):
     assert app.race_manager.status == RaceStatus.READY
 
-    now = time.monotonic()
+    now = time.monotonic() - 0.1
 
-    async with app.app_context():
-        app.race_manager.schedule_race(limited_schedule, assigned_start=now)
+    with pytest.raises(ValueError):
+        async with app.app_context():
+            app.race_manager.schedule_race(limited_schedule, assigned_start=now)
 
     assert app.race_manager.status == RaceStatus.READY
 
