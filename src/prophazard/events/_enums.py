@@ -33,7 +33,7 @@ class _EvtData:
     """The priority associated with the event"""
     permission: UserPermission
     """The permission the event is associated with"""
-    id: str = auto()  # type: ignore
+    id: str
     """Identifier for the event"""
 
 
@@ -57,8 +57,8 @@ class SpecialEvt(_ApplicationEvt):
     Special Events
     """
 
-    HEARTBEAT = _EvtPriority.LOW, SystemDefaultPerms.EVENT_WEBSOCKET
-    PERMISSIONS_UPDATE = _EvtPriority.HIGH, SystemDefaultPerms.EVENT_WEBSOCKET
+    HEARTBEAT = _EvtPriority.LOW, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
+    PERMISSIONS_UPDATE = _EvtPriority.HIGH, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
 
 
 class EventSetupEvt(_ApplicationEvt):
@@ -66,9 +66,9 @@ class EventSetupEvt(_ApplicationEvt):
     Events associated with modification to race objects
     """
 
-    PILOT_ADD = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS
-    PILOT_ALTER = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS
-    PILOT_DELETE = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS
+    PILOT_ADD = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
+    PILOT_ALTER = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
+    PILOT_DELETE = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
 
 
 class RaceSequenceEvt(_ApplicationEvt):
@@ -76,7 +76,8 @@ class RaceSequenceEvt(_ApplicationEvt):
     Events associated with live race sequence
     """
 
-    RACE_STAGE = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS
-    RACE_START = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS
-    RACE_FINISH = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS
-    RACE_STOP = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS
+    RACE_SCHEDULE = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_STAGE = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_START = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_FINISH = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_STOP = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()

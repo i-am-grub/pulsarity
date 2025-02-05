@@ -12,7 +12,7 @@ async def future_schedule(app_: RHApplication, limited_schedule_: RaceSchedule):
     schedule_time = time.monotonic() + schedule_offset
 
     async with app_.app_context():
-        app_.race_manager.schedule_race(limited_schedule_, schedule_time)
+        app_.race_manager.schedule_race(limited_schedule_, assigned_start=schedule_time)
 
     return schedule_offset
 
@@ -26,7 +26,7 @@ async def cancel_race(app_: RHApplication):
 @pytest.mark.asyncio
 async def test_default_status(app: RHApplication):
     assert app.race_manager.status == RaceStatus.READY
-    app.race_manager.stop_race() == RaceStatus.READY
+    app.race_manager.stop_race()
     assert app.race_manager.status == RaceStatus.READY
 
 
@@ -34,10 +34,11 @@ async def test_default_status(app: RHApplication):
 async def test_past_schedule(app: RHApplication, limited_schedule: RaceSchedule):
     assert app.race_manager.status == RaceStatus.READY
 
-    now = time.monotonic()
+    now = time.monotonic() - 0.1
 
-    async with app.app_context():
-        app.race_manager.schedule_race(limited_schedule, now)
+    with pytest.raises(ValueError):
+        async with app.app_context():
+            app.race_manager.schedule_race(limited_schedule, assigned_start=now)
 
     assert app.race_manager.status == RaceStatus.READY
 
