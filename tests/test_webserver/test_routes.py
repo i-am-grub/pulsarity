@@ -24,9 +24,12 @@ async def webserver_login_valid(
 
 @pytest.mark.asyncio
 async def test_webserver_login_valid(
-    client: TestClientProtocol, default_user_creds: tuple[str]
+    app: RHApplication, default_user_creds: tuple[str]
 ):
-    await webserver_login_valid(client, default_user_creds)
+    client = app.test_client()
+
+    async with app.test_app():
+        await webserver_login_valid(client, default_user_creds)
 
 
 @pytest.mark.asyncio
@@ -77,25 +80,27 @@ async def test_password_reset_valid(app: RHApplication, default_user_creds: tupl
     user = await database.users.get_by_username(None, default_user_creds[0])
     assert user is not None
 
-    reset_required = await webserver_login_valid(client, default_user_creds)
-    assert reset_required is True
+    async with app.test_app():
+        reset_required = await webserver_login_valid(client, default_user_creds)
+        assert reset_required is True
 
-    async with authenticated_client(client, user.auth_id.hex):
+        async with authenticated_client(client, user.auth_id.hex):
 
-        reset_data = {
-            "old_password": default_user_creds[1],
-            "new_password": new_password,
-        }
+            reset_data = {
+                "old_password": default_user_creds[1],
+                "new_password": new_password,
+            }
 
-        response = await client.post("/auth/reset-password", json=reset_data)
-        assert response.status_code == 200
+            response = await client.post("/auth/reset-password", json=reset_data)
+            assert response.status_code == 200
 
-        data = await response.get_json()
-        assert data["status"] is True
+            data = await response.get_json()
+            assert data["status"] is True
 
-    new_creds = (default_user_creds[0], new_password)
-    reset_required = await webserver_login_valid(client, new_creds)
-    assert reset_required is False
+        new_creds = (default_user_creds[0], new_password)
+
+        reset_required = await webserver_login_valid(client, new_creds)
+        assert reset_required is False
 
 
 @pytest.mark.asyncio

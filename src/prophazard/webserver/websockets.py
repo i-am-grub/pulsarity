@@ -89,12 +89,9 @@ async def server_ws() -> None:
 
             current_app.add_background_task(_process_recieved_event_data, model)
 
-    try:
-        async with TaskGroup() as tg:
-            tg.create_task(server_sending())
-            tg.create_task(server_receiving())
-    except CancelledError:
-        pass
+    async with TaskGroup() as tg:
+        tg.create_task(server_sending())
+        tg.create_task(server_receiving())
 
 
 async def _process_recieved_event_data(model: EventWSData) -> None:
