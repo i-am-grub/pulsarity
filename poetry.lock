@@ -2480,4 +2480,4 @@ pgsql = ["asyncpg"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11"
-content-hash = "49fa0644ebd933eaa8ad6eff5a43a6976252f5b8d93d50cb8c2318276a096fa7"
+content-hash = "8ad944d42c718bfbb4c6df3ad8075ab986ed01ba779861ed1f69b6f65bc6f77f"

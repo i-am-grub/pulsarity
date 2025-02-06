@@ -33,13 +33,15 @@ async def test_server_websocket_auth(
 
     payload = {"id": str(uuid.uuid4()), "event_id": "heartbeat", "data": {"foo": "bar"}}
 
-    async with authenticated_client(client, user.auth_id.hex):
-        async with client.websocket("/ws/server") as test_websocket:
-            await asyncio.sleep(2)  # wait for permissions to set
+    async with (
+        authenticated_client(client, user.auth_id.hex),
+        client.websocket("/ws/server") as test_websocket,
+    ):
+        await asyncio.sleep(2)  # wait for permissions to set
 
-            await test_websocket.send_json(payload)
+        await test_websocket.send_json(payload)
 
-            async with asyncio.timeout(2):
-                recieved = await test_websocket.receive_json()
+        async with asyncio.timeout(2):
+            recieved = await test_websocket.receive_json()
 
-            assert recieved == payload
+        assert recieved == payload
