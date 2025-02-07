@@ -28,16 +28,6 @@ else:
     from asyncio import run
 
 
-class AutoQueueListener(logging.handlers.QueueListener):
-    """
-    Auto starting Queue listener
-    """
-
-    def __init__(self, queue, *handlers, respect_handler_level=True):
-        super().__init__(queue, *handlers, respect_handler_level=respect_handler_level)
-        self.start()
-
-
 def _setup_logging():
     if not os.path.exists("logs"):
         os.mkdir("logs")
@@ -51,8 +41,16 @@ def main() -> None:
     """
     Run the PropHazard server
     """
+
+    os.environ["REBOOT_PH_FLAG"] = "inactive"
+
     _setup_logging()
+
     run(prophazard_webserver())
+
+    if os.environ["REBOOT_PH_FLAG"] == "active":
+        args = [sys.executable, "-m", "prophazard", "-OO"]
+        os.execv(sys.executable, args)
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ from .extensions import RHApplication
 from .webserver import generate_app
 from .utils.config import configs
 from .utils.crypto import generate_self_signed_cert
+from .webserver.events import shutdown_event
 
 __version__ = importlib.metadata.version(__name__)
 
@@ -69,4 +70,4 @@ def prophazard_webserver(
     if redirects:
         app = HTTPToHTTPSRedirectMiddleware(app, secure_bind[0])  # type: ignore
 
-    return serve(app, webserver_config)
+    return serve(app, webserver_config, shutdown_trigger=shutdown_event.wait)

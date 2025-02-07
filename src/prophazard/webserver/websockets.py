@@ -2,8 +2,10 @@
 Webserver Websocket Connections
 """
 
+import os
+import signal
 import logging
-from asyncio import TaskGroup, CancelledError
+from asyncio import TaskGroup
 from uuid import UUID
 
 from quart import Blueprint, websocket, copy_current_websocket_context
@@ -59,6 +61,8 @@ async def _get_user_permissions() -> set[str]:
 async def server_ws() -> None:
     """
     The primary websocket for the main web application
+
+    TODO: Verify permissions before processing recieved ws data
     """
 
     @copy_current_websocket_context
@@ -121,3 +125,7 @@ async def _process_recieved_event_data(model: EventWSData) -> None:
             current_app.event_broker.publish(
                 SpecialEvt.HEARTBEAT, model.data, uuid=model.id
             )
+
+        case SpecialEvt.RESTART.id:
+            os.environ["REBOOT_PH_FLAG"] = "active"
+            signal.raise_signal(signal.Signals.SIGTERM)

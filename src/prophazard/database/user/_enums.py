@@ -20,6 +20,7 @@ class SystemDefaultPerms(UserPermission):
     """
 
     EVENT_WEBSOCKET = auto()
+    SYSTEM_CONTROL = auto()
 
     READ_PILOTS = auto()
     WRITE_PILOTS = auto()
