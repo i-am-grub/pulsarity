@@ -3,11 +3,13 @@ Webserver event handling
 """
 
 import logging
+from typing import Any
 
 from quart import ResponseReturnValue, redirect, url_for
 from quart_auth import Unauthorized
 
 from ..extensions import RHBlueprint, current_app
+from ..events import SpecialEvt
 
 from ..database.user import UserDatabaseManager
 from ..database.race import RaceDatabaseManager
@@ -19,6 +21,17 @@ logger = logging.getLogger(__name__)
 
 p_events = RHBlueprint("private_events", __name__)
 events = RHBlueprint("events", __name__)
+
+
+@events.while_app_serving
+async def lifespan() -> Any:
+    """
+    Trigger startup and shutdown events
+    """
+    current_app.event_broker.trigger(SpecialEvt.STARTUP, {})
+    yield
+    current_app.event_broker.trigger(SpecialEvt.SHUTDOWN, {})
+    logger.info("Server shutting down...")
 
 
 @events.errorhandler(Unauthorized)

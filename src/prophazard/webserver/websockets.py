@@ -2,8 +2,10 @@
 Webserver Websocket Connections
 """
 
+import os
+import signal
 import logging
-from asyncio import TaskGroup, CancelledError
+import asyncio
 from uuid import UUID
 
 from quart import Blueprint, websocket, copy_current_websocket_context
@@ -64,13 +66,13 @@ async def server_ws() -> None:
     @copy_current_websocket_context
     async def server_sending() -> None:
 
-        permissions = await _get_user_permissions()
-
         async for event in current_app.event_broker.subscribe():
             _, permission, event_id, event_uuid, data = event
 
             if event_id == SpecialEvt.PERMISSIONS_UPDATE.id:
-                permissions = await _get_user_permissions()
+                temp = await _get_user_permissions()
+                permissions.clear()
+                permissions.update(temp)
 
             elif permission in permissions:
                 evt_data = EventWSData(id=event_uuid, event_id=event_id, data=data)
@@ -87,14 +89,20 @@ async def server_ws() -> None:
                 logger.debug("Error validating websocket data: %s", data)
                 continue
 
-            current_app.add_background_task(_process_recieved_event_data, model)
+            current_app.add_background_task(
+                _process_recieved_event_data, model, permissions
+            )
 
-    async with TaskGroup() as tg:
+    permissions = await _get_user_permissions()
+
+    async with asyncio.TaskGroup() as tg:
         tg.create_task(server_sending())
         tg.create_task(server_receiving())
 
 
-async def _process_recieved_event_data(model: EventWSData) -> None:
+async def _process_recieved_event_data(
+    model: EventWSData, permissions: set[str]
+) -> None:
     """
     Process data recieved over the event websocket
 
@@ -105,19 +113,27 @@ async def _process_recieved_event_data(model: EventWSData) -> None:
     match model.event_id:
 
         case RaceSequenceEvt.RACE_SCHEDULE.id:
-            schedule = RaceSchedule(
-                stage_time_sec=3,
-                random_stage_delay=0,
-                unlimited_time=False,
-                race_time_sec=60,
-                overtime_sec=0,
-            )
-            current_app.race_manager.schedule_race(schedule, **model.data)
+            if RaceSequenceEvt.RACE_SCHEDULE.permission in permissions:
+                schedule = RaceSchedule(
+                    stage_time_sec=3,
+                    random_stage_delay=0,
+                    unlimited_time=False,
+                    race_time_sec=60,
+                    overtime_sec=0,
+                )
+                current_app.race_manager.schedule_race(schedule, **model.data)
 
         case RaceSequenceEvt.RACE_STOP.id:
-            current_app.race_manager.stop_race()
+            if RaceSequenceEvt.RACE_STOP.permission in permissions:
+                current_app.race_manager.stop_race()
 
         case SpecialEvt.HEARTBEAT.id:
-            current_app.event_broker.publish(
-                SpecialEvt.HEARTBEAT, model.data, uuid=model.id
-            )
+            if SpecialEvt.HEARTBEAT.permission in permissions:
+                current_app.event_broker.publish(
+                    SpecialEvt.HEARTBEAT, model.data, uuid=model.id
+                )
+
+        case SpecialEvt.RESTART.id:
+            if SpecialEvt.RESTART.permission in permissions:
+                os.environ["REBOOT_PH_FLAG"] = "active"
+                signal.raise_signal(signal.Signals.SIGTERM)

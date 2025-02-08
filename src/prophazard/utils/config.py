@@ -12,6 +12,8 @@ from typing import Literal, Any
 import anyio
 import tomlkit
 
+from .logging import generate_default_config
+
 _DEFAULT_CONFIG_FILE_NAME = "config.toml"
 
 _SECTIONS = Literal[
@@ -57,52 +59,7 @@ def _get_configs_defaults() -> dict[_SECTIONS, dict]:
     general = {"LAST_MODIFIED_TIME": 0}
 
     # logging settings
-    logging_ = {
-        "version": 1,
-        "disable_existing_loggers": True,
-        "formatters": {
-            "standard": {"format": "%(asctime)s [%(levelname)s]: %(message)s"},
-            "detailed": {
-                "format": "%(asctime)s [%(levelname)s|%(module)s|L%(lineno)d]: %(message)s",
-                "datefmt": "%Y-%m%dT%H:%M:%S%z",
-            },
-        },
-        "handlers": {
-            "stderr": {
-                "level": "INFO",
-                "formatter": "standard",
-                "class": "logging.StreamHandler",
-                "stream": "ext://sys.stdout",
-            },
-            "file": {
-                "level": "INFO",
-                "formatter": "detailed",
-                "class": "logging.handlers.TimedRotatingFileHandler",
-                "filename": "logs/prophazard.log",
-                "when": "midnight",
-                "interval": 1,
-                "backupCount": 10,
-            },
-            "queue_handler": {
-                "class": "logging.handlers.QueueHandler",
-                "listener": "prophazard.__main__.AutoQueueListener",
-                "handlers": ["stderr", "file"],
-                "respect_handler_level": True,
-            },
-        },
-        "loggers": {
-            "root": {
-                "handlers": ["queue_handler"],
-                "level": "WARNING",
-                "propagate": False,
-            },
-            "prophazard": {
-                "handlers": ["queue_handler"],
-                "level": "INFO",
-                "propagate": False,
-            },
-        },
-    }
+    logging_ = generate_default_config()
 
     config: dict[_SECTIONS, dict[str, Any]] = {
         "SECRETS": secrets,

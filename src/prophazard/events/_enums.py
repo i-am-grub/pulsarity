@@ -59,6 +59,9 @@ class SpecialEvt(_ApplicationEvt):
 
     HEARTBEAT = _EvtPriority.LOW, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
     PERMISSIONS_UPDATE = _EvtPriority.HIGH, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
+    STARTUP = _EvtPriority.HIGHEST, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
+    SHUTDOWN = _EvtPriority.HIGHEST, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
+    RESTART = _EvtPriority.LOW, SystemDefaultPerms.SYSTEM_CONTROL, auto()
 
 
 class EventSetupEvt(_ApplicationEvt):
