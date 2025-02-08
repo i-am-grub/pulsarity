@@ -41,18 +41,24 @@ def main() -> None:
     """
     Run the PropHazard server
     """
+    multiprocessing.freeze_support()
 
     os.environ["REBOOT_PH_FLAG"] = "inactive"
 
     _setup_logging()
+    logger = logging.getLogger(__name__)
+
+    logger.info("Starting PropHazard")
 
     run(prophazard_webserver())
 
+    logger.info("PropHazard shutdown complete")
+
     if os.environ["REBOOT_PH_FLAG"] == "active":
+        logger.info("Automatically rebooting server")
         args = [sys.executable, "-m", "prophazard", "-OO"]
         os.execv(sys.executable, args)
 
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
     main()

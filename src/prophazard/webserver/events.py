@@ -3,8 +3,6 @@ Webserver event handling
 """
 
 import logging
-import asyncio
-import signal
 from typing import Any
 
 from quart import ResponseReturnValue, redirect, url_for
@@ -24,26 +22,6 @@ logger = logging.getLogger(__name__)
 p_events = RHBlueprint("private_events", __name__)
 events = RHBlueprint("events", __name__)
 
-shutdown_event = asyncio.Event()
-
-
-def _signal_shutdown(*_: Any) -> None:
-    """
-    Trigger the event to shutdown the server
-    """
-    logger.info("Shutting down server...")
-    shutdown_event.set()
-
-
-@p_events.before_app_serving
-async def register_shutdown_signals() -> None:
-    """
-    Registers signals to trigger signal shutdown
-    """
-    loop = asyncio.get_running_loop()
-    loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
-    loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
-
 
 @events.while_app_serving
 async def lifespan() -> Any:
@@ -53,6 +31,7 @@ async def lifespan() -> Any:
     current_app.event_broker.trigger(SpecialEvt.STARTUP, {})
     yield
     current_app.event_broker.trigger(SpecialEvt.SHUTDOWN, {})
+    logger.info("Server shutting down...")
 
 
 @events.errorhandler(Unauthorized)
