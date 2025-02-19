@@ -168,6 +168,27 @@ class RHUser(AuthUser):
     to routes and websockets.
     """
 
+    async def get_permissions(self) -> set[str]:
+        """
+        Get the permissions for the user
+
+        :return: The set of permissions
+        """
+
+        if self._auth_id is None:
+            return set()
+
+        db_manager = await current_app.get_user_database()
+        session_maker = db_manager.new_session_maker()
+
+        async with session_maker() as session:
+            uuid = UUID(hex=self._auth_id)
+            user: User | None = await db_manager.users.get_by_uuid(session, uuid)
+            if user is None:
+                return set()
+
+            return await user.permissions
+
     async def has_permission(self, permission: UserPermission) -> bool:
         """
         Check a user for valid permissions
@@ -177,20 +198,8 @@ class RHUser(AuthUser):
         True verifies that the permission has been granted.
         """
 
-        if self._auth_id is None:
-            return False
-
-        db_manager = await current_app.get_user_database()
-        session_maker = db_manager.new_session_maker()
-
-        async with session_maker() as session:
-            uuid = UUID(hex=self._auth_id)
-            user: User | None = await db_manager.users.get_by_uuid(session, uuid)
-            if user is None:
-                return False
-
-            permissions = await user.permissions
-            return permission in permissions
+        permissions = await self.get_permissions()
+        return permission in permissions
 
 
 current_user: RHUser = _current_user  # type: ignore
