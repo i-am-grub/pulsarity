@@ -6,6 +6,7 @@ import os
 import signal
 import logging
 import asyncio
+import inspect
 from typing import TypeVar, ParamSpec
 from collections.abc import Callable, Awaitable
 
@@ -25,10 +26,10 @@ logger = logging.getLogger(__name__)
 
 websockets = Blueprint("websockets", __name__, url_prefix="/ws")
 
-_routes: dict[str, tuple[UserPermission, Callable]] = {}
+_wse_routes: dict[str, tuple[UserPermission, Callable]] = {}
 
 
-class EventWSData(BaseModel):
+class WSEventData(BaseModel):
     """
     Class for validating websocket data
     """
@@ -47,26 +48,32 @@ def ws_event(event: _ApplicationEvt):
 
     def inner(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
 
-        _routes[event.id] = (event.permission, func)
+        _wse_routes[event.id] = (event.permission, func)
 
         return func
 
     return inner
 
 
-async def handle_ws_event(ws_data: EventWSData, permissions: set[str]):
+async def handle_ws_event(ws_data: WSEventData, permissions: set[str]):
     """
-    Handle the event identified in the websocket data
+    Handle the event identified in the websocket data while enforcing
+    the its permissions
 
     :param ws_data: The recieved websocket data
     :param permissions: The permissions for the user
     """
 
-    if ws_data.event_id in _routes:
-        permission, route = _routes[ws_data.event_id]
+    if ws_data.event_id in _wse_routes:
+        permission, route = _wse_routes[ws_data.event_id]
 
         if permission in permissions:
-            await route(ws_data)
+
+            signature = inspect.signature(route)
+            if "ws_data" in signature.parameters:
+                await route(ws_data)
+            else:
+                await route()
 
     else:
         logger.debug("Route not available for websocket data")
@@ -76,7 +83,7 @@ async def handle_ws_event(ws_data: EventWSData, permissions: set[str]):
 @permission_required(SystemDefaultPerms.EVENT_WEBSOCKET)
 async def server_ws() -> None:
     """
-    The primary websocket for the main web application
+    The primary full duplex websocket for the main web application
     """
 
     @copy_current_websocket_context
@@ -91,7 +98,7 @@ async def server_ws() -> None:
                 permissions.update(temp)
 
             elif permission in permissions:
-                evt_data = EventWSData(id=event_uuid, event_id=event_id, data=data)
+                evt_data = WSEventData(id=event_uuid, event_id=event_id, data=data)
                 await websocket.send_json(evt_data.model_dump())
 
     @copy_current_websocket_context
@@ -100,7 +107,7 @@ async def server_ws() -> None:
             data = await websocket.receive()
 
             try:
-                model = EventWSData.model_validate_json(data)
+                model = WSEventData.model_validate_json(data)
             except ValidationError:
                 logger.debug("Error validating websocket data: %s", data)
                 continue
@@ -115,9 +122,9 @@ async def server_ws() -> None:
 
 
 @ws_event(SpecialEvt.HEARTBEAT)
-async def heatbeat_echo(ws_data: EventWSData):
+async def heatbeat_echo(ws_data: WSEventData):
     """
-    Echo recieved heatbeat data,
+    Echo recieved heatbeat data
 
     :param ws_data: Recieved websocket event data
     """
@@ -127,7 +134,7 @@ async def heatbeat_echo(ws_data: EventWSData):
 
 
 @ws_event(SpecialEvt.RESTART)
-async def restart_server(_ws_data: EventWSData):
+async def restart_server():
     """
     Restart the webserver
 
@@ -138,7 +145,7 @@ async def restart_server(_ws_data: EventWSData):
 
 
 @ws_event(RaceSequenceEvt.RACE_SCHEDULE)
-async def schedule_race(ws_data: EventWSData):
+async def schedule_race(ws_data: WSEventData):
     """
     Schedule the start of a race.
 
@@ -155,7 +162,7 @@ async def schedule_race(ws_data: EventWSData):
 
 
 @ws_event(RaceSequenceEvt.RACE_STOP)
-async def race_stop(_ws_data: EventWSData):
+async def race_stop():
     """
     Stop the current race
 
