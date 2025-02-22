@@ -6,24 +6,30 @@ import os
 import signal
 import logging
 import asyncio
-from uuid import UUID
+import inspect
+from typing import TypeVar, ParamSpec
+from collections.abc import Callable, Awaitable
 
 from quart import Blueprint, websocket, copy_current_websocket_context
-from quart_auth import Unauthorized
 from pydantic import BaseModel, UUID4, ValidationError
 
 from .auth import permission_required
-from ..database.user import SystemDefaultPerms
+from ..database.user import SystemDefaultPerms, UserPermission
 from ..database.race._orm.raceformat import RaceSchedule
 from ..extensions import current_app, current_user
-from ..events import SpecialEvt, RaceSequenceEvt
+from ..events import _ApplicationEvt, SpecialEvt, RaceSequenceEvt
+
+T = TypeVar("T")
+P = ParamSpec("P")
 
 logger = logging.getLogger(__name__)
 
 websockets = Blueprint("websockets", __name__, url_prefix="/ws")
 
+_wse_routes: dict[str, tuple[UserPermission, Callable]] = {}
 
-class EventWSData(BaseModel):
+
+class WSEventData(BaseModel):
     """
     Class for validating websocket data
     """
@@ -33,34 +39,51 @@ class EventWSData(BaseModel):
     data: dict
 
 
-async def _get_user_permissions() -> set[str]:
+def ws_event(event: _ApplicationEvt):
     """
-    Gets the permissions for a given UUID
+    Decorator to route recieved websocket event data
 
-    :raises Unauthorized: _description_
-    :return: The set of user permissions
+    :param event: The event to base the routing on
     """
-    user_uuid = UUID(hex=current_user.auth_id)
-    user_database = await current_app.get_user_database()
-    session_maker = user_database.new_session_maker()
 
-    async with session_maker() as session:
+    def inner(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
 
-        db_user = await user_database.users.get_by_uuid(session, user_uuid)
+        _wse_routes[event.id] = (event.permission, func)
 
-        if db_user is None:
-            raise Unauthorized
+        return func
 
-        permissions = await db_user.permissions
+    return inner
 
-    return permissions
+
+async def handle_ws_event(ws_data: WSEventData, permissions: set[str]):
+    """
+    Handle the event identified in the websocket data while enforcing
+    the its permissions
+
+    :param ws_data: The recieved websocket data
+    :param permissions: The permissions for the user
+    """
+
+    if ws_data.event_id in _wse_routes:
+        permission, route = _wse_routes[ws_data.event_id]
+
+        if permission in permissions:
+
+            signature = inspect.signature(route)
+            if "ws_data" in signature.parameters:
+                await route(ws_data)
+            else:
+                await route()
+
+    else:
+        logger.debug("Route not available for websocket data")
 
 
 @websockets.websocket("/server")
 @permission_required(SystemDefaultPerms.EVENT_WEBSOCKET)
 async def server_ws() -> None:
     """
-    The primary websocket for the main web application
+    The primary full duplex websocket for the main web application
     """
 
     @copy_current_websocket_context
@@ -70,12 +93,12 @@ async def server_ws() -> None:
             _, permission, event_id, event_uuid, data = event
 
             if event_id == SpecialEvt.PERMISSIONS_UPDATE.id:
-                temp = await _get_user_permissions()
+                temp = await current_user.get_permissions()
                 permissions.clear()
                 permissions.update(temp)
 
             elif permission in permissions:
-                evt_data = EventWSData(id=event_uuid, event_id=event_id, data=data)
+                evt_data = WSEventData(id=event_uuid, event_id=event_id, data=data)
                 await websocket.send_json(evt_data.model_dump())
 
     @copy_current_websocket_context
@@ -84,56 +107,65 @@ async def server_ws() -> None:
             data = await websocket.receive()
 
             try:
-                model = EventWSData.model_validate_json(data)
+                model = WSEventData.model_validate_json(data)
             except ValidationError:
                 logger.debug("Error validating websocket data: %s", data)
                 continue
 
-            current_app.add_background_task(
-                _process_recieved_event_data, model, permissions
-            )
+            current_app.add_background_task(handle_ws_event, model, permissions)
 
-    permissions = await _get_user_permissions()
+    permissions = await current_user.get_permissions()
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(server_sending())
         tg.create_task(server_receiving())
 
 
-async def _process_recieved_event_data(
-    model: EventWSData, permissions: set[str]
-) -> None:
+@ws_event(SpecialEvt.HEARTBEAT)
+async def heatbeat_echo(ws_data: WSEventData):
     """
-    Process data recieved over the event websocket
+    Echo recieved heatbeat data
 
-    :param data: Event data
+    :param ws_data: Recieved websocket event data
     """
-    # pylint: disable=W0511
+    current_app.event_broker.publish(
+        SpecialEvt.HEARTBEAT, ws_data.data, uuid=ws_data.id
+    )
 
-    match model.event_id:
 
-        case RaceSequenceEvt.RACE_SCHEDULE.id:
-            if RaceSequenceEvt.RACE_SCHEDULE.permission in permissions:
-                schedule = RaceSchedule(
-                    stage_time_sec=3,
-                    random_stage_delay=0,
-                    unlimited_time=False,
-                    race_time_sec=60,
-                    overtime_sec=0,
-                )
-                current_app.race_manager.schedule_race(schedule, **model.data)
+@ws_event(SpecialEvt.RESTART)
+async def restart_server():
+    """
+    Restart the webserver
 
-        case RaceSequenceEvt.RACE_STOP.id:
-            if RaceSequenceEvt.RACE_STOP.permission in permissions:
-                current_app.race_manager.stop_race()
+    :param _ws_data: Recieved websocket event data
+    """
+    os.environ["REBOOT_PH_FLAG"] = "active"
+    signal.raise_signal(signal.Signals.SIGTERM)
 
-        case SpecialEvt.HEARTBEAT.id:
-            if SpecialEvt.HEARTBEAT.permission in permissions:
-                current_app.event_broker.publish(
-                    SpecialEvt.HEARTBEAT, model.data, uuid=model.id
-                )
 
-        case SpecialEvt.RESTART.id:
-            if SpecialEvt.RESTART.permission in permissions:
-                os.environ["REBOOT_PH_FLAG"] = "active"
-                signal.raise_signal(signal.Signals.SIGTERM)
+@ws_event(RaceSequenceEvt.RACE_SCHEDULE)
+async def schedule_race(ws_data: WSEventData):
+    """
+    Schedule the start of a race.
+
+    :param ws_data: Recieved websocket event data
+    """
+    schedule = RaceSchedule(
+        stage_time_sec=3,
+        random_stage_delay=0,
+        unlimited_time=False,
+        race_time_sec=60,
+        overtime_sec=0,
+    )
+    current_app.race_manager.schedule_race(schedule, **ws_data.data)
+
+
+@ws_event(RaceSequenceEvt.RACE_STOP)
+async def race_stop():
+    """
+    Stop the current race
+
+    :param _ws_data: Recieved websocket event data
+    """
+    current_app.race_manager.stop_race()
