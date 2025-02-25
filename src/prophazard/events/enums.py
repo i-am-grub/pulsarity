@@ -5,7 +5,7 @@ Enums for system events
 from dataclasses import dataclass
 from enum import IntEnum, Enum, auto
 
-from ..database.user import UserPermission, SystemDefaultPerms
+from ..database.permission import UserPermission, SystemDefaultPerms
 
 
 class _EvtPriority(IntEnum):

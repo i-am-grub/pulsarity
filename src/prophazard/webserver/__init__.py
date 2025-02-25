@@ -5,8 +5,9 @@ Webserver Components
 from quart_auth import QuartAuth
 from quart_schema import QuartSchema
 
+from tortoise.contrib.quart import register_tortoise
+
 from ..extensions import RHApplication, RHUser
-from .events import p_events as _p_events
 from .events import events as _events
 from .routes import files as _files
 from .routes import auth as _auth
@@ -17,7 +18,7 @@ from .websockets import websockets as _websockets
 from ..utils.config import configs
 
 
-def generate_app(*, test_mode: bool = False) -> RHApplication:
+def generate_app() -> RHApplication:
     """
     Generate a PropHazard webserver application
 
@@ -49,10 +50,14 @@ def generate_app(*, test_mode: bool = False) -> RHApplication:
         swagger_ui_path="/api/docs" if generate_api_docs else None,
     )
 
+    register_tortoise(
+        app,
+        db_url="sqlite:///prophazard.db",
+        modules={"models": ["prophazard.database"]},
+        generate_schemas=False,
+    )
+
     for blueprint in (_events, _files, _auth, _api, _tasks, _websockets):
         app.register_blueprint(blueprint)
-
-    if not test_mode:
-        app.register_blueprint(_p_events)
 
     return app

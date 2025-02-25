@@ -14,8 +14,8 @@ from quart import Blueprint, websocket, copy_current_websocket_context
 from pydantic import BaseModel, UUID4, ValidationError
 
 from .auth import permission_required
-from ..database.user import SystemDefaultPerms, UserPermission
-from ..database.race._orm.raceformat import RaceSchedule
+from ..database.permission import SystemDefaultPerms, UserPermission
+from ..database.raceformat import RaceSchedule
 from ..extensions import current_app, current_user
 from ..events import _ApplicationEvt, SpecialEvt, RaceSequenceEvt
 

@@ -10,7 +10,7 @@ from collections.abc import Generator
 
 from .enums import RaceStatus
 from ..events import RaceSequenceEvt
-from ..database.race._orm.raceformat import RaceSchedule
+from ..database.raceformat import RaceSchedule
 
 if TYPE_CHECKING:
     from ..extensions import current_app

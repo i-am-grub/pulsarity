@@ -21,6 +21,8 @@ from .webserver import generate_app
 from .utils.config import configs
 from .utils.crypto import generate_self_signed_cert
 
+from .database import User, Role, Permission
+
 __version__ = importlib.metadata.version(__name__)
 
 _shutdown_event = asyncio.Event()

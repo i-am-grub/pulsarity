@@ -6,7 +6,7 @@ from quart_auth import authenticated_client
 from quart.typing import TestClientProtocol
 
 from prophazard.extensions import RHApplication
-from prophazard.events._enums import SpecialEvt
+from prophazard.events.enums import SpecialEvt
 
 
 @pytest.mark.asyncio

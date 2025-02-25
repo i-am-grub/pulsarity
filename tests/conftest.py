@@ -1,11 +1,13 @@
+import os
+
+import pytest
 import pytest_asyncio
+from tortoise.contrib.test import finalizer, initializer, init_memory_sqlite
 
 from prophazard.webserver import generate_app
-from prophazard.database.race import RaceDatabaseManager
-from prophazard.database.user import UserDatabaseManager
 from prophazard.extensions import RHApplication
 
-from prophazard.database.race._orm.raceformat import RaceFormat, RaceSchedule
+from prophazard.database.raceformat import RaceFormat, RaceSchedule
 
 
 @pytest_asyncio.fixture()
@@ -17,30 +19,14 @@ async def default_user_creds():
 
 
 @pytest_asyncio.fixture(scope="function")
-async def user_database(default_user_creds):
-    user_database_: UserDatabaseManager = UserDatabaseManager()
-    await user_database_.setup()
-    await user_database_.verify_persistant_objects(*default_user_creds)
-    yield user_database_
-    await user_database_.shutdown()
+async def app():
+    yield generate_app(test_mode=True)
 
 
-@pytest_asyncio.fixture(scope="function")
-async def race_database():
-    race_database_: RaceDatabaseManager = RaceDatabaseManager()
-    await race_database_.setup()
-    yield race_database_
-    await race_database_.shutdown()
-
-
-@pytest_asyncio.fixture(scope="function")
-async def app(user_database: UserDatabaseManager, race_database: RaceDatabaseManager):
-    app_ = generate_app(test_mode=True)
-
-    app_.set_user_database(user_database)
-    app_.set_race_database(race_database)
-
-    yield app_
+@pytest.fixture(scope="session", autouse=True)
+def initialize_tests(request: pytest.FixtureRequest):
+    initializer(["app.database"])
+    request.addfinalizer(finalizer)
 
 
 @pytest_asyncio.fixture()

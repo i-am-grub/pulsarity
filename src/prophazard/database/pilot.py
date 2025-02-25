@@ -2,40 +2,35 @@
 ORM classes for Pilot data
 """
 
-from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from __future__ import annotations
 
-from ..._base import _RaceAttribute, _RaceBase, _RaceData
+from tortoise import fields
+
+from .base import _PHDataBase
 
 # pylint: disable=E1136
 
 
-class PilotAttribute(_RaceAttribute, _RaceBase):
+class PilotAttribute(_PHDataBase):
     """
     Unique and stored individually stored values for each pilot.
     """
 
     # pylint: disable=R0903
 
-    __tablename__ = "pilot_attribute"
-
-    id: Mapped[int] = mapped_column(
-        ForeignKey("pilot.id"), nullable=False, primary_key=True
+    name = fields.CharField(max_length=80)
+    pilot_id: fields.ForeignKeyRelation[Pilot] = fields.ForeignKeyField(
+        "models.Pilot", related_name="id"
     )
-    """ID of pilot to which this attribute is assigned"""
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        table = "pilot_attr"
+        unique_together = (("id", "name"),)
 
 
-class PilotData(_RaceData):
-    """
-    A model to use for validating pilot data
-    """
-
-    callsign: str = ""
-    name: str = ""
-    phonetic: str = ""
-
-
-class Pilot(_RaceBase):
+class Pilot(_PHDataBase):
     """
     A pilot is an individual participant. In order to participate in races,
     pilots can be assigned to multiple heats.
@@ -45,19 +40,24 @@ class Pilot(_RaceBase):
 
     __tablename__ = "pilot"
 
-    callsign: Mapped[str] = mapped_column(String(80))
+    callsign = fields.CharField(max_length=80)
     """Pilot callsign"""
-    phonetic: Mapped[str] = mapped_column(String(80))
+    phonetic = fields.CharField(max_length=80)
     """Phonetically-spelled callsign, used for text-to-speech"""
-    name: Mapped[str] = mapped_column(String(120))
+    name = fields.CharField(max_length=120)
     """Pilot name"""
-    used_frequencies: Mapped[str | None] = mapped_column()
+    used_frequencies = fields.CharField(max_length=80, null=True)
     """Serialized list of frequencies this pilot has been assigned when starting a race, 
     ordered by recency"""
-    active: Mapped[bool] = mapped_column(default=True)
+    active = fields.BooleanField(default=True)
     """Not yet implemented"""
-    attributes: Mapped[list[PilotAttribute]] = relationship()
+    attributes: fields.ManyToManyRelation[PilotAttribute]
     """PilotAttributes for this pilot. Access through awaitable attributes."""
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        table = "pilot"
 
     def __init__(
         self, *, name: str = "", callsign: str = "", phonetic: str = ""
@@ -69,9 +69,14 @@ class Pilot(_RaceBase):
         :param callsign: _description_, defaults to ""
         :param phonetic: _description_, defaults to ""
         """
+        super().__init__()
+
         self.name = name
         self.callsign = callsign
         self.phonetic = phonetic
+
+    def __repr__(self):
+        return f"<Pilot {self.id}>"
 
     @property
     def display_callsign(self) -> str:
@@ -87,7 +92,7 @@ class Pilot(_RaceBase):
         if self.name:
             return self.name
 
-        return f"Pilot {id}"
+        return f"Pilot {self.id}"
 
     @property
     def display_name(self) -> str:
@@ -102,7 +107,7 @@ class Pilot(_RaceBase):
         if self.callsign:
             return self.callsign
 
-        return f"Pilot {id}"
+        return f"Pilot {self.id}"
 
     @property
     def spoken_callsign(self) -> str:
@@ -120,36 +125,4 @@ class Pilot(_RaceBase):
         if self.name:
             return self.name
 
-        return f"Pilot {id}"
-
-    def __repr__(self):
-        return f"<Pilot {self.id}>"
-
-    def to_data_model(self) -> PilotData:
-        """
-        Generate a validation model for the pilot
-
-        :return: The generated model
-        """
-
-        model = PilotData(
-            id=self.id,
-            callsign=self.display_callsign,
-            name=self.display_name,
-            phonetic=self.spoken_callsign,
-        )
-
-        PilotData.model_validate(model)
-
-        return model
-
-    def to_bytes(self) -> bytes:
-        """
-        Generates a JSON object from a pilot model and encodes
-        it for sending.
-
-        :return: JSON object as bytes
-        """
-
-        model = self.to_data_model()
-        return model.model_dump_json().encode()
+        return f"Pilot {self.id}"

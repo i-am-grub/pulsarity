@@ -5,7 +5,7 @@ from quart.typing import TestClientProtocol
 from quart_auth import authenticated_client
 
 from prophazard.extensions import RHApplication
-from prophazard.database.user._enums import SystemDefaultPerms
+from prophazard.database.enums import SystemDefaultPerms
 from prophazard.database.user import User, Role, Permission
 
 
