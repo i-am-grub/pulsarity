@@ -22,14 +22,12 @@ class Role(_PHDataBase):
 
     # pylint: disable=W0212,R0903
 
-    __tablename__ = "role"
-
     name = fields.CharField(max_length=64, unique=True)
     """Name of role"""
     _users: fields.ManyToManyRelation[User]
     """Users role is assigned to"""
     _permissions: fields.ManyToManyRelation[Permission] = fields.ManyToManyField(
-        "models.Permission", related_name="_roles", through="role_permission"
+        "system.Permission", related_name="_roles", through="role_permission"
     )
     """Permissions granted to a role"""
     persistent = fields.BooleanField(default=False)
@@ -38,6 +36,7 @@ class Role(_PHDataBase):
     class Meta:
         """Tortoise ORM metadata"""
 
+        app = "system"
         table = "role"
 
     async def get_permissions(self) -> set[str]:

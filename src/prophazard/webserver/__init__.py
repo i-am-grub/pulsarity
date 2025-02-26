@@ -50,13 +50,6 @@ def generate_app() -> RHApplication:
         swagger_ui_path="/api/docs" if generate_api_docs else None,
     )
 
-    register_tortoise(
-        app,
-        db_url="sqlite:///prophazard.db",
-        modules={"models": ["prophazard.database"]},
-        generate_schemas=False,
-    )
-
     for blueprint in (_events, _files, _auth, _api, _tasks, _websockets):
         app.register_blueprint(blueprint)
 

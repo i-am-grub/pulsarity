@@ -32,6 +32,7 @@ class Permission(_PHDataBase):
     class Meta:
         """Tortoise ORM metadata"""
 
+        app = "system"
         table = "permission"
 
     def __init__(self, value: UserPermission, *, persistent=False):

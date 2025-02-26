@@ -170,5 +170,7 @@ cython_debug/
 config.json
 config.toml
 *.db
+*.db-shm
+*.db-wal
 *.pem
 logs/*

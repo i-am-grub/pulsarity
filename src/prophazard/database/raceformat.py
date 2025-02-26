@@ -37,12 +37,16 @@ class RaceFormat(_PHDataBase):
 
     # pylint: disable=R0903
 
-    __tablename__ = "format"
-
     name = fields.CharField(max_length=80, null=False)
     """User-facing name"""
     _schedule = fields.BinaryField(null=False)
     """Settings for race scheduling"""
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "format"
 
     def __init__(self, name: str, schedule: RaceSchedule):
         """

@@ -45,7 +45,7 @@ class User(_PHDataBase):
     _password_hash = fields.TextField(null=True)
     """Hash of the user's password"""
     _roles: fields.ManyToManyRelation[Role] = fields.ManyToManyField(
-        "models.Role", related_name="_users", through="user_role"
+        "system.Role", related_name="_users", through="user_role"
     )
     """The role of the user"""
     last_login = fields.DatetimeField(null=True)
@@ -58,6 +58,7 @@ class User(_PHDataBase):
     class Meta:
         """Tortoise ORM metadata"""
 
+        app = "system"
         table = "user"
 
     @property

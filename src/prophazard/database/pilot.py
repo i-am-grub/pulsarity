@@ -19,13 +19,14 @@ class PilotAttribute(_PHDataBase):
     # pylint: disable=R0903
 
     name = fields.CharField(max_length=80)
-    pilot_id: fields.ForeignKeyRelation[Pilot] = fields.ForeignKeyField(
-        "models.Pilot", related_name="id"
+    pilot: fields.ForeignKeyRelation[Pilot] = fields.ForeignKeyField(
+        "event.Pilot", related_name="attributes"
     )
 
     class Meta:
         """Tortoise ORM metadata"""
 
+        app = "event"
         table = "pilot_attr"
         unique_together = (("id", "name"),)
 
@@ -38,8 +39,6 @@ class Pilot(_PHDataBase):
     The sentinel value :atts:`RHUtils.PILOT_ID_NONE` should be used when no pilot is defined.
     """
 
-    __tablename__ = "pilot"
-
     callsign = fields.CharField(max_length=80)
     """Pilot callsign"""
     phonetic = fields.CharField(max_length=80)
@@ -51,12 +50,13 @@ class Pilot(_PHDataBase):
     ordered by recency"""
     active = fields.BooleanField(default=True)
     """Not yet implemented"""
-    attributes: fields.ManyToManyRelation[PilotAttribute]
+    attributes: fields.ReverseRelation[PilotAttribute]
     """PilotAttributes for this pilot. Access through awaitable attributes."""
 
     class Meta:
         """Tortoise ORM metadata"""
 
+        app = "event"
         table = "pilot"
 
     def __init__(
