@@ -38,16 +38,11 @@ class ExecutorManager:
         else:
             count = os.cpu_count()
 
+        count_ = min(1 if count is None or count <= 1 else count - 1, 8)
         if sys.version_info >= (3, 13) and not sys._is_gil_enabled():
-            if count is None or count <= 2:
-                pool_exec = ThreadPoolExecutor(1)
-            else:
-                pool_exec = ThreadPoolExecutor(count - 1)
+            pool_exec = ThreadPoolExecutor(count_)
         else:
-            if count is None or count <= 2:
-                pool_exec = ProcessPoolExecutor(1)
-            else:
-                pool_exec = ProcessPoolExecutor(count - 1)
+            pool_exec = ProcessPoolExecutor(count_)
 
         if not self._executor.done():
             self._executor.set_result(pool_exec)
