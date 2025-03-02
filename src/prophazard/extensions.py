@@ -51,7 +51,7 @@ class RHApplication(Quart):
 
         :return: The schedule timer handler
         """
-        # pylint: disable= W0718
+        # pylint: disable=E1101,W0718
 
         async def _wrapper() -> None:
             try:
