@@ -8,8 +8,8 @@ from dataclasses import astuple
 from uuid import UUID, uuid4
 from typing import TYPE_CHECKING
 
-from ._enums import _EvtPriority, _ApplicationEvt
-from ..database.user import UserPermission
+from .enums import _EvtPriority, _ApplicationEvt
+from ..database.permission import UserPermission
 
 if TYPE_CHECKING:
     from ..extensions import current_app

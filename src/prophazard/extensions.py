@@ -16,9 +16,9 @@ from quart_auth import AuthUser
 from quart_auth import current_user as _current_user
 
 from .events import EventBroker
-from .database.user import UserDatabaseManager, User, UserPermission
-from .database.race import RaceDatabaseManager
 from .race.manager import RaceManager
+from .database.user import User
+from .database.permission import UserPermission
 
 logger = logging.getLogger(__name__)
 
@@ -30,65 +30,12 @@ class RHApplication(Quart):
 
     # pylint: disable=W0106
 
-    _user_database: asyncio.Future[UserDatabaseManager] | None = None
-    _race_database: asyncio.Future[RaceDatabaseManager] | None = None
-
     def __init__(self, *args, **kwargs) -> None:
         super().__init__.__doc__
         super().__init__(*args, **kwargs)
 
         self.event_broker: EventBroker = EventBroker()
         self.race_manager: RaceManager = RaceManager()
-
-    async def get_user_database(self) -> UserDatabaseManager:
-        """
-        Gets the user database for the application. Waits for
-        it to be set if needed.
-
-        :return: The user database
-        """
-        if self._user_database is None:
-            loop = asyncio.get_running_loop()
-            self._user_database = loop.create_future()
-
-        return await self._user_database
-
-    def set_user_database(self, manager: UserDatabaseManager) -> None:
-        """
-        Sets the user database.
-
-        :param manager: The user database to set
-        """
-        if self._user_database is None:
-            loop = asyncio.get_running_loop()
-            self._user_database = loop.create_future()
-
-        self._user_database.set_result(manager)
-
-    async def get_race_database(self) -> RaceDatabaseManager:
-        """
-        Gets the race database for the application. Waits for
-        it to be set if needed.
-
-        :return: The race database
-        """
-        if self._race_database is None:
-            loop = asyncio.get_running_loop()
-            self._race_database = loop.create_future()
-
-        return await self._race_database
-
-    def set_race_database(self, manager: RaceDatabaseManager) -> None:
-        """
-        Sets the race database.
-
-        :param manager: The race database to set
-        """
-        if self._race_database is None:
-            loop = asyncio.get_running_loop()
-            self._race_database = loop.create_future()
-
-        self._race_database.set_result(manager)
 
     def schedule_background_task(
         self, time: float, func: Callable, *args: Any, **kwargs: Any
@@ -178,16 +125,13 @@ class RHUser(AuthUser):
         if self._auth_id is None:
             return set()
 
-        db_manager = await current_app.get_user_database()
-        session_maker = db_manager.new_session_maker()
+        uuid = UUID(hex=self._auth_id)
+        user = await User.get_or_none(auth_id=uuid)
 
-        async with session_maker() as session:
-            uuid = UUID(hex=self._auth_id)
-            user: User | None = await db_manager.users.get_by_uuid(session, uuid)
-            if user is None:
-                return set()
+        if user is None:
+            return set()
 
-            return await user.permissions
+        return await user.permissions
 
     async def has_permission(self, permission: UserPermission) -> bool:
         """

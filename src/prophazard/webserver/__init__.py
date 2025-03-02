@@ -5,9 +5,11 @@ Webserver Components
 from quart_auth import QuartAuth
 from quart_schema import QuartSchema
 
+from tortoise.contrib.quart import register_tortoise
+
 from ..extensions import RHApplication, RHUser
-from .events import p_events as _p_events
 from .events import events as _events
+from .events import db_events as _db_events
 from .routes import files as _files
 from .routes import auth as _auth
 from .routes import api as _api
@@ -53,6 +55,6 @@ def generate_app(*, test_mode: bool = False) -> RHApplication:
         app.register_blueprint(blueprint)
 
     if not test_mode:
-        app.register_blueprint(_p_events)
+        app.register_blueprint(_db_events)
 
     return app

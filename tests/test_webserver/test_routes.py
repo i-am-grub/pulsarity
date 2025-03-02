@@ -1,10 +1,10 @@
-import json
 import pytest
 
 from quart.typing import TestClientProtocol
 from quart_auth import authenticated_client
 
 from prophazard.extensions import RHApplication
+from prophazard.database import User
 
 
 async def webserver_login_valid(
@@ -24,7 +24,7 @@ async def webserver_login_valid(
 
 @pytest.mark.asyncio
 async def test_webserver_login_valid(
-    app: RHApplication, default_user_creds: tuple[str]
+    app: RHApplication, default_user_creds: tuple[str], _setup_database
 ):
     client = app.test_client()
 
@@ -34,7 +34,7 @@ async def test_webserver_login_valid(
 
 @pytest.mark.asyncio
 async def test_webserver_login_invalid(
-    client: TestClientProtocol, default_user_creds: tuple[str]
+    client: TestClientProtocol, default_user_creds: tuple[str], _setup_database
 ):
 
     fake_password = "fake_password"
@@ -50,12 +50,11 @@ async def test_webserver_login_invalid(
 
 @pytest.mark.asyncio
 async def test_password_reset_invalid(
-    app: RHApplication, default_user_creds: tuple[str]
+    app: RHApplication, default_user_creds: tuple[str], _setup_database
 ):
     client: TestClientProtocol = app.test_client()
 
-    database = await app.get_user_database()
-    user = await database.users.get_by_username(None, default_user_creds[0])
+    user = await User.get_by_username(default_user_creds[0])
     assert user is not None
 
     async with authenticated_client(client, user.auth_id.hex):
@@ -72,12 +71,13 @@ async def test_password_reset_invalid(
 
 
 @pytest.mark.asyncio
-async def test_password_reset_valid(app: RHApplication, default_user_creds: tuple[str]):
+async def test_password_reset_valid(
+    app: RHApplication, default_user_creds: tuple[str], _setup_database
+):
     client: TestClientProtocol = app.test_client()
     new_password = "new_password"
 
-    database = await app.get_user_database()
-    user = await database.users.get_by_username(None, default_user_creds[0])
+    user = await User.get_by_username(default_user_creds[0])
     assert user is not None
 
     async with app.test_app():
@@ -101,25 +101,3 @@ async def test_password_reset_valid(app: RHApplication, default_user_creds: tupl
 
         reset_required = await webserver_login_valid(client, new_creds)
         assert reset_required is False
-
-
-@pytest.mark.asyncio
-async def test_pilot_stream(app: RHApplication, default_user_creds: tuple[str]):
-    client: TestClientProtocol = app.test_client()
-
-    race_database = await app.get_race_database()
-    await race_database.pilots.add_many(None, 3)
-
-    user_database = await app.get_user_database()
-    user = await user_database.users.get_by_username(None, default_user_creds[0])
-    assert user is not None
-
-    async with authenticated_client(client, user.auth_id.hex):
-        async with client.request("/api/pilot/all") as connection:
-
-            data = await connection.receive()
-            data_ = json.loads(data.decode())
-            assert data_ is not None
-            assert connection.status_code == 200
-
-            await connection.disconnect()

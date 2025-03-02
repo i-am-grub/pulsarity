@@ -3,24 +3,43 @@ Webserver event handling
 """
 
 import logging
+import json
 from typing import Any
 
 from quart import ResponseReturnValue, redirect, url_for
 from quart_auth import Unauthorized
 
+from tortoise import Tortoise, connections
+
 from ..extensions import RHBlueprint, current_app
 from ..events import SpecialEvt
-
-from ..database.user import UserDatabaseManager
-from ..database.race import RaceDatabaseManager
+from ..database import setup_default_objects
 
 from ..utils.executor import executor
 from ..utils.config import configs
 
 logger = logging.getLogger(__name__)
 
-p_events = RHBlueprint("private_events", __name__)
 events = RHBlueprint("events", __name__)
+db_events = RHBlueprint("db_events", __name__)
+
+
+@events.before_app_serving
+async def server_startup() -> None:
+    """
+    Log the application startup
+    """
+    logger.info("Starting PropHazard...")
+    executor.set_executor()
+
+
+@events.after_app_serving
+async def server_shutdown() -> None:
+    """
+    Log the application shutdown
+    """
+    logger.info("Stopping PropHazard...")
+    await executor.shutdown_executor()
 
 
 @events.while_app_serving
@@ -28,10 +47,51 @@ async def lifespan() -> Any:
     """
     Trigger startup and shutdown events
     """
+
+    logger.info("PropHazard startup completed...")
     current_app.event_broker.trigger(SpecialEvt.STARTUP, {})
+
     yield
+
     current_app.event_broker.trigger(SpecialEvt.SHUTDOWN, {})
-    logger.info("Server shutting down...")
+    logger.info("PropHazard shutdown completed...")
+
+
+@db_events.before_app_serving
+async def database_startup() -> None:
+    """
+    Initialize the database
+    """
+    await Tortoise.init(
+        {
+            "connections": configs.get_section("DATABASE"),
+            "apps": {
+                "system": {
+                    "models": ["prophazard.database"],
+                    "default_connection": "system_db",
+                },
+                "event": {
+                    "models": ["prophazard.database"],
+                    "default_connection": "event_db",
+                },
+            },
+        }
+    )
+
+    await Tortoise.generate_schemas(True)
+    await setup_default_objects()
+
+    logger.debug("Database started, %s", json.dumps(Tortoise.apps))
+
+
+@db_events.after_app_serving
+async def database_shutdown() -> None:
+    """
+    Shutdown the database
+    """
+    await connections.close_all()
+
+    logger.debug("Database shutdown")
 
 
 @events.errorhandler(Unauthorized)
@@ -43,66 +103,3 @@ async def redirect_to_index(*_) -> ResponseReturnValue:
     :return: The server response
     """
     return redirect(url_for("index"))
-
-
-@events.before_app_serving
-async def setup_global_executor() -> None:
-    """
-    Sets executor to uses for computationally intestive
-    processing.
-    """
-    executor.set_executor()
-
-
-@p_events.before_app_serving
-async def setup_user_database() -> None:
-    """
-    Sets the active user database for the server
-    """
-
-    database_manager = UserDatabaseManager(filename="user.db")
-    await database_manager.setup()
-
-    default_username = str(configs.get_config("SECRETS", "DEFAULT_USERNAME"))
-    default_password = str(configs.get_config("SECRETS", "DEFAULT_PASSWORD"))
-
-    await database_manager.verify_persistant_objects(default_username, default_password)
-
-    current_app.set_user_database(database_manager)
-
-
-@events.after_app_serving
-async def shutdown_user_database() -> None:
-    """
-    Shutdown the server's user database
-    """
-
-    database_manager = await current_app.get_user_database()
-    await database_manager.shutdown()
-
-
-@p_events.before_app_serving
-async def setup_race_database() -> None:
-    """
-    Sets the active race database for the server
-    """
-    database_manager = RaceDatabaseManager(filename="race.db")
-    await database_manager.setup()
-    current_app.set_race_database(database_manager)
-
-
-@events.after_app_serving
-async def shutdown_race_database() -> None:
-    """
-    Shutdown the server's race database
-    """
-    database_manager = await current_app.get_race_database()
-    await database_manager.shutdown()
-
-
-@events.after_app_serving
-async def await_executor() -> None:
-    """
-    Shuts down the server's executor
-    """
-    await executor.shutdown_executor()

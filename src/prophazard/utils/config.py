@@ -16,17 +16,12 @@ from .logging import generate_default_config
 
 _DEFAULT_CONFIG_FILE_NAME = "config.toml"
 
-_SECTIONS = Literal[
-    "SECRETS",
-    "WEBSERVER",
-    "GENERAL",
-    "LOGGING",
-]
+_SECTIONS = Literal["SECRETS", "WEBSERVER", "GENERAL", "LOGGING", "DATABASE"]
 
 _logger = logging.getLogger(__name__)
 
 
-def _get_configs_defaults() -> dict[_SECTIONS, dict]:
+def get_configs_defaults() -> dict[_SECTIONS, dict]:
     """
     Provides the server default configurations
 
@@ -61,11 +56,23 @@ def _get_configs_defaults() -> dict[_SECTIONS, dict]:
     # logging settings
     logging_ = generate_default_config()
 
+    database = {
+        "system_db": {
+            "engine": "tortoise.backends.sqlite",
+            "credentials": {"file_path": "system.db"},
+        },
+        "event_db": {
+            "engine": "tortoise.backends.sqlite",
+            "credentials": {"file_path": "event.db"},
+        },
+    }
+
     config: dict[_SECTIONS, dict[str, Any]] = {
         "SECRETS": secrets,
         "WEBSERVER": webserver,
         "GENERAL": general,
         "LOGGING": logging_,
+        "DATABASE": database,
     }
 
     return config
@@ -123,7 +130,7 @@ class ConfigManager:
 
         except IOError:
             _logger.info("No configuration file found, using defaults")
-            configs_ = _get_configs_defaults()
+            configs_ = get_configs_defaults()
             self._write_file_config(configs_)
             return configs_
 
@@ -131,11 +138,11 @@ class ConfigManager:
             _logger.error(
                 "Configuration file invalid, using defaults; error is: %s", ex
             )
-            configs_ = _get_configs_defaults()
+            configs_ = get_configs_defaults()
             self._write_file_config(configs_)
             return configs_
 
-        return external_config
+        return external_config.unwrap()  # type: ignore
 
     def get_config(
         self,

@@ -6,7 +6,7 @@ from quart_auth import authenticated_client
 from quart.typing import TestClientProtocol
 
 from prophazard.extensions import RHApplication
-from prophazard.events._enums import SpecialEvt
+from prophazard.database import User
 
 
 @pytest.mark.asyncio
@@ -22,13 +22,12 @@ async def test_server_websocket_unauth(app: RHApplication):
 
 @pytest.mark.asyncio
 async def test_server_websocket_auth(
-    app: RHApplication, default_user_creds: tuple[str]
+    app: RHApplication, default_user_creds: tuple[str], _setup_database
 ):
 
     client: TestClientProtocol = app.test_client()
 
-    user_database = await app.get_user_database()
-    user = await user_database.users.get_by_username(None, default_user_creds[0])
+    user = await User.get_by_username(default_user_creds[0])
     assert user is not None
 
     payload = {"id": str(uuid.uuid4()), "event_id": "heartbeat", "data": {"foo": "bar"}}

@@ -4,19 +4,20 @@ HTTP Rest API Routes
 
 import os
 from uuid import UUID
-from collections.abc import AsyncGenerator
 import logging
 
 from quart import ResponseReturnValue, render_template, send_from_directory
 from quart_auth import login_user, logout_user, login_required
 from quart_schema import validate_request, validate_response, hide
+from pydantic import BaseModel
 from werkzeug.exceptions import NotFound
 
 from ..extensions import RHBlueprint, RHUser, current_user, current_app
 from .auth import permission_required
-from ..database.user import SystemDefaultPerms
+from ..database.user import User
+from ..database.pilot import Pilot
+from ..database.permission import SystemDefaultPerms
 from .validation import BaseResponse, LoginRequest, LoginResponse, ResetPasswordRequest
-from ..database.race._orm import _PilotData
 
 logger = logging.getLogger(__name__)
 
@@ -95,8 +96,7 @@ async def login(data: LoginRequest) -> LoginResponse:
 
     :return: JSON containing the status of the request
     """
-    database = await current_app.get_user_database()
-    user = await database.users.get_by_username(None, data.username)
+    user = await User.get_or_none(username=data.username)
 
     if user is not None and await user.verify_password(data.password):
         auth_user = RHUser(user.auth_id.hex)
@@ -104,13 +104,9 @@ async def login(data: LoginRequest) -> LoginResponse:
 
         logger.info("%s has been logged into the server", auth_user.auth_id)
 
-        current_app.add_background_task(
-            database.users.update_user_login_time, None, user
-        )
+        current_app.add_background_task(User.update_user_login_time)
 
-        current_app.add_background_task(
-            database.users.check_for_rehash, None, user, data.password
-        )
+        current_app.add_background_task(User.check_for_rehash, data.password)
 
         return LoginResponse(status=True, password_reset_required=user.reset_required)
 
@@ -142,18 +138,14 @@ async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
     :return: JSON containing the status of the request
     """
     uuid = UUID(hex=current_user.auth_id)
-
-    database = await current_app.get_user_database()
-    user = await database.users.get_by_uuid(None, uuid)
+    user = await User.get_by_uuid(uuid)
 
     if user is not None and await user.verify_password(data.old_password):
-        await database.users.update_user_password(None, user, data.new_password)
+        await user.update_user_password(data.new_password)
 
         logger.info("Password reset for %s completed", user.username)
 
-        current_app.add_background_task(
-            database.users.update_password_required, None, user, False
-        )
+        current_app.add_background_task(user.update_password_required, False)
 
         return BaseResponse(status=True)
 
@@ -166,28 +158,33 @@ api = RHBlueprint(
     url_prefix="/api",
 )
 
+PilotModel = Pilot.generate_pydaantic_model()
+
 
 @api.get("/pilot/<int:pilot_id>")
 @permission_required(SystemDefaultPerms.READ_PILOTS)
-@validate_response(_PilotData)
-async def get_pilot(pilot_id: int) -> _PilotData:
+@validate_response(PilotModel)
+async def get_pilot(pilot_id: int) -> BaseModel:
     """
     Get the pilot by id
 
     :return: Pilot data.
     """
-    database = await current_app.get_race_database()
-    pilot = await database.pilots.get_by_id(None, pilot_id)
+    pilot = await Pilot.get_by_id(pilot_id)
 
     if pilot is None:
         raise NotFound()
 
-    return pilot.to_data_model()
+    return await PilotModel.from_tortoise_orm(pilot)
+
+
+PilotModelList = Pilot.generate_pydaantic_queryset()
 
 
 @api.get("/pilot/all")
 @permission_required(SystemDefaultPerms.READ_PILOTS)
-async def get_pilots() -> AsyncGenerator[bytes, None]:
+@validate_response(PilotModelList)
+async def get_pilots() -> BaseModel:
     """
     A streaming route for getting all pilots currently stored in the
     database.
@@ -195,10 +192,4 @@ async def get_pilots() -> AsyncGenerator[bytes, None]:
     :yield: A generator yielding pilots converted
     to a encoded JSON object.
     """
-    database = await current_app.get_race_database()
-
-    async def stream_pilots():
-        async for pilot in database.pilots.get_all_as_stream(None):
-            yield pilot.to_bytes()
-
-    return stream_pilots()
+    return await PilotModelList.from_queryset(Pilot.all())

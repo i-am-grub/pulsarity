@@ -2,12 +2,12 @@
 ORM classes for Format data
 """
 
+import pickle
 from dataclasses import dataclass
 
-from sqlalchemy import String, PickleType
-from sqlalchemy.orm import Mapped, mapped_column
+from tortoise import fields
 
-from ..._base import _RaceBase
+from .base import _PHDataBase
 
 
 @dataclass
@@ -28,7 +28,7 @@ class RaceSchedule:
     """Overtime duration in seconds, -1 for unlimited, unused if unlimited_time is True"""
 
 
-class RaceFormat(_RaceBase):
+class RaceFormat(_PHDataBase):
     """
     Race formats are profiles of properties used to define parameters of individual races.
     Every race has an assigned format. A race formats may be assigned to a race class,
@@ -37,12 +37,34 @@ class RaceFormat(_RaceBase):
 
     # pylint: disable=R0903
 
-    __tablename__ = "format"
-
-    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    name = fields.CharField(max_length=80, null=False)
     """User-facing name"""
-    schedule: Mapped[RaceSchedule] = mapped_column(PickleType, nullable=False)
+    _schedule = fields.BinaryField(null=False)
     """Settings for race scheduling"""
 
-    def __init__(self, schedule: RaceSchedule):
-        self.schedule = schedule
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "format"
+
+    def __init__(self, name: str, schedule: RaceSchedule):
+        """
+        Class initialization
+
+        :param schedule: _description_
+        """
+
+        super().__init__()
+        self.name = name
+        self._schedule = pickle.dumps(schedule)
+
+    @property
+    def schedule(self) -> RaceSchedule:
+        """The race schedule for the race format"""
+        return pickle.loads(self._schedule)
+
+    @schedule.setter
+    def schedule(self, schedule: RaceSchedule) -> None:
+        """Race schedule setter"""
+        self._schedule = pickle.dumps(schedule)

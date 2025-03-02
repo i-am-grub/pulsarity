@@ -48,11 +48,7 @@ def main() -> None:
     _setup_logging()
     logger = logging.getLogger(__name__)
 
-    logger.info("Starting PropHazard")
-
     run(prophazard_webserver())
-
-    logger.info("PropHazard shutdown complete")
 
     if os.environ["REBOOT_PH_FLAG"] == "active":
         logger.info("Automatically rebooting server")

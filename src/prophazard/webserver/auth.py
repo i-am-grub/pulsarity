@@ -9,7 +9,7 @@ from functools import wraps
 from quart_auth import Unauthorized
 from werkzeug.exceptions import Forbidden
 
-from ..database.user._enums import UserPermission
+from ..database.permission import UserPermission
 
 if TYPE_CHECKING:
     from ..extensions import current_app, current_user
