@@ -8,15 +8,13 @@ from tortoise import fields
 
 from .base import _PHDataBase
 
-# pylint: disable=E1136
+# pylint: disable=R0903,E1136
 
 
 class PilotAttribute(_PHDataBase):
     """
     Unique and stored individually stored values for each pilot.
     """
-
-    # pylint: disable=R0903
 
     name = fields.CharField(max_length=80)
     pilot: fields.ForeignKeyRelation[Pilot] = fields.ForeignKeyField(
