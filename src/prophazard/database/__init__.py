@@ -17,3 +17,13 @@ __all__ = [
     "RaceFormat",
     "RaceSchedule",
 ]
+
+
+async def setup_default_objects():
+    """
+    Setup the default objects in the system database
+    """
+
+    await Permission.verify_persistant()
+    await Role.verify_persistant()
+    await User.verify_persistant()

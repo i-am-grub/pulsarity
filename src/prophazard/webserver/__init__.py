@@ -9,6 +9,7 @@ from tortoise.contrib.quart import register_tortoise
 
 from ..extensions import RHApplication, RHUser
 from .events import events as _events
+from .events import db_events as _db_events
 from .routes import files as _files
 from .routes import auth as _auth
 from .routes import api as _api
@@ -18,7 +19,7 @@ from .websockets import websockets as _websockets
 from ..utils.config import configs
 
 
-def generate_app() -> RHApplication:
+def generate_app(*, test_mode: bool = False) -> RHApplication:
     """
     Generate a PropHazard webserver application
 
@@ -52,5 +53,8 @@ def generate_app() -> RHApplication:
 
     for blueprint in (_events, _files, _auth, _api, _tasks, _websockets):
         app.register_blueprint(blueprint)
+
+    if not test_mode:
+        app.register_blueprint(_db_events)
 
     return app

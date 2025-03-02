@@ -5,8 +5,8 @@ from quart.typing import TestClientProtocol
 from quart_auth import authenticated_client
 
 from prophazard.extensions import RHApplication
-from prophazard.database.enums import SystemDefaultPerms
-from prophazard.database.user import User, Role, Permission
+from prophazard.database.permission import SystemDefaultPerms
+from prophazard.database import User, Role, Permission
 
 
 @pytest.mark.asyncio
@@ -16,27 +16,24 @@ async def test_webserver_unauthorized(client: TestClientProtocol):
 
 
 @pytest.mark.asyncio
-async def test_webserver_lack_permissions(app: RHApplication):
+async def test_webserver_lack_permissions(app: RHApplication, _setup_database):
     client: TestClientProtocol = app.test_client()
 
-    database = await app.get_user_database()
-    session_maker = database.new_session_maker()
-
     permissions_: set[Permission] = set()
-    async with session_maker() as session:
-        permissions = database.permissions.get_all_as_stream(session)
-        async for permission in permissions:
-            if permission.value != SystemDefaultPerms.READ_PILOTS:
-                permissions_.add(permission)
-                break
+    permissions = await Permission.all()
+    for permission in permissions:
+        if permission.value != SystemDefaultPerms.READ_PILOTS:
+            permissions_.add(permission)
+            break
 
-        role = Role("TEST", permissions=permissions_)
-        await database.roles.add(session, role)
+    role = await Role.create(name="TEST")
+    await role.add_permissions(*permissions_)
 
-        roles: set[Role] = set()
-        roles.add(role)
-        user = User("test", roles=roles)
-        await database.users.add(session, user)
+    roles: set[Role] = set()
+    roles.add(role)
+
+    user = await User.create(username="test")
+    await user._roles.add(*roles)
 
     async with authenticated_client(client, user.auth_id.hex):
         response = await client.get("/api/pilot/all")
@@ -44,11 +41,12 @@ async def test_webserver_lack_permissions(app: RHApplication):
 
 
 @pytest.mark.asyncio
-async def test_webserver_authorized(app: RHApplication, default_user_creds: tuple[str]):
+async def test_webserver_authorized(
+    app: RHApplication, default_user_creds: tuple[str], _setup_database
+):
     client: TestClientProtocol = app.test_client()
 
-    database = await app.get_user_database()
-    user = await database.users.get_by_username(None, default_user_creds[0])
+    user = await User.get_by_username(default_user_creds[0])
     assert user is not None
 
     async with authenticated_client(client, user.auth_id.hex):

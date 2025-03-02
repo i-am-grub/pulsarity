@@ -4,11 +4,12 @@ from prophazard.database.user import User
 
 
 @pytest.mark.asyncio
-async def test_user_create():
+async def test_user_create(_setup_database):
     username = "foo"
-    user = await User.create(username=username)
 
-    assert user.id == 1
+    assert await User.get_or_none(username=username) is None
+    user = await User.create(username=username)
+    assert await User.get_or_none(username=username) is not None
     assert user.username == username
 
 

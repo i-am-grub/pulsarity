@@ -18,6 +18,8 @@ from argon2.exceptions import (
     InvalidHashError,
 )
 
+from ..utils.config import configs
+
 from .base import _PHDataBase
 from .role import Role
 
@@ -165,8 +167,6 @@ class User(_PHDataBase):
         """
         Updates a user's password hash in the database.
 
-        :param session: _description_
-        :param user: _description_
         :param password: The password to hash and store
         """
         hashed_password = await self.generate_hash(password)
@@ -177,45 +177,46 @@ class User(_PHDataBase):
         """
         Attempt to retrieve a user by uuid
 
-        :param session: _description_
-        :param uuid: _description_
-        :return: _description_
+        :param uuid: The uuid to search for
         """
         return await cls.get_or_none(auth_id=uuid)
 
     @classmethod
     async def get_by_username(cls, username: str) -> Self | None:
         """
-        Attempt to retrieve a user by uuid
+        Attempt to retrieve a user by username
 
-        :param session: _description_
-        :param uuid: _description_
-        :return: _description_
+        :param username: The username to search for
         """
         return await cls.get_or_none(username=username)
 
     @classmethod
-    async def verify_persistant_user(cls, username: str, password: str) -> None:
+    async def verify_persistant(cls) -> None:
         """
-        Verify permissions are setup for a role.
+        Verify all system roles are in the user database.
+        """
+        default_username = str(configs.get_config("SECRETS", "DEFAULT_USERNAME"))
+        default_password = str(configs.get_config("SECRETS", "DEFAULT_PASSWORD"))
 
-        :param session: _description_
-        :param username: Username of role to check
-        :param password: Password to set if the user doesn't exist yet.
-        :param roles: Set of roles to apply to user
-        """
-        if await cls.get_by_username(username) is None:
-            user = await cls.create(username=username, persistent=True)
-            await user.update_user_password(password)
+        user, created = await User.get_or_create(
+            username=default_username, persistent=True
+        )
+
+        role = await Role.get_or_none(name="SYSTEM_ADMIN")
+        if role is not None:
+            await user._roles.add(role)
+        else:
+            raise RuntimeError("Role for system admin does not exist")
+
+        if created:
+            await user.update_user_password(default_password)
 
     async def check_for_rehash(self, password: str) -> None:
         """
         Checks to see if a user's hash needs to be updated. Update it
         automatically automatically if it does.
 
-        :param session: _description_
-        :param user: _description_
-        :param password: The password to rehash
+        :param password: The password to rehash if necessary
         """
 
         if await self.check_password_rehash():
@@ -224,9 +225,6 @@ class User(_PHDataBase):
     async def update_user_login_time(self) -> None:
         """
         Update a user's `last_login` time.
-
-        :param session: _description_
-        :param user: _description_
         """
         await self.filter(id=self.id).update(last_login=datetime.now())
 
@@ -234,8 +232,6 @@ class User(_PHDataBase):
         """
         Change the status of the `reset_required` attribute for a user
 
-        :param session: _description_
-        :param user: _description_
-        :param status: _description_
+        :param status: The value to set the status to
         """
         await self.filter(id=self.id).update(reset_required=status)

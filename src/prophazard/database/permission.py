@@ -48,6 +48,27 @@ class Permission(_PHDataBase):
         self.value = value
         self.persistent = persistent
 
+    @classmethod
+    async def verify_persistant(cls) -> None:
+        """
+        Verify all nessessary permissions are in the user database.
+        """
+
+        permissions: set[str] = set(await cls.all().values_list("value", flat=True))  # type: ignore
+
+        permissions_add = []
+
+        for permission_class in UserPermission.__subclasses__():
+
+            persistent = permission_class is SystemDefaultPerms
+
+            for enum in permission_class:
+
+                if enum not in permissions:
+                    permissions_add.append(Permission(enum, persistent=persistent))
+
+        await cls.bulk_create(permissions_add)
+
 
 class UserPermission(StrEnum):
     """

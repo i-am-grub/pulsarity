@@ -49,7 +49,7 @@ class Role(_PHDataBase):
         values = set(await self._permissions.all().values_list("value", flat=True))
         return values  # type: ignore
 
-    async def set_permissions(self, *permissions: Permission) -> None:
+    async def add_permissions(self, *permissions: Permission) -> None:
         """
         Set the permissions for a role. Overwrites any previous values
 
@@ -57,3 +57,14 @@ class Role(_PHDataBase):
         """
         await self._permissions.clear()
         await self._permissions.add(*permissions)
+
+    @classmethod
+    async def verify_persistant(cls) -> None:
+        """
+        Verify all system roles are in the user database.
+        """
+        admin_role, _ = await cls.get_or_create(name="SYSTEM_ADMIN", persistent=True)
+
+        permissions = await Permission.all()
+
+        await admin_role._permissions.add(*permissions)

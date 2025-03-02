@@ -4,7 +4,7 @@ import asyncio
 
 from prophazard.extensions import RHApplication
 from prophazard.race.enums import RaceStatus
-from prophazard.database.orm.raceformat import RaceSchedule
+from prophazard.database import RaceSchedule
 
 
 async def future_schedule(app_: RHApplication, limited_schedule_: RaceSchedule):
