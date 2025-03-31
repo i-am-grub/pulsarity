@@ -12,7 +12,7 @@ import sys
 topdir = os.path.split(os.path.split(__file__)[0])[0]
 sys.path.insert(0, os.path.join(topdir, "src"))
 
-from prophazard import __version__ as release
+from pulsarity import __version__ as release
 
 project = "PropHazard"
 copyright = "2024, Bryce Gruber"

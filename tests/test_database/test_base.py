@@ -1,7 +1,7 @@
 import pytest
 from pydantic import BaseModel
 
-from prophazard.database.base import _PHDataBase
+from pulsarity.database.base import _PHDataBase
 
 
 @pytest.mark.asyncio

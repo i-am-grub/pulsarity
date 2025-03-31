@@ -4,9 +4,9 @@ from quart.typing import TestClientProtocol
 
 from quart_auth import authenticated_client
 
-from prophazard.extensions import RHApplication
-from prophazard.database.permission import SystemDefaultPerms
-from prophazard.database import User, Role, Permission
+from pulsarity.extensions import RHApplication
+from pulsarity.database.permission import SystemDefaultPerms
+from pulsarity.database import User, Role, Permission
 
 
 @pytest.mark.asyncio

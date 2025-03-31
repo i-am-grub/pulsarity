@@ -1,6 +1,6 @@
 import pytest
 
-from prophazard.database.user import User
+from pulsarity.database.user import User
 
 
 @pytest.mark.asyncio

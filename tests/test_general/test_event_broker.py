@@ -1,7 +1,7 @@
 import pytest
 
-from prophazard.extensions import RHApplication
-from prophazard.events import EventBroker, EventSetupEvt, RaceSequenceEvt
+from pulsarity.extensions import RHApplication
+from pulsarity.events import EventBroker, EventSetupEvt, RaceSequenceEvt
 
 
 async def broker_subscriber(broker: EventBroker, check_values: list):

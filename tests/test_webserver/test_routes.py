@@ -3,8 +3,8 @@ import pytest
 from quart.typing import TestClientProtocol
 from quart_auth import authenticated_client
 
-from prophazard.extensions import RHApplication
-from prophazard.database import User
+from pulsarity.extensions import RHApplication
+from pulsarity.database import User
 
 
 async def webserver_login_valid(

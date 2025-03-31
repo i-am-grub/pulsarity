@@ -5,8 +5,8 @@ from quart.testing import WebsocketResponseError
 from quart_auth import authenticated_client
 from quart.typing import TestClientProtocol
 
-from prophazard.extensions import RHApplication
-from prophazard.database import User
+from pulsarity.extensions import RHApplication
+from pulsarity.database import User
 
 
 @pytest.mark.asyncio

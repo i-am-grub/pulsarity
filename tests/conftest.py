@@ -3,13 +3,13 @@ import pytest_asyncio
 
 from tortoise import Tortoise, connections
 
-from prophazard.webserver import generate_app
-from prophazard.extensions import RHApplication
-from prophazard.database import setup_default_objects
+from pulsarity.webserver import generate_app
+from pulsarity.extensions import RHApplication
+from pulsarity.database import setup_default_objects
 
-from prophazard.database.raceformat import RaceSchedule
+from pulsarity.database.raceformat import RaceSchedule
 
-from prophazard.utils.config import get_configs_defaults
+from pulsarity.utils.config import get_configs_defaults
 
 
 @pytest.fixture()

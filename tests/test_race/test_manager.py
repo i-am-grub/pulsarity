@@ -2,9 +2,9 @@ import pytest
 import time
 import asyncio
 
-from prophazard.extensions import RHApplication
-from prophazard.race.enums import RaceStatus
-from prophazard.database import RaceSchedule
+from pulsarity.extensions import RHApplication
+from pulsarity.race.enums import RaceStatus
+from pulsarity.database import RaceSchedule
 
 
 async def future_schedule(app_: RHApplication, limited_schedule_: RaceSchedule):

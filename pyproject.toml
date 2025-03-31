@@ -1,5 +1,5 @@
 [project]
-name = "PropHazard"
+name = "Pulsarity"
 version = "0.1.0-dev"
 description = "A demonstrator project for a RotorHazard variant"
 authors = [
@@ -31,7 +31,7 @@ dependencies = [
 ]
 
 [project.urls]
-repository = "https://github.com/i-am-grub/PropHazard"
+repository = "https://github.com/i-am-grub/Pulsarity"
 
 [project.optional-dependencies]
 pgsql = [ "asyncpg>=0.30,<0.31" ]
@@ -44,7 +44,7 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-start-prophazard = "prophazard.__main__:main"
+start-pulsarity = "pulsarity.__main__:main"
 
 [tool.poetry.group.dev]
 optional = true
