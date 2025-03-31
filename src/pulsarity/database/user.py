@@ -20,7 +20,7 @@ from argon2.exceptions import (
 
 from ..utils.config import configs
 
-from .base import _PHDataBase
+from .base import _PulsarityBase
 from .role import Role
 
 
@@ -29,7 +29,7 @@ logger = logging.Logger(__name__)
 _ph = PasswordHasher()
 
 
-class User(_PHDataBase):
+class User(_PulsarityBase):
     """
     User for the application
     """

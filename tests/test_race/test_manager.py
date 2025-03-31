@@ -2,12 +2,12 @@ import pytest
 import time
 import asyncio
 
-from pulsarity.extensions import RHApplication
+from pulsarity.extensions import PulsarityApp
 from pulsarity.race.enums import RaceStatus
 from pulsarity.database import RaceSchedule
 
 
-async def future_schedule(app_: RHApplication, limited_schedule_: RaceSchedule):
+async def future_schedule(app_: PulsarityApp, limited_schedule_: RaceSchedule):
     schedule_offset = 1
     schedule_time = time.monotonic() + schedule_offset
 
@@ -17,21 +17,21 @@ async def future_schedule(app_: RHApplication, limited_schedule_: RaceSchedule):
     return schedule_offset
 
 
-async def cancel_race(app_: RHApplication):
+async def cancel_race(app_: PulsarityApp):
 
     async with app_.app_context():
         app_.race_manager.stop_race()
 
 
 @pytest.mark.asyncio
-async def test_default_status(app: RHApplication):
+async def test_default_status(app: PulsarityApp):
     assert app.race_manager.status == RaceStatus.READY
     app.race_manager.stop_race()
     assert app.race_manager.status == RaceStatus.READY
 
 
 @pytest.mark.asyncio
-async def test_past_schedule(app: RHApplication, limited_schedule: RaceSchedule):
+async def test_past_schedule(app: PulsarityApp, limited_schedule: RaceSchedule):
     assert app.race_manager.status == RaceStatus.READY
 
     now = time.monotonic() - 0.1
@@ -44,7 +44,7 @@ async def test_past_schedule(app: RHApplication, limited_schedule: RaceSchedule)
 
 
 @pytest.mark.asyncio
-async def test_limited_sequence(app: RHApplication, limited_schedule: RaceSchedule):
+async def test_limited_sequence(app: PulsarityApp, limited_schedule: RaceSchedule):
 
     offset = await future_schedule(app, limited_schedule)
 
@@ -69,7 +69,7 @@ async def test_limited_sequence(app: RHApplication, limited_schedule: RaceSchedu
 
 
 @pytest.mark.asyncio
-async def test_scheduled_stopped(app: RHApplication, limited_schedule: RaceSchedule):
+async def test_scheduled_stopped(app: PulsarityApp, limited_schedule: RaceSchedule):
 
     await future_schedule(app, limited_schedule)
 
@@ -82,7 +82,7 @@ async def test_scheduled_stopped(app: RHApplication, limited_schedule: RaceSched
 
 
 @pytest.mark.asyncio
-async def test_staging_stopped(app: RHApplication, limited_schedule: RaceSchedule):
+async def test_staging_stopped(app: PulsarityApp, limited_schedule: RaceSchedule):
 
     offset = await future_schedule(app, limited_schedule)
 
@@ -99,7 +99,7 @@ async def test_staging_stopped(app: RHApplication, limited_schedule: RaceSchedul
 
 
 @pytest.mark.asyncio
-async def test_racing_stopped(app: RHApplication, limited_schedule: RaceSchedule):
+async def test_racing_stopped(app: PulsarityApp, limited_schedule: RaceSchedule):
 
     offset = await future_schedule(app, limited_schedule)
 
@@ -118,7 +118,7 @@ async def test_racing_stopped(app: RHApplication, limited_schedule: RaceSchedule
 
 
 @pytest.mark.asyncio
-async def test_overtime_stopped(app: RHApplication, limited_schedule: RaceSchedule):
+async def test_overtime_stopped(app: PulsarityApp, limited_schedule: RaceSchedule):
 
     offset = await future_schedule(app, limited_schedule)
 
@@ -139,7 +139,7 @@ async def test_overtime_stopped(app: RHApplication, limited_schedule: RaceSchedu
 
 
 @pytest.mark.asyncio
-async def test_no_overtime(app: RHApplication, limited_no_ot_schedule: RaceSchedule):
+async def test_no_overtime(app: PulsarityApp, limited_no_ot_schedule: RaceSchedule):
 
     offset = await future_schedule(app, limited_no_ot_schedule)
 
@@ -158,7 +158,7 @@ async def test_no_overtime(app: RHApplication, limited_no_ot_schedule: RaceSched
 
 
 @pytest.mark.asyncio
-async def test_unlimited_sequence(app: RHApplication, unlimited_schedule: RaceSchedule):
+async def test_unlimited_sequence(app: PulsarityApp, unlimited_schedule: RaceSchedule):
 
     offset = await future_schedule(app, unlimited_schedule)
 

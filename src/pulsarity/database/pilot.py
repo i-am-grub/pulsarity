@@ -6,12 +6,12 @@ from __future__ import annotations
 
 from tortoise import fields
 
-from .base import _PHDataBase
+from .base import _PulsarityBase
 
 # pylint: disable=R0903,E1136
 
 
-class PilotAttribute(_PHDataBase):
+class PilotAttribute(_PulsarityBase):
     """
     Unique and stored individually stored values for each pilot.
     """
@@ -29,7 +29,7 @@ class PilotAttribute(_PHDataBase):
         unique_together = (("id", "name"),)
 
 
-class Pilot(_PHDataBase):
+class Pilot(_PulsarityBase):
     """
     A pilot is an individual participant. In order to participate in races,
     pilots can be assigned to multiple heats.

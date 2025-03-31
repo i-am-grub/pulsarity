@@ -11,7 +11,7 @@ from quart_auth import Unauthorized
 
 from tortoise import Tortoise, connections
 
-from ..extensions import RHBlueprint, current_app
+from ..extensions import PulsarityBlueprint, current_app
 from ..events import SpecialEvt
 from ..database import setup_default_objects
 
@@ -20,8 +20,8 @@ from ..utils.config import configs
 
 logger = logging.getLogger(__name__)
 
-events = RHBlueprint("events", __name__)
-db_events = RHBlueprint("db_events", __name__)
+events = PulsarityBlueprint("events", __name__)
+db_events = PulsarityBlueprint("db_events", __name__)
 
 
 @events.before_app_serving
@@ -29,7 +29,7 @@ async def server_startup() -> None:
     """
     Log the application startup
     """
-    logger.info("Starting PropHazard...")
+    logger.info("Starting Pulsarity...")
     executor.set_executor()
 
 
@@ -38,7 +38,7 @@ async def server_shutdown() -> None:
     """
     Log the application shutdown
     """
-    logger.info("Stopping PropHazard...")
+    logger.info("Stopping Pulsarity...")
     await executor.shutdown_executor()
 
 
@@ -48,13 +48,13 @@ async def lifespan() -> Any:
     Trigger startup and shutdown events
     """
 
-    logger.info("PropHazard startup completed...")
+    logger.info("Pulsarity startup completed...")
     current_app.event_broker.trigger(SpecialEvt.STARTUP, {})
 
     yield
 
     current_app.event_broker.trigger(SpecialEvt.SHUTDOWN, {})
-    logger.info("PropHazard shutdown completed...")
+    logger.info("Pulsarity shutdown completed...")
 
 
 @db_events.before_app_serving
@@ -67,11 +67,11 @@ async def database_startup() -> None:
             "connections": configs.get_section("DATABASE"),
             "apps": {
                 "system": {
-                    "models": ["prophazard.database"],
+                    "models": ["pulsarity.database"],
                     "default_connection": "system_db",
                 },
                 "event": {
-                    "models": ["prophazard.database"],
+                    "models": ["pulsarity.database"],
                     "default_connection": "event_db",
                 },
             },
@@ -81,7 +81,7 @@ async def database_startup() -> None:
     await Tortoise.generate_schemas(True)
     await setup_default_objects()
 
-    logger.debug("Database started, %s", json.dumps(Tortoise.apps))
+    logger.debug("Database started, %s", json.dumps(tuple(Tortoise.apps)))
 
 
 @db_events.after_app_serving

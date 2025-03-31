@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(topdir, "src"))
 
 from pulsarity import __version__ as release
 
-project = "PropHazard"
+project = "Pulsarity"
 copyright = "2024, Bryce Gruber"
 author = "Bryce Gruber"
 version = ".".join(release.split(".")[:-1])
@@ -47,7 +47,7 @@ html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
 
 html_theme_options = {
-    "repository_url": "https://github.com/i-am-grub/PropHazard",
+    "repository_url": "https://github.com/i-am-grub/Pulsarity",
     "path_to_docs": "docs",
     "use_repository_button": True,
     "use_edit_page_button": True,

@@ -4,7 +4,7 @@ import pytest_asyncio
 from tortoise import Tortoise, connections
 
 from pulsarity.webserver import generate_app
-from pulsarity.extensions import RHApplication
+from pulsarity.extensions import PulsarityApp
 from pulsarity.database import setup_default_objects
 
 from pulsarity.database.raceformat import RaceSchedule
@@ -18,7 +18,7 @@ def app():
 
 
 @pytest.fixture()
-def client(app: RHApplication):
+def client(app: PulsarityApp):
     yield app.test_client()
 
 
@@ -39,11 +39,11 @@ async def setup_database():
             },
             "apps": {
                 "system": {
-                    "models": ["prophazard.database"],
+                    "models": ["pulsarity.database"],
                     "default_connection": "system",
                 },
                 "event": {
-                    "models": ["prophazard.database"],
+                    "models": ["pulsarity.database"],
                     "default_connection": "event",
                 },
             },

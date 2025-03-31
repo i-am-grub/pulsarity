@@ -24,11 +24,7 @@ def generate_self_signed_cert(key_filename: str, cert_filename: str) -> None:
 
     subject = issuer = x509.Name(
         [
-            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
-            x509.NameAttribute(NameOID.LOCALITY_NAME, "San Francisco"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "PropHazard"),
-            x509.NameAttribute(NameOID.COMMON_NAME, "PropHazard Webserver"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "Pulsarity Webserver"),
         ]
     )
 

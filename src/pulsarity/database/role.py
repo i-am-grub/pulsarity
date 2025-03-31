@@ -8,14 +8,14 @@ from typing import TYPE_CHECKING
 
 from tortoise import fields
 
-from .base import _PHDataBase
+from .base import _PulsarityBase
 from .permission import Permission
 
 if TYPE_CHECKING:
     from .user import User
 
 
-class Role(_PHDataBase):
+class Role(_PulsarityBase):
     """
     Role for the application
     """

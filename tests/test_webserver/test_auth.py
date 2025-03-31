@@ -4,7 +4,7 @@ from quart.typing import TestClientProtocol
 
 from quart_auth import authenticated_client
 
-from pulsarity.extensions import RHApplication
+from pulsarity.extensions import PulsarityApp
 from pulsarity.database.permission import SystemDefaultPerms
 from pulsarity.database import User, Role, Permission
 
@@ -16,7 +16,7 @@ async def test_webserver_unauthorized(client: TestClientProtocol):
 
 
 @pytest.mark.asyncio
-async def test_webserver_lack_permissions(app: RHApplication, _setup_database):
+async def test_webserver_lack_permissions(app: PulsarityApp, _setup_database):
     client: TestClientProtocol = app.test_client()
 
     permissions_: set[Permission] = set()
@@ -42,7 +42,7 @@ async def test_webserver_lack_permissions(app: RHApplication, _setup_database):
 
 @pytest.mark.asyncio
 async def test_webserver_authorized(
-    app: RHApplication, default_user_creds: tuple[str], _setup_database
+    app: PulsarityApp, default_user_creds: tuple[str], _setup_database
 ):
     client: TestClientProtocol = app.test_client()
 

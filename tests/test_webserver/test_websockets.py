@@ -5,12 +5,12 @@ from quart.testing import WebsocketResponseError
 from quart_auth import authenticated_client
 from quart.typing import TestClientProtocol
 
-from pulsarity.extensions import RHApplication
+from pulsarity.extensions import PulsarityApp
 from pulsarity.database import User
 
 
 @pytest.mark.asyncio
-async def test_server_websocket_unauth(app: RHApplication):
+async def test_server_websocket_unauth(app: PulsarityApp):
 
     client = app.test_client()
 
@@ -22,7 +22,7 @@ async def test_server_websocket_unauth(app: RHApplication):
 
 @pytest.mark.asyncio
 async def test_server_websocket_auth(
-    app: RHApplication, default_user_creds: tuple[str], _setup_database
+    app: PulsarityApp, default_user_creds: tuple[str], _setup_database
 ):
 
     client: TestClientProtocol = app.test_client()

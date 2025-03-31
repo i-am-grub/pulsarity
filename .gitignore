@@ -166,7 +166,7 @@ cython_debug/
 # IDE files
 .vscode
 
-# PropHazard based files
+# Pulsarity based files
 config.json
 config.toml
 *.db

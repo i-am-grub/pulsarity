@@ -10,9 +10,10 @@ import inspect
 from typing import TypeVar, ParamSpec
 from collections.abc import Callable, Awaitable
 
-from quart import Blueprint, websocket, copy_current_websocket_context
+from quart import websocket, copy_current_websocket_context
 from pydantic import BaseModel, UUID4, ValidationError
 
+from ..extensions import PulsarityBlueprint
 from .auth import permission_required
 from ..database.permission import SystemDefaultPerms, UserPermission
 from ..database.raceformat import RaceSchedule
@@ -24,7 +25,7 @@ P = ParamSpec("P")
 
 logger = logging.getLogger(__name__)
 
-websockets = Blueprint("websockets", __name__, url_prefix="/ws")
+websockets = PulsarityBlueprint("websockets", __name__, url_prefix="/ws")
 
 _wse_routes: dict[str, tuple[UserPermission, Callable]] = {}
 
@@ -140,7 +141,7 @@ async def restart_server():
 
     :param _ws_data: Recieved websocket event data
     """
-    os.environ["REBOOT_PH_FLAG"] = "active"
+    os.environ["REBOOT_PULSARITY_FLAG"] = "active"
     signal.raise_signal(signal.Signals.SIGTERM)
 
 

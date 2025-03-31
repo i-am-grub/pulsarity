@@ -2,17 +2,15 @@
 HTTP Rest API Routes
 """
 
-import os
 from uuid import UUID
 import logging
 
-from quart import ResponseReturnValue, render_template, send_from_directory
 from quart_auth import login_user, logout_user, login_required
-from quart_schema import validate_request, validate_response, hide
+from quart_schema import validate_request, validate_response
 from pydantic import BaseModel
 from werkzeug.exceptions import NotFound
 
-from ..extensions import RHBlueprint, RHUser, current_user, current_app
+from ..extensions import PulsarityBlueprint, AppUser, current_user, current_app
 from .auth import permission_required
 from ..database.user import User
 from ..database.pilot import Pilot
@@ -22,53 +20,7 @@ from .validation import BaseResponse, LoginRequest, LoginResponse, ResetPassword
 logger = logging.getLogger(__name__)
 
 
-def _get_webapp_filepath() -> str:
-    """
-    Navigate to location of frontend artifacts
-
-    :return: The path of the frontent build folder
-    """
-
-    current_location = __file__
-    for _ in range(3):
-        current_location = os.path.split(current_location)[0]
-
-    target_location = os.path.join(
-        current_location, "frontend", "dist", "prophazard-frontend", "browser"
-    )
-
-    return target_location
-
-
-_app_folder = _get_webapp_filepath()
-files = RHBlueprint("files", __name__, template_folder=_app_folder)
-
-
-@files.get("/")
-@hide
-async def index() -> ResponseReturnValue:
-    """
-    Serves the web application to the client
-
-    :return str: The rendered web page
-    """
-    return await render_template("index.html")
-
-
-@files.get("/<path:path>")
-@hide
-async def static_proxy(path) -> ResponseReturnValue:
-    """
-    Serves the static files for the web application
-    to the client
-
-    :param path: The requested path for a file
-    :return: The requested file
-    """
-    return await send_from_directory(_app_folder, path)
-
-
-auth = RHBlueprint(
+auth = PulsarityBlueprint(
     "auth",
     __name__,
     url_prefix="/auth",
@@ -99,7 +51,7 @@ async def login(data: LoginRequest) -> LoginResponse:
     user = await User.get_or_none(username=data.username)
 
     if user is not None and await user.verify_password(data.password):
-        auth_user = RHUser(user.auth_id.hex)
+        auth_user = AppUser(user.auth_id.hex)
         login_user(auth_user, True)
 
         logger.info("%s has been logged into the server", auth_user.auth_id)
@@ -152,7 +104,7 @@ async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
     return BaseResponse(status=False)
 
 
-api = RHBlueprint(
+api = PulsarityBlueprint(
     "api",
     __name__,
     url_prefix="/api",

@@ -1,6 +1,6 @@
 import pytest
 
-from pulsarity.extensions import RHApplication
+from pulsarity.extensions import PulsarityApp
 from pulsarity.events import EventBroker, EventSetupEvt, RaceSequenceEvt
 
 
@@ -24,7 +24,7 @@ def broker_publisher(broker: EventBroker, event_values: tuple[tuple]):
 
 
 @pytest.mark.asyncio
-async def test_single_event_handling(app: RHApplication):
+async def test_single_event_handling(app: PulsarityApp):
     broker = EventBroker()
 
     events = [EventSetupEvt.PILOT_ADD]
@@ -38,7 +38,7 @@ async def test_single_event_handling(app: RHApplication):
 
 
 @pytest.mark.asyncio
-async def test_multi_event_handling(app: RHApplication):
+async def test_multi_event_handling(app: PulsarityApp):
     broker = EventBroker()
 
     events = [EventSetupEvt.PILOT_ADD] * 3

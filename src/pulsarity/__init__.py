@@ -16,12 +16,10 @@ from hypercorn.asyncio import serve
 from hypercorn.config import Config
 from hypercorn.middleware import HTTPToHTTPSRedirectMiddleware
 
-from .extensions import RHApplication
+from .extensions import PulsarityApp
 from .webserver import generate_app
 from .utils.config import configs
 from .utils.crypto import generate_self_signed_cert
-
-from .database import User, Role, Permission
 
 __version__ = importlib.metadata.version(__name__)
 
@@ -37,7 +35,7 @@ def _signal_shutdown(*_: Any) -> None:
     logger.debug("Server shutdown signaled")
 
 
-def _add_signal_callback(app: RHApplication) -> None:
+def _add_signal_callback(app: PulsarityApp) -> None:
     """
     Add a callback to system signal
 
@@ -52,13 +50,13 @@ def _add_signal_callback(app: RHApplication) -> None:
         loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
 
-def prophazard_webserver(
-    app: RHApplication | None = None,
+def pulsarity_webserver(
+    app: PulsarityApp | None = None,
 ) -> Coroutine[None, None, None]:
     """
     An awaitable task for the application deployed with a hypercorn ASGI server.
 
-    This task is configured by reading parameters from the prophazard config file
+    This task is configured by reading parameters from the pulsarity config file
 
     :param app: Application to use for the webserver, defaults to None
     :return: Webserver coroutine

@@ -1,4 +1,4 @@
-# PropHazard
+# Pulsarity
 A demonstrator project for a RotorHazard variant
 
 > [!CAUTION]  
@@ -59,9 +59,9 @@ please follow any guidelines/practices recommended by the following projects:
 To start the webserver use
 
 ```
-poetry run start-prophazard
+poetry run start
 ```
 or
 ```
-python -m prophazard
+python -m pulsarity
 ```

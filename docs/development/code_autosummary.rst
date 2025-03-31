@@ -6,4 +6,4 @@ Source Code Documentation
    :template: custom-mod-template.rst
    :recursive:
 
-   prophazard
+   pulsarity

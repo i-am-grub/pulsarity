@@ -23,9 +23,9 @@ from .database.permission import UserPermission
 logger = logging.getLogger(__name__)
 
 
-class RHApplication(Quart):
+class PulsarityApp(Quart):
     """
-    RotorHazard web application based on Quart
+    Pulsarity web application based on Quart
     """
 
     # pylint: disable=W0106
@@ -100,16 +100,16 @@ class RHApplication(Quart):
         return self.schedule_background_task(time, func, *args, **kwargs)
 
 
-class RHBlueprint(Blueprint):
+class PulsarityBlueprint(Blueprint):
     """
-    RotorHazard Quart based blueprints
+    Pulsarity Quart based blueprints
     """
 
 
-current_app: RHApplication = _current_app  # type: ignore
+current_app: PulsarityApp = _current_app  # type: ignore
 
 
-class RHUser(AuthUser):
+class AppUser(AuthUser):
     """
     The client user class for system authentication and guarding access
     to routes and websockets.
@@ -146,4 +146,4 @@ class RHUser(AuthUser):
         return permission in permissions
 
 
-current_user: RHUser = _current_user  # type: ignore
+current_user: AppUser = _current_user  # type: ignore

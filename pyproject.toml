@@ -44,7 +44,7 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-start-pulsarity = "pulsarity.__main__:main"
+start = "pulsarity.__main__:main"
 
 [tool.poetry.group.dev]
 optional = true
@@ -100,14 +100,14 @@ commands = [["pytest", {cov="src",  replace = "posargs", default = ["tests"], ex
 description = "run black"
 skip_install = true
 deps = ["black"]
-commands = [["black", { replace = "posargs", default = ["src/prophazard"], extend = true} ]]
+commands = [["black", { replace = "posargs", default = ["src/pulsarity"], extend = true} ]]
 
 [tool.tox.env.mypy]
 description = "run mypy"
 deps = ["mypy"]
-commands = [["mypy", { replace = "posargs", default = ["src/prophazard"], extend = true} ]]
+commands = [["mypy", { replace = "posargs", default = ["src/pulsarity"], extend = true} ]]
 
 [tool.tox.env.pylint]
 description = "run pylint"
 deps = ["pylint"]
-commands = [["pylint", "--recursive=y", { replace = "posargs", default = ["src/prophazard"], extend = true} ]]
+commands = [["pylint", "--recursive=y", { replace = "posargs", default = ["src/pulsarity"], extend = true} ]]

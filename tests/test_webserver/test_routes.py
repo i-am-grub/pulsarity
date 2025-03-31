@@ -3,7 +3,7 @@ import pytest
 from quart.typing import TestClientProtocol
 from quart_auth import authenticated_client
 
-from pulsarity.extensions import RHApplication
+from pulsarity.extensions import PulsarityApp
 from pulsarity.database import User
 
 
@@ -24,7 +24,7 @@ async def webserver_login_valid(
 
 @pytest.mark.asyncio
 async def test_webserver_login_valid(
-    app: RHApplication, default_user_creds: tuple[str], _setup_database
+    app: PulsarityApp, default_user_creds: tuple[str], _setup_database
 ):
     client = app.test_client()
 
@@ -50,7 +50,7 @@ async def test_webserver_login_invalid(
 
 @pytest.mark.asyncio
 async def test_password_reset_invalid(
-    app: RHApplication, default_user_creds: tuple[str], _setup_database
+    app: PulsarityApp, default_user_creds: tuple[str], _setup_database
 ):
     client: TestClientProtocol = app.test_client()
 
@@ -72,7 +72,7 @@ async def test_password_reset_invalid(
 
 @pytest.mark.asyncio
 async def test_password_reset_valid(
-    app: RHApplication, default_user_creds: tuple[str], _setup_database
+    app: PulsarityApp, default_user_creds: tuple[str], _setup_database
 ):
     client: TestClientProtocol = app.test_client()
     new_password = "new_password"

@@ -9,13 +9,13 @@ from enum import StrEnum, auto
 
 from tortoise import fields
 
-from .base import _PHDataBase
+from .base import _PulsarityBase
 
 if TYPE_CHECKING:
     from .role import Role
 
 
-class Permission(_PHDataBase):
+class Permission(_PulsarityBase):
     """
     Role for the application
     """

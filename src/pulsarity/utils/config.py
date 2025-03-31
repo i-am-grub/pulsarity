@@ -33,7 +33,7 @@ def get_configs_defaults() -> dict[_SECTIONS, dict]:
     # secret configuration:
     secrets = {
         "DEFAULT_USERNAME": "admin",
-        "DEFAULT_PASSWORD": "rotorhazard",
+        "DEFAULT_PASSWORD": "pulsarity",
         "SECRET_KEY": token_urlsafe(32),
     }
 
@@ -51,7 +51,7 @@ def get_configs_defaults() -> dict[_SECTIONS, dict]:
     }
 
     # other default configurations
-    general = {"LAST_MODIFIED_TIME": 0}
+    general = {"LAST_MODIFIED_TIME": datetime.datetime.now()}
 
     # logging settings
     logging_ = generate_default_config()

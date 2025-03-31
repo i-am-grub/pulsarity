@@ -43,14 +43,14 @@ def generate_default_config() -> dict:
                 "level": "INFO",
                 "formatter": "detailed",
                 "class": "logging.handlers.TimedRotatingFileHandler",
-                "filename": "logs/prophazard.log",
+                "filename": "logs/pulsarity.log",
                 "when": "midnight",
                 "interval": 1,
                 "backupCount": 10,
             },
             "queue_handler": {
                 "class": "logging.handlers.QueueHandler",
-                "listener": "prophazard.utils.logging.AutoQueueListener",
+                "listener": "pulsarity.utils.logging.AutoQueueListener",
                 "handlers": ["stderr", "file"],
                 "respect_handler_level": True,
             },
@@ -61,7 +61,7 @@ def generate_default_config() -> dict:
                 "level": "WARNING",
                 "propagate": False,
             },
-            "prophazard": {
+            "pulsarity": {
                 "handlers": ["queue_handler"],
                 "level": "INFO",
                 "propagate": False,

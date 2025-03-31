@@ -1,5 +1,5 @@
 """
-PropHazard server entry point
+Pulsarity server entry point
 """
 
 import os
@@ -9,7 +9,7 @@ import logging
 import logging.config
 import logging.handlers
 
-from . import prophazard_webserver
+from . import pulsarity_webserver
 from .utils.config import configs
 
 # pylint: disable=E0401
@@ -39,20 +39,20 @@ def _setup_logging():
 
 def main() -> None:
     """
-    Run the PropHazard server
+    Run the default Pulsarity server
     """
     multiprocessing.freeze_support()
 
-    os.environ["REBOOT_PH_FLAG"] = "inactive"
+    os.environ["REBOOT_PULSARITY_FLAG"] = "inactive"
 
     _setup_logging()
     logger = logging.getLogger(__name__)
 
-    run(prophazard_webserver())
+    run(pulsarity_webserver())
 
-    if os.environ["REBOOT_PH_FLAG"] == "active":
+    if os.environ["REBOOT_PULSARITY_FLAG"] == "active":
         logger.info("Automatically rebooting server")
-        args = [sys.executable, "-m", "prophazard", "-OO"]
+        args = [sys.executable, "-m", "pulsarity", *sys.argv]
         os.execv(sys.executable, args)
 
 
