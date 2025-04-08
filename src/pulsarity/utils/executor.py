@@ -6,7 +6,7 @@ import sys
 import os
 import asyncio
 from asyncio import Future
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import Executor, ThreadPoolExecutor, ProcessPoolExecutor
 
 
 class ExecutorManager:
@@ -14,7 +14,7 @@ class ExecutorManager:
     Manager for the system pool executor
     """
 
-    _executor: Future[ThreadPoolExecutor | ProcessPoolExecutor] | None = None
+    _executor: Future[Executor] | None = None
     """The serverwide executor pool to use for parallel computations"""
 
     def set_executor(self) -> None:
@@ -40,14 +40,14 @@ class ExecutorManager:
 
         count_ = min(1 if count is None or count <= 1 else count - 1, 8)
         if sys.version_info >= (3, 13) and not sys._is_gil_enabled():
-            pool_exec = ThreadPoolExecutor(count_)
+            pool_exec: Executor = ThreadPoolExecutor(count_)
         else:
             pool_exec = ProcessPoolExecutor(count_)
 
         if not self._executor.done():
             self._executor.set_result(pool_exec)
 
-    async def get_executor(self) -> ThreadPoolExecutor | ProcessPoolExecutor:
+    async def get_executor(self) -> Executor:
         """
         Get an executor to enable parallel processing for computationally
         intensive tasks. If the task to schedule in the executor is IO bound,

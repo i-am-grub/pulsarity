@@ -7,7 +7,6 @@ import sys
 import multiprocessing
 import logging
 import logging.config
-import logging.handlers
 
 from . import pulsarity_webserver
 from .utils.config import configs
