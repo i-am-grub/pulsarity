@@ -1,5 +1,11 @@
 name: Backend-Tests
 
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write
+  checks: write
+
 on:
   push:
     branches: [master]

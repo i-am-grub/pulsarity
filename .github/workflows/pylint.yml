@@ -1,5 +1,11 @@
 name: Pylint
 
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write
+  checks: write
+
 on: [push]
 
 jobs:
