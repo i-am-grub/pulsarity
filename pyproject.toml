@@ -39,6 +39,7 @@ pgsql = [ "asyncpg>=0.30,<0.31" ]
 
 [tool.poetry]
 package-mode = true
+include = ["src/pulsarity/py.typed"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
