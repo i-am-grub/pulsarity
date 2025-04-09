@@ -3,6 +3,7 @@ System event distribution to clients
 """
 
 from asyncio import PriorityQueue
+from collections import defaultdict
 from collections.abc import AsyncGenerator, Callable
 from dataclasses import astuple
 from uuid import UUID, uuid4
@@ -28,7 +29,7 @@ class EventBroker:
         Class initialization
         """
         self._connections: set[PriorityQueue] = set()
-        self._callbacks: dict[str, set[Callable]] = {}
+        self._callbacks: dict[str, set[Callable]] = defaultdict(set)
 
     def publish(
         self, event: _ApplicationEvt, data: dict, *, uuid: UUID | None = None
@@ -70,9 +71,6 @@ class EventBroker:
         :param event_id: The id of the event to register the callback against
         :param callback: The callback to run
         """
-        if event.id not in self._callbacks:
-            self._callbacks[event.id] = set()
-
         self._callbacks[event.id].add(callback)
 
     def unregister_event_callback(self, event: _ApplicationEvt, callback: Callable):
@@ -82,9 +80,6 @@ class EventBroker:
         :param event_id: The id of the event to register the callback against
         :param callback: The callback to remove
         """
-        if event.id not in self._callbacks:
-            return
-
         self._callbacks[event.id].remove(callback)
 
     async def subscribe(
@@ -102,3 +97,6 @@ class EventBroker:
                 yield await connection.get()
         finally:
             self._connections.remove(connection)
+
+
+event_broker = EventBroker()

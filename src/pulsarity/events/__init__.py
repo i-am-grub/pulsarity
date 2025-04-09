@@ -2,5 +2,5 @@
 System events
 """
 
-from .broker import EventBroker
+from .broker import event_broker
 from .enums import _ApplicationEvt, SpecialEvt, EventSetupEvt, RaceSequenceEvt

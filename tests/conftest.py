@@ -6,6 +6,7 @@ from tortoise import Tortoise, connections
 from pulsarity.webserver import generate_app
 from pulsarity.extensions import PulsarityApp
 from pulsarity.database import setup_default_objects
+from pulsarity.race.manager import RaceManager
 
 from pulsarity.database.raceformat import RaceSchedule
 
@@ -56,6 +57,11 @@ async def setup_database():
     yield
 
     await connections.close_all()
+
+
+@pytest_asyncio.fixture(name="race_manager", scope="function")
+def race_manager():
+    return RaceManager()
 
 
 @pytest.fixture()

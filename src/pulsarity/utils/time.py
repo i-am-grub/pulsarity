@@ -4,7 +4,7 @@ Custom time utilities
 
 import time
 from datetime import datetime, timezone, timedelta
-from functools import lru_cache
+from functools import cache
 
 
 def get_current_epoch_time() -> timedelta:
@@ -27,7 +27,7 @@ def get_current_epoch_time_seconds() -> float:
     return get_current_epoch_time().total_seconds()
 
 
-@lru_cache(maxsize=1)
+@cache
 def get_server_start_time() -> timedelta:
     """
     Gets the server start time relative to 1 January 1970
@@ -49,7 +49,7 @@ def get_server_start_time_seconds() -> float:
     return get_server_start_time().total_seconds()
 
 
-@lru_cache(maxsize=1)
+@cache
 def get_server_start_time_monotonic() -> timedelta:
     """
     Gets the monotonic server start time
@@ -71,7 +71,7 @@ def get_server_start_time_monotonic_seconds() -> float:
     return get_server_start_time_monotonic().total_seconds()
 
 
-@lru_cache(maxsize=1)
+@cache
 def mtonic_to_epoch_millis_offset() -> float:
     """
     Get the current offest of the system time compared to

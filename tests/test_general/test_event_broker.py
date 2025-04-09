@@ -1,7 +1,8 @@
 import pytest
 
 from pulsarity.extensions import PulsarityApp
-from pulsarity.events import EventBroker, EventSetupEvt, RaceSequenceEvt
+from pulsarity.events import EventSetupEvt, RaceSequenceEvt
+from pulsarity.events.broker import EventBroker
 
 
 async def broker_subscriber(broker: EventBroker, check_values: list):

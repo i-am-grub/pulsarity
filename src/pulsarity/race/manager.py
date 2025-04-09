@@ -9,7 +9,7 @@ from random import random
 from collections.abc import Generator
 
 from .enums import RaceStatus
-from ..events import RaceSequenceEvt
+from ..events import event_broker, RaceSequenceEvt
 from ..database.raceformat import RaceSchedule
 
 if TYPE_CHECKING:
@@ -76,13 +76,13 @@ class RaceManager:
 
         elif self.status == RaceStatus.RACING:
             data: dict = {}
-            current_app.event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
-            current_app.event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+            event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
+            event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
             self.status = RaceStatus.STOPPED
 
         elif self.status == RaceStatus.OVERTIME:
             data = {}
-            current_app.event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+            event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
             self.status = RaceStatus.STOPPED
 
     async def _stage(self, start_time: float, schedule: RaceSchedule) -> None:
@@ -94,7 +94,7 @@ class RaceManager:
         :param schedule: The format's race schedule
         """
         data: dict = {}
-        current_app.event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
+        event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
         self.status = RaceStatus.STAGING
 
         self._program_handle = current_app.schedule_background_task(
@@ -109,7 +109,7 @@ class RaceManager:
         :param schedule: The format's race schedule
         """
         data: dict = {}
-        current_app.event_broker.trigger(RaceSequenceEvt.RACE_START, data)
+        event_broker.trigger(RaceSequenceEvt.RACE_START, data)
         self.status = RaceStatus.RACING
 
         if not schedule.unlimited_time:
@@ -128,7 +128,7 @@ class RaceManager:
         :param schedule: The format's race schedule
         """
         data: dict = {}
-        current_app.event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
+        event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
         self.status = RaceStatus.OVERTIME
 
         if schedule.overtime_sec > 0:
@@ -147,7 +147,10 @@ class RaceManager:
         Put the system into race stop mode
         """
         data: dict = {}
-        current_app.event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+        event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
         self.status = RaceStatus.STOPPED
 
         self._program_handle = None
+
+
+race_manager = RaceManager()

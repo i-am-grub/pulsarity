@@ -18,7 +18,8 @@ from .auth import permission_required
 from ..database.permission import SystemDefaultPerms, UserPermission
 from ..database.raceformat import RaceSchedule
 from ..extensions import current_app, current_user
-from ..events import _ApplicationEvt, SpecialEvt, RaceSequenceEvt
+from ..events import event_broker, _ApplicationEvt, SpecialEvt, RaceSequenceEvt
+from ..race import race_manager
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -90,7 +91,7 @@ async def server_ws() -> None:
     @copy_current_websocket_context
     async def server_sending() -> None:
 
-        async for event in current_app.event_broker.subscribe():
+        async for event in event_broker.subscribe():
             _, permission, event_id, event_uuid, data = event
 
             if event_id == SpecialEvt.PERMISSIONS_UPDATE.id:
@@ -129,9 +130,7 @@ async def heatbeat_echo(ws_data: WSEventData):
 
     :param ws_data: Recieved websocket event data
     """
-    current_app.event_broker.publish(
-        SpecialEvt.HEARTBEAT, ws_data.data, uuid=ws_data.id
-    )
+    event_broker.publish(SpecialEvt.HEARTBEAT, ws_data.data, uuid=ws_data.id)
 
 
 @ws_event(SpecialEvt.RESTART)
@@ -159,7 +158,7 @@ async def schedule_race(ws_data: WSEventData):
         race_time_sec=60,
         overtime_sec=0,
     )
-    current_app.race_manager.schedule_race(schedule, **ws_data.data)
+    race_manager.schedule_race(schedule, **ws_data.data)
 
 
 @ws_event(RaceSequenceEvt.RACE_STOP)
@@ -169,4 +168,4 @@ async def race_stop():
 
     :param _ws_data: Recieved websocket event data
     """
-    current_app.race_manager.stop_race()
+    race_manager.stop_race()

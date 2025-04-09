@@ -11,8 +11,8 @@ from quart_auth import Unauthorized
 
 from tortoise import Tortoise, connections
 
-from ..extensions import PulsarityBlueprint, current_app
-from ..events import SpecialEvt
+from ..extensions import PulsarityBlueprint
+from ..events import event_broker, SpecialEvt
 from ..database import setup_default_objects
 
 from ..utils.executor import executor
@@ -49,11 +49,11 @@ async def lifespan() -> Any:
     """
 
     logger.info("Pulsarity startup completed...")
-    current_app.event_broker.trigger(SpecialEvt.STARTUP, {})
+    event_broker.trigger(SpecialEvt.STARTUP, {})
 
     yield
 
-    current_app.event_broker.trigger(SpecialEvt.SHUTDOWN, {})
+    event_broker.trigger(SpecialEvt.SHUTDOWN, {})
     logger.info("Pulsarity shutdown completed...")
 
 

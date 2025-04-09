@@ -15,8 +15,6 @@ from quart import current_app as _current_app
 from quart_auth import AuthUser
 from quart_auth import current_user as _current_user
 
-from .events import EventBroker
-from .race.manager import RaceManager
 from .database.user import User
 from .database.permission import UserPermission
 
@@ -33,9 +31,6 @@ class PulsarityApp(Quart):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__.__doc__
         super().__init__(*args, **kwargs)
-
-        self.event_broker: EventBroker = EventBroker()
-        self.race_manager: RaceManager = RaceManager()
 
     def schedule_background_task(
         self, time: float, func: Callable, *args: Any, **kwargs: Any
