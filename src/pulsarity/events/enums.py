@@ -3,12 +3,12 @@ Enums for system events
 """
 
 from dataclasses import dataclass
-from enum import IntEnum, Enum, auto
+from enum import Enum, IntEnum, auto
 
-from ..database.permission import UserPermission, SystemDefaultPerms
+from ..database.permission import SystemDefaultPerms, UserPermission
 
 
-class _EvtPriority(IntEnum):
+class EvtPriority(IntEnum):
     """
     The priority of the event over other events that may
     be queued. By default, this is does not determine the
@@ -18,9 +18,12 @@ class _EvtPriority(IntEnum):
     """
 
     HIGHEST = auto()
+    HIGHER = auto()
     HIGH = auto()
     MEDUIUM = auto()
     LOW = auto()
+    LOWER = auto()
+    LOWEST = auto()
 
 
 @dataclass
@@ -29,7 +32,7 @@ class _EvtData:
     The dataclass used to define event enums
     """
 
-    priority: _EvtPriority
+    priority: EvtPriority
     """The priority associated with the event"""
     permission: UserPermission
     """The permission the event is associated with"""
@@ -44,7 +47,7 @@ class _ApplicationEvt(_EvtData, Enum):
     """
 
     @staticmethod
-    def _generate_next_value_(name: str, _start: int, _count: int, _last_values: list):
+    def _generate_next_value_(name: str, *_):
         """
         Return the lower-cased version of the member name. Follows
         the method defined for StrEnum in the standard library
@@ -57,11 +60,11 @@ class SpecialEvt(_ApplicationEvt):
     Special Events
     """
 
-    HEARTBEAT = _EvtPriority.LOW, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
-    PERMISSIONS_UPDATE = _EvtPriority.HIGH, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
-    STARTUP = _EvtPriority.HIGHEST, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
-    SHUTDOWN = _EvtPriority.HIGHEST, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
-    RESTART = _EvtPriority.LOW, SystemDefaultPerms.SYSTEM_CONTROL, auto()
+    HEARTBEAT = EvtPriority.LOW, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
+    PERMISSIONS_UPDATE = EvtPriority.HIGH, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
+    STARTUP = EvtPriority.HIGHEST, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
+    SHUTDOWN = EvtPriority.HIGHEST, SystemDefaultPerms.EVENT_WEBSOCKET, auto()
+    RESTART = EvtPriority.LOW, SystemDefaultPerms.SYSTEM_CONTROL, auto()
 
 
 class EventSetupEvt(_ApplicationEvt):
@@ -69,9 +72,9 @@ class EventSetupEvt(_ApplicationEvt):
     Events associated with modification to race objects
     """
 
-    PILOT_ADD = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
-    PILOT_ALTER = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
-    PILOT_DELETE = _EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
+    PILOT_ADD = EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
+    PILOT_ALTER = EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
+    PILOT_DELETE = EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
 
 
 class RaceSequenceEvt(_ApplicationEvt):
@@ -79,8 +82,8 @@ class RaceSequenceEvt(_ApplicationEvt):
     Events associated with live race sequence
     """
 
-    RACE_SCHEDULE = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
-    RACE_STAGE = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
-    RACE_START = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
-    RACE_FINISH = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
-    RACE_STOP = _EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_SCHEDULE = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_STAGE = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_START = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_FINISH = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_STOP = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
