@@ -2,20 +2,18 @@
 System event distribution to clients
 """
 
-from asyncio import PriorityQueue
+import asyncio
+import bisect
+import copy
+import dataclasses
+import functools
+import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator, Callable
-from dataclasses import astuple
-from uuid import UUID, uuid4
-from typing import TYPE_CHECKING
+from typing import Any
 
-from .enums import _EvtPriority, _ApplicationEvt
 from ..database.permission import UserPermission
-
-if TYPE_CHECKING:
-    from ..extensions import current_app
-else:
-    from quart import current_app
+from .enums import EvtPriority, _ApplicationEvt
 
 
 class EventBroker:
@@ -28,11 +26,17 @@ class EventBroker:
         """
         Class initialization
         """
-        self._connections: set[PriorityQueue] = set()
-        self._callbacks: dict[str, set[Callable]] = defaultdict(set)
+        self._connections: set[asyncio.PriorityQueue] = set()
+        self._callbacks: dict[str, list[tuple[int, Callable, dict[str, Any]]]] = (
+            defaultdict(list)
+        )
 
     def publish(
-        self, event: _ApplicationEvt, data: dict, *, uuid: UUID | None = None
+        self,
+        event: _ApplicationEvt,
+        data: dict[str, Any],
+        *,
+        uuid_: uuid.UUID | None = None,
     ) -> None:
         """
         Push the event data to all subscribed clients
@@ -41,14 +45,18 @@ class EventBroker:
         :param data: Event data
         :param uuid: Message uuid, defaults to None
         """
-        uuid_ = uuid4() if uuid is None else uuid
+        uid = uuid.uuid4() if uuid_ is None else uuid_
 
-        payload = (*astuple(event), uuid_, data)
+        payload = (*dataclasses.astuple(event), uid, data)
         for connection in self._connections:
             connection.put_nowait(payload)
 
-    def trigger(
-        self, event: _ApplicationEvt, data: dict, *, uuid: UUID | None = None
+    async def trigger(
+        self,
+        event: _ApplicationEvt,
+        data: dict[str, Any],
+        *,
+        uuid_: uuid.UUID | None = None,
     ) -> None:
         """
         Publishes data to all subscribed clients and triggers
@@ -58,39 +66,71 @@ class EventBroker:
         :param data: Event data
         :param uuid: Message uuid, defaults to None
         """
-        self.publish(event, data, uuid=uuid)
+        self.publish(event, data, uuid_=uuid_)
 
-        if (callbacks := self._callbacks.get(event.id)) is not None:
-            for callback in callbacks:
-                current_app.add_background_task(callback, **data)
+        callbacks = copy.copy(self._callbacks[event.id])
 
-    def register_event_callback(self, event: _ApplicationEvt, callback: Callable):
+        for callback in callbacks:
+            kwargs = callback[2] | data
+
+            callable_ = callback[1]
+            if asyncio.iscoroutinefunction(callable_):
+                await callable_(**kwargs)
+            else:
+                await asyncio.to_thread(callable_, **kwargs)
+
+    def register_event_callback(
+        self,
+        event: _ApplicationEvt,
+        callback: Callable,
+        *,
+        priority: EvtPriority = EvtPriority.LOWEST,
+        default_kwargs: dict[str, Any] | None = None,
+    ) -> None:
         """
         Register a callback to run when when an event is published
 
-        :param event_id: The id of the event to register the callback against
+        :param event: The id of the event to register the callback against
         :param callback: The callback to run
+        :param priority: The priority associated with scheduling the callback.
+        :param default_kwargs: Default key word arguments to use and/or include
+        when the event is triggered
         """
-        self._callbacks[event.id].add(callback)
+        if default_kwargs is not None:
+            default_kwargs_ = default_kwargs
+        else:
+            default_kwargs_ = {}
 
-    def unregister_event_callback(self, event: _ApplicationEvt, callback: Callable):
+        bisect.insort_right(
+            self._callbacks[event.id], (priority, callback, default_kwargs_)
+        )
+
+    def unregister_event_callback(
+        self, event: _ApplicationEvt, callback: Callable
+    ) -> None:
         """
         Unregister an event callback
 
-        :param event_id: The id of the event to register the callback against
+        :param event_id: The identifier of the event to register the callback against
         :param callback: The callback to remove
         """
-        self._callbacks[event.id].remove(callback)
+        callbacks = self._callbacks[event.id]
+        for callback_ in callbacks:
+            if callback is callback_[1]:
+                callbacks.remove(callback_)
+                break
+        else:
+            raise RuntimeError("Callback not register in system")
 
     async def subscribe(
         self,
-    ) -> AsyncGenerator[tuple[_EvtPriority, UserPermission, str, UUID, dict], None]:
+    ) -> AsyncGenerator[tuple[EvtPriority, UserPermission, str, uuid.UUID, dict], None]:
         """
         Subscribe to recieve server events. Typically used for client connections
 
         :yield: Event data
         """
-        connection: PriorityQueue = PriorityQueue()
+        connection: asyncio.PriorityQueue = asyncio.PriorityQueue()
         self._connections.add(connection)
         try:
             while True:
@@ -100,3 +140,30 @@ class EventBroker:
 
 
 event_broker = EventBroker()
+"""
+A module singleton instance of `EventBroker`
+"""
+
+
+def register_as_callback(
+    event: _ApplicationEvt,
+    *,
+    priority: EvtPriority = EvtPriority.LOWEST,
+    default_kwargs: dict[str, Any] | None = None,
+):
+    """
+    Decorator for registing a callback function for an event
+
+    :param event: The id of the event to register the callback against
+    :param priority: The priority associated with scheduling the callback.
+    :param default_kwargs: Default key word arguments to use and/or include
+    when the event is triggered
+    """
+
+    @functools.wraps
+    def inner(func):
+        event_broker.register_event_callback(
+            event, func, priority=priority, default_kwargs=default_kwargs
+        )
+
+    return inner

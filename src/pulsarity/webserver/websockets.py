@@ -2,24 +2,23 @@
 Webserver Websocket Connections
 """
 
-import os
-import signal
-import logging
 import asyncio
 import inspect
-from typing import TypeVar, ParamSpec
-from collections.abc import Callable, Awaitable
+import logging
+import os
+import signal
+from collections.abc import Awaitable, Callable
+from typing import ParamSpec, TypeVar
 
-from quart import websocket, copy_current_websocket_context
-from pydantic import BaseModel, UUID4, ValidationError
+from pydantic import UUID4, BaseModel, ValidationError
+from quart import copy_current_websocket_context, websocket
 
-from ..extensions import PulsarityBlueprint
-from .auth import permission_required
 from ..database.permission import SystemDefaultPerms, UserPermission
 from ..database.raceformat import RaceSchedule
-from ..extensions import current_app, current_user
-from ..events import event_broker, _ApplicationEvt, SpecialEvt, RaceSequenceEvt
+from ..events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt, event_broker
+from ..extensions import PulsarityBlueprint, current_app, current_user
 from ..race import race_manager
+from .auth import permission_required
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -130,7 +129,7 @@ async def heatbeat_echo(ws_data: WSEventData):
 
     :param ws_data: Recieved websocket event data
     """
-    event_broker.publish(SpecialEvt.HEARTBEAT, ws_data.data, uuid=ws_data.id)
+    event_broker.publish(SpecialEvt.HEARTBEAT, ws_data.data, uuid_=ws_data.id)
 
 
 @ws_event(SpecialEvt.RESTART)
@@ -168,4 +167,4 @@ async def race_stop():
 
     :param _ws_data: Recieved websocket event data
     """
-    race_manager.stop_race()
+    await race_manager.stop_race()
