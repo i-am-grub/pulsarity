@@ -2,10 +2,11 @@
 System events
 """
 
-from .broker import event_broker, register_as_callback
+from .broker import EventBroker, event_broker, register_as_callback
 from .enums import EventSetupEvt, RaceSequenceEvt, SpecialEvt, _ApplicationEvt
 
 __all__ = [
+    "EventBroker",
     "event_broker",
     "register_as_callback",
     "EventSetupEvt",

@@ -1,10 +1,11 @@
-import pytest
-import time
 import asyncio
+import time
 
+import pytest
+
+from pulsarity.database import RaceSchedule
 from pulsarity.extensions import PulsarityApp
 from pulsarity.race.enums import RaceStatus
-from pulsarity.database import RaceSchedule
 from pulsarity.race.manager import RaceManager
 
 
@@ -23,7 +24,7 @@ async def future_schedule(
 async def cancel_race(app_: PulsarityApp, race_manager: RaceManager):
 
     async with app_.app_context():
-        race_manager.stop_race()
+        await race_manager.stop_race()
 
 
 @pytest.mark.asyncio

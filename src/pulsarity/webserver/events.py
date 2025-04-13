@@ -2,21 +2,19 @@
 Webserver event handling
 """
 
-import logging
 import json
+import logging
 from typing import Any
 
 from quart import ResponseReturnValue, redirect, url_for
 from quart_auth import Unauthorized
-
 from tortoise import Tortoise, connections
 
-from ..extensions import PulsarityBlueprint
-from ..events import event_broker, SpecialEvt
 from ..database import setup_default_objects
-
-from ..utils.executor import executor
+from ..events import SpecialEvt, event_broker
+from ..extensions import PulsarityBlueprint
 from ..utils.config import configs
+from ..utils.executor import executor
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +47,11 @@ async def lifespan() -> Any:
     """
 
     logger.info("Pulsarity startup completed...")
-    event_broker.trigger(SpecialEvt.STARTUP, {})
+    await event_broker.trigger(SpecialEvt.STARTUP, {})
 
     yield
 
-    event_broker.trigger(SpecialEvt.SHUTDOWN, {})
+    await event_broker.trigger(SpecialEvt.SHUTDOWN, {})
     logger.info("Pulsarity shutdown completed...")
 
 

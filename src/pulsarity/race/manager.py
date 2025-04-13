@@ -2,15 +2,15 @@
 Race management
 """
 
-import logging
 import asyncio
-from typing import TYPE_CHECKING
-from random import random
+import logging
 from collections.abc import Generator
+from random import random
+from typing import TYPE_CHECKING
 
-from .enums import RaceStatus
-from ..events import event_broker, RaceSequenceEvt
 from ..database.raceformat import RaceSchedule
+from ..events import RaceSequenceEvt, event_broker
+from .enums import RaceStatus
 
 if TYPE_CHECKING:
     from ..extensions import current_app
@@ -62,7 +62,7 @@ class RaceManager:
         else:
             logger.warning("All conditions are not met to program race")
 
-    def stop_race(self) -> None:
+    async def stop_race(self) -> None:
         """
         Stop the race
         """
@@ -76,13 +76,13 @@ class RaceManager:
 
         elif self.status == RaceStatus.RACING:
             data: dict = {}
-            event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
-            event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+            await event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
+            await event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
             self.status = RaceStatus.STOPPED
 
         elif self.status == RaceStatus.OVERTIME:
             data = {}
-            event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+            await event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
             self.status = RaceStatus.STOPPED
 
     async def _stage(self, start_time: float, schedule: RaceSchedule) -> None:
@@ -94,7 +94,7 @@ class RaceManager:
         :param schedule: The format's race schedule
         """
         data: dict = {}
-        event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
+        await event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
         self.status = RaceStatus.STAGING
 
         self._program_handle = current_app.schedule_background_task(
@@ -109,7 +109,7 @@ class RaceManager:
         :param schedule: The format's race schedule
         """
         data: dict = {}
-        event_broker.trigger(RaceSequenceEvt.RACE_START, data)
+        await event_broker.trigger(RaceSequenceEvt.RACE_START, data)
         self.status = RaceStatus.RACING
 
         if not schedule.unlimited_time:
@@ -128,7 +128,7 @@ class RaceManager:
         :param schedule: The format's race schedule
         """
         data: dict = {}
-        event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
+        await event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
         self.status = RaceStatus.OVERTIME
 
         if schedule.overtime_sec > 0:
@@ -147,7 +147,7 @@ class RaceManager:
         Put the system into race stop mode
         """
         data: dict = {}
-        event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+        await event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
         self.status = RaceStatus.STOPPED
 
         self._program_handle = None
