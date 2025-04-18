@@ -2,55 +2,34 @@
 Webserver Components
 """
 
-from quart_auth import QuartAuth
-from quart_schema import QuartSchema
-
-from ..extensions import PulsarityApp, AppUser
-from .events import events as _events
-from .events import db_events as _db_events
-from .routes import auth as _auth
-from .routes import api as _api
-from .websockets import websockets as _websockets
+from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.middleware.authentication import AuthenticationMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from ..utils.config import configs
+from .auth import AuthenticationBackend
+from .events import lifespan as _lifespan
+from .routes import routes as http_routes
+from .websockets import routes as ws_routes
 
 
-def generate_app(*, test_mode: bool = False) -> PulsarityApp:
+def generate_application() -> Starlette:
     """
-    Generate a Pulsarity webserver application
+    Generates the Pulsarity application
 
-    :param test_mode: Run in test mode. If set to True, the events blueprint
-    will not be registered, defaults to False
-    :return: _description_
+    :return: The starlette application object
     """
 
-    app = PulsarityApp(__name__)
+    middleware = [
+        Middleware(
+            SessionMiddleware,
+            secret_key=str(configs.get_config("SECRETS", "SECRET_KEY")),
+            domain=str(configs.get_config("WEBSERVER", "HOST")),
+        ),
+        Middleware(AuthenticationMiddleware, backend=AuthenticationBackend()),
+    ]
 
-    app.secret_key = str(configs.get_config("SECRETS", "SECRET_KEY"))
+    all_routes = http_routes + ws_routes
 
-    QuartAuth(
-        app,
-        cookie_domain=str(configs.get_config("WEBSERVER", "HOST")),
-        cookie_name="PULSARITY_AUTH",
-        cookie_samesite="Strict",
-        mode="cookie",
-        duration=86400,
-        user_class=AppUser,
-    )
-
-    generate_api_docs = bool(configs.get_config("WEBSERVER", "API_DOCS"))
-    QuartSchema(
-        app,
-        openapi_path="/api/openapi.json" if generate_api_docs else None,
-        redoc_ui_path="/api/redocs" if generate_api_docs else None,
-        scalar_ui_path="/api/scalar" if generate_api_docs else None,
-        swagger_ui_path="/api/docs" if generate_api_docs else None,
-    )
-
-    for blueprint in (_events, _auth, _api, _websockets):
-        app.register_blueprint(blueprint)
-
-    if not test_mode:
-        app.register_blueprint(_db_events)
-
-    return app
+    return Starlette(routes=all_routes, lifespan=_lifespan, middleware=middleware)

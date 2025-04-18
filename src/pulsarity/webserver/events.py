@@ -2,60 +2,77 @@
 Webserver event handling
 """
 
+import asyncio
+import contextlib
 import json
 import logging
+import signal
 from typing import Any
 
-from quart import ResponseReturnValue, redirect, url_for
-from quart_auth import Unauthorized
+from starlette.applications import Starlette
 from tortoise import Tortoise, connections
 
 from ..database import setup_default_objects
 from ..events import SpecialEvt, event_broker
-from ..extensions import PulsarityBlueprint
+from ..utils.background import background_tasks
 from ..utils.config import configs
 from ..utils.executor import executor
 
 logger = logging.getLogger(__name__)
 
-events = PulsarityBlueprint("events", __name__)
-db_events = PulsarityBlueprint("db_events", __name__)
+_shutdown_event = asyncio.Event()
 
 
-@events.before_app_serving
-async def server_startup() -> None:
+def _signal_shutdown(*_: Any) -> None:
     """
-    Log the application startup
+    Set the event to shutdown the server gracefully
     """
+    _shutdown_event.set()
+    logger.debug("Server shutdown signaled")
+
+
+async def shutdown_waiter() -> None:
+    """
+    Async function that awaits until the server is
+    set to shutdown
+    """
+    await _shutdown_event.wait()
+
+
+@contextlib.asynccontextmanager
+async def lifespan(_app: Starlette):
+    """
+    Startup and shutdown procedures for the webserver
+
+    :param _app: The application
+    """
+    loop = asyncio.get_running_loop()
+    loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
+    loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
+
     logger.info("Starting Pulsarity...")
-    executor.set_executor()
 
+    async with asyncio.TaskGroup() as tg:
+        executor.set_executor()
+        tg.create_task(database_startup())
 
-@events.after_app_serving
-async def server_shutdown() -> None:
-    """
-    Log the application shutdown
-    """
-    logger.info("Stopping Pulsarity...")
-    await executor.shutdown_executor()
-
-
-@events.while_app_serving
-async def lifespan() -> Any:
-    """
-    Trigger startup and shutdown events
-    """
-
-    logger.info("Pulsarity startup completed...")
     await event_broker.trigger(SpecialEvt.STARTUP, {})
+    logger.info("Pulsarity startup completed...")
 
     yield
 
+    logger.info("Stopping Pulsarity...")
     await event_broker.trigger(SpecialEvt.SHUTDOWN, {})
+
+    await background_tasks.shutdown(5)
+
+    async with asyncio.TaskGroup() as tg:
+        tg.create_task(executor.shutdown_executor())
+        tg.create_task(database_shutdown())
+
     logger.info("Pulsarity shutdown completed...")
 
 
-@db_events.before_app_serving
 async def database_startup() -> None:
     """
     Initialize the database
@@ -82,7 +99,6 @@ async def database_startup() -> None:
     logger.debug("Database started, %s", json.dumps(tuple(Tortoise.apps)))
 
 
-@db_events.after_app_serving
 async def database_shutdown() -> None:
     """
     Shutdown the database
@@ -90,14 +106,3 @@ async def database_shutdown() -> None:
     await connections.close_all()
 
     logger.debug("Database shutdown")
-
-
-@events.errorhandler(Unauthorized)
-async def redirect_to_index(*_) -> ResponseReturnValue:
-    """
-    Redirects the user when `Unauthorized` to access
-    a route or websocket
-
-    :return: The server response
-    """
-    return redirect(url_for("index"))

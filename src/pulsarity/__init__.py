@@ -4,54 +4,29 @@ A demonstrator project for an asynchronous RotorHazard framework
 
 from __future__ import annotations
 
-import os
-import signal
-import asyncio
-import logging
 import importlib.metadata
-from typing import Any
+import logging
+import os
 from collections.abc import Coroutine
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
 from hypercorn.middleware import HTTPToHTTPSRedirectMiddleware
+from starlette.applications import Starlette
 
-from .extensions import PulsarityApp
-from .webserver import generate_app
 from .utils.config import configs
 from .utils.crypto import generate_self_signed_cert
+from .webserver import generate_application
+from .webserver.events import shutdown_waiter
 
 __version__ = importlib.metadata.version(__name__)
 
-_shutdown_event = asyncio.Event()
+
 logger = logging.getLogger(__name__)
 
 
-def _signal_shutdown(*_: Any) -> None:
-    """
-    Set the event to shutdown the server gracefully
-    """
-    _shutdown_event.set()
-    logger.debug("Server shutdown signaled")
-
-
-def _add_signal_callback(app: PulsarityApp) -> None:
-    """
-    Add a callback to system signal
-
-    :param app: The application to use for referencing the event loop.
-    A handler will be added to the targeted event loop.
-    """
-
-    @app.before_serving
-    async def _register_shutdown_signals() -> None:
-        loop = asyncio.get_running_loop()
-        loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
-        loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
-
-
 def pulsarity_webserver(
-    app: PulsarityApp | None = None,
+    app: Starlette | None = None,
 ) -> Coroutine[None, None, None]:
     """
     An awaitable task for the application deployed with a hypercorn ASGI server.
@@ -95,12 +70,9 @@ def pulsarity_webserver(
     )
 
     if app is None:
-        app = generate_app()
+        app = generate_application()
 
-    _add_signal_callback(app)
-
-    redirects = configs.get_config("WEBSERVER", "FORCE_REDIRECTS")
-    if redirects:
+    if bool(configs.get_config("WEBSERVER", "FORCE_REDIRECTS")):
         app = HTTPToHTTPSRedirectMiddleware(app, secure_bind[0])  # type: ignore
 
-    return serve(app, webserver_config, shutdown_trigger=_shutdown_event.wait)
+    return serve(app, webserver_config, shutdown_trigger=shutdown_waiter)  # type: ignore

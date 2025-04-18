@@ -6,16 +6,11 @@ import asyncio
 import logging
 from collections.abc import Generator
 from random import random
-from typing import TYPE_CHECKING
 
 from ..database.raceformat import RaceSchedule
 from ..events import RaceSequenceEvt, event_broker
+from ..utils.background import background_tasks
 from .enums import RaceStatus
-
-if TYPE_CHECKING:
-    from ..extensions import current_app
-else:
-    from quart import current_app
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +49,7 @@ class RaceManager:
         start_time = assigned_start + start_delay
 
         if all(self._staging_checks(assigned_start)):
-            self._program_handle = current_app.schedule_background_task(
+            self._program_handle = background_tasks.schedule_background_task(
                 assigned_start, self._stage, start_time, schedule
             )
             self.status = RaceStatus.SCHEDULED
@@ -97,7 +92,7 @@ class RaceManager:
         await event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
         self.status = RaceStatus.STAGING
 
-        self._program_handle = current_app.schedule_background_task(
+        self._program_handle = background_tasks.schedule_background_task(
             start_time, self._start, schedule
         )
 
@@ -113,7 +108,7 @@ class RaceManager:
         self.status = RaceStatus.RACING
 
         if not schedule.unlimited_time:
-            self._program_handle = current_app.delay_background_task(
+            self._program_handle = background_tasks.delay_background_task(
                 schedule.race_time_sec, self._finish, schedule
             )
 
@@ -132,7 +127,7 @@ class RaceManager:
         self.status = RaceStatus.OVERTIME
 
         if schedule.overtime_sec > 0:
-            self._program_handle = current_app.delay_background_task(
+            self._program_handle = background_tasks.delay_background_task(
                 schedule.overtime_sec, self._stop
             )
 

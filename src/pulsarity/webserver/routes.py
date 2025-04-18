@@ -2,141 +2,109 @@
 HTTP Rest API Routes
 """
 
-from uuid import UUID
 import logging
 
-from quart_auth import login_user, logout_user, login_required
-from quart_schema import validate_request, validate_response
-from pydantic import BaseModel
-from werkzeug.exceptions import NotFound
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+from starlette.routing import Mount, Route
 
-from ..extensions import PulsarityBlueprint, AppUser, current_user, current_app
-from .auth import permission_required
-from ..database.user import User
 from ..database.pilot import Pilot
-from ..database.permission import SystemDefaultPerms
-from .validation import BaseResponse, LoginRequest, LoginResponse, ResetPasswordRequest
+from .auth import PulsarityUser
+from .validation import BaseResponse
 
 logger = logging.getLogger(__name__)
 
 
-auth = PulsarityBlueprint(
-    "auth",
-    __name__,
-    url_prefix="/auth",
-)
-
-
-@auth.post("/")
-@validate_response(BaseResponse)
-async def check_auth() -> BaseResponse:
+async def check_auth(request: Request):
     """
     Check if a user is authenticated
 
     :return: The user's authentication status
     """
-    status = await current_user.is_authenticated
-    return BaseResponse(status=status)
+    user: PulsarityUser = request.user
+    return BaseResponse(status=user.is_authenticated)
 
 
-@auth.post("/login")
-@validate_request(LoginRequest)
-@validate_response(LoginResponse)
-async def login(data: LoginRequest) -> LoginResponse:
-    """
-    Pass the user credentials to log the user into the server
+# async def login(request: Request) -> LoginResponse | None:
+#     """
+#     Pass the user credentials to log the user into the server
 
-    :return: JSON containing the status of the request
-    """
-    user = await User.get_or_none(username=data.username)
+#     :return: JSON containing the status of the request
+#     """
+#     if request.method != "POST":
+#         return None
 
-    if user is not None and await user.verify_password(data.password):
-        auth_user = AppUser(user.auth_id.hex)
-        login_user(auth_user, True)
+#     data = await request.json()
+#     user = await User.get_or_none(username=data["username"])
 
-        logger.info("%s has been logged into the server", auth_user.auth_id)
+#     if user is not None and await user.verify_password(data.password):
+#         auth_user = AppUser(user.auth_id.hex)
+#         login_user(auth_user, True)
 
-        current_app.add_background_task(User.update_user_login_time)
+#         logger.info("%s has been logged into the server", auth_user.auth_id)
 
-        current_app.add_background_task(User.check_for_rehash, data.password)
+#         current_app.add_background_task(User.update_user_login_time)
 
-        return LoginResponse(status=True, password_reset_required=user.reset_required)
+#         current_app.add_background_task(User.check_for_rehash, data.password)
 
-    return LoginResponse(status=False)
+#         return LoginResponse(status=True, password_reset_required=user.reset_required)
 
-
-@auth.get("/logout")
-@login_required
-@validate_response(BaseResponse)
-async def logout() -> BaseResponse:
-    """
-    Logout the currently connected client
-
-    :return: JSON containing the status of the request
-    """
-    logout_user()
-    logger.info("Logged user (%s) out of the server", current_user.auth_id)
-    return BaseResponse(status=True)
+#     return None
 
 
-@auth.post("/reset-password")
-@login_required
-@validate_request(ResetPasswordRequest)
-@validate_response(BaseResponse)
-async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
-    """
-    Resets the password for the client user
+# async def logout(request: Request):
+#     """
+#     Logout the currently connected client
 
-    :return: JSON containing the status of the request
-    """
-    uuid = UUID(hex=current_user.auth_id)
-    user = await User.get_by_uuid(uuid)
-
-    if user is not None and await user.verify_password(data.old_password):
-        await user.update_user_password(data.new_password)
-
-        logger.info("Password reset for %s completed", user.username)
-
-        current_app.add_background_task(user.update_password_required, False)
-
-        return BaseResponse(status=True)
-
-    return BaseResponse(status=False)
+#     :return: JSON containing the status of the request
+#     """
+#     logout_user()
+#     logger.info("Logged user (%s) out of the server", current_user.auth_id)
+#     return BaseResponse(status=True)
 
 
-api = PulsarityBlueprint(
-    "api",
-    __name__,
-    url_prefix="/api",
-)
+# async def reset_password(request: Request):
+#     """
+#     Resets the password for the client user
+
+#     :return: JSON containing the status of the request
+#     """
+#     uuid = UUID(hex=current_user.auth_id)
+#     user = await User.get_by_uuid(uuid)
+
+#     if user is not None and await user.verify_password(data.old_password):
+#         await user.update_user_password(data.new_password)
+
+#         logger.info("Password reset for %s completed", user.username)
+
+#         current_app.add_background_task(user.update_password_required, False)
+
+#         return BaseResponse(status=True)
+
+#     return BaseResponse(status=False)
+
 
 PilotModel = Pilot.generate_pydaantic_model()
 
 
-@api.get("/pilot/<int:pilot_id>")
-@permission_required(SystemDefaultPerms.READ_PILOTS)
-@validate_response(PilotModel)
-async def get_pilot(pilot_id: int) -> BaseModel:
+async def get_pilot(request: Request):
     """
     Get the pilot by id
 
     :return: Pilot data.
     """
+    pilot_id: int = request.path_params["id"]
     pilot = await Pilot.get_by_id(pilot_id)
 
-    if pilot is None:
-        raise NotFound()
-
-    return await PilotModel.from_tortoise_orm(pilot)
+    if pilot is not None:
+        model = await PilotModel.from_tortoise_orm(pilot)
+        return JSONResponse(model)
 
 
 PilotModelList = Pilot.generate_pydaantic_queryset()
 
 
-@api.get("/pilot/all")
-@permission_required(SystemDefaultPerms.READ_PILOTS)
-@validate_response(PilotModelList)
-async def get_pilots() -> BaseModel:
+async def get_pilots(_request: Request):
     """
     A streaming route for getting all pilots currently stored in the
     database.
@@ -144,4 +112,25 @@ async def get_pilots() -> BaseModel:
     :yield: A generator yielding pilots converted
     to a encoded JSON object.
     """
-    return await PilotModelList.from_queryset(Pilot.all())
+    model = await PilotModelList.from_queryset(Pilot.all())
+    return JSONResponse(model)
+
+
+routes = [
+    Route("/", endpoint=check_auth),
+    # Mount(
+    #     "/auth",
+    #     routes=[
+    #         Route("/login", endpoint=login),
+    #         Route("/logout", endpoint=logout),
+    #         Route("/reset-password", endpoint=reset_password),
+    #     ],
+    # ),
+    Mount(
+        "/api",
+        routes=[
+            Route("/pilot/{id:int}", endpoint=get_pilot),
+            Route("/pilot/all", endpoint=get_pilots),
+        ],
+    ),
+]

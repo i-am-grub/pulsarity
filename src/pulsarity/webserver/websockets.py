@@ -8,24 +8,22 @@ import logging
 import os
 import signal
 from collections.abc import Awaitable, Callable
-from typing import ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar, override
 
 from pydantic import UUID4, BaseModel, ValidationError
-from quart import copy_current_websocket_context, websocket
+from starlette.endpoints import WebSocketEndpoint
+from starlette.routing import WebSocketRoute
+from starlette.websockets import WebSocket
 
-from ..database.permission import SystemDefaultPerms, UserPermission
+from ..database.permission import UserPermission
 from ..database.raceformat import RaceSchedule
 from ..events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt, event_broker
-from ..extensions import PulsarityBlueprint, current_app, current_user
 from ..race import race_manager
-from .auth import permission_required
 
 T = TypeVar("T")
 P = ParamSpec("P")
 
 logger = logging.getLogger(__name__)
-
-websockets = PulsarityBlueprint("websockets", __name__, url_prefix="/ws")
 
 _wse_routes: dict[str, tuple[UserPermission, Callable]] = {}
 
@@ -80,46 +78,62 @@ async def handle_ws_event(ws_data: WSEventData, permissions: set[str]):
         logger.debug("Route not available for websocket data")
 
 
-@websockets.websocket("/server")
-@permission_required(SystemDefaultPerms.EVENT_WEBSOCKET)
-async def server_ws() -> None:
+class ServerWS(WebSocketEndpoint):
     """
-    The primary full duplex websocket for the main web application
+    The full duplex websocket connection for clients
     """
 
-    @copy_current_websocket_context
-    async def server_sending() -> None:
+    encoding = "json"
+    _events: asyncio.Task | None = None
+
+    def __init__(self, scope, receive, send) -> None:
+        super().__init__(scope, receive, send)
+        self._permissions: set[str] = set()
+
+    @override
+    async def on_connect(self, websocket) -> None:
+        self._permissions = await websocket.user.get_permissions()
+        await websocket.accept()
+
+        self._events = asyncio.create_task(self.event_subscriber(websocket))
+
+    @override
+    async def on_receive(self, _websocket, data) -> None:
+
+        try:
+            model = WSEventData.model_validate_json(data)
+        except ValidationError:
+            logger.debug("Error validating websocket data: %s", data)
+
+        asyncio.create_task(handle_ws_event(model, self._permissions))
+
+    @override
+    async def on_disconnect(self, _websocket, _close_code) -> None:
+        if self._events is not None:
+            self._events.cancel()
+
+    async def event_subscriber(self, websocket: WebSocket) -> None:
+        """
+        Subscibe the client to system events
+
+        :param websocket: The websocket to use for the connection
+        """
 
         async for event in event_broker.subscribe():
             _, permission, event_id, event_uuid, data = event
 
-            if event_id == SpecialEvt.PERMISSIONS_UPDATE.id:
-                temp = await current_user.get_permissions()
-                permissions.clear()
-                permissions.update(temp)
-
-            elif permission in permissions:
-                evt_data = WSEventData(id=event_uuid, event_id=event_id, data=data)
-                await websocket.send_json(evt_data.model_dump())
-
-    @copy_current_websocket_context
-    async def server_receiving() -> None:
-        while True:
-            data = await websocket.receive()
-
-            try:
-                model = WSEventData.model_validate_json(data)
-            except ValidationError:
-                logger.debug("Error validating websocket data: %s", data)
+            if self._permissions is None:
                 continue
 
-            current_app.add_background_task(handle_ws_event, model, permissions)
+            if event_id == SpecialEvt.PERMISSIONS_UPDATE.id:
+                temp = await websocket.user.get_permissions()
 
-    permissions = await current_user.get_permissions()
+                self._permissions.clear()
+                self._permissions.update(temp)
 
-    async with asyncio.TaskGroup() as tg:
-        tg.create_task(server_sending())
-        tg.create_task(server_receiving())
+            elif permission in self._permissions:
+                evt_data = WSEventData(id=event_uuid, event_id=event_id, data=data)
+                await websocket.send_json(evt_data.model_dump())
 
 
 @ws_event(SpecialEvt.HEARTBEAT)
@@ -168,3 +182,8 @@ async def race_stop():
     :param _ws_data: Recieved websocket event data
     """
     await race_manager.stop_race()
+
+
+routes = [
+    WebSocketRoute("/server", endpoint=ServerWS),
+]
