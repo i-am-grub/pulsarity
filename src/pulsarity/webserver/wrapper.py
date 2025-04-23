@@ -2,70 +2,67 @@
 Endpoint wrappers
 """
 
-import asyncio
 import functools
 from collections.abc import Callable, Coroutine
-from typing import Any, ParamSpec, TypeVar
+from json.decoder import JSONDecodeError
+from typing import ParamSpec, TypeVar
 
 from pydantic import BaseModel, ValidationError
+from starlette.authentication import requires
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse, Response
+from starlette.responses import JSONResponse, Response
 
 from ..database.permission import UserPermission
-from .auth import PulsarityUser
+from ..utils.asyncio import ensure_async
+from .validation import BaseResponse
 
 T = TypeVar("T")
 P = ParamSpec("P")
 
 
-async def _run_endpoint(func: Callable[..., Any | None], *args, **kwargs) -> Any | None:
-
-    if asyncio.iscoroutinefunction(func):
-        return await func(*args, **kwargs)
-
-    return await asyncio.to_thread(func, *args, **kwargs)
-
-
 def endpoint(
-    *,
-    request_model: BaseModel | None = None,
-    permission: UserPermission | None = None,
-    response_model: BaseModel | None = None,
+    *permission: UserPermission,
+    request_model: type[BaseModel] | None = None,
+    response_model: type[BaseModel] | None = None,
 ):
     """
     Decorator for validating request data, user permissions, and
     response data for a route
 
     :param request_model: _description_, defaults to None
-    :param permission: _description_, defaults to None
     :param response_model: _description_, defaults to None
     """
+    bad_response = JSONResponse(BaseResponse(status=False).model_dump_json())
+    good_response = JSONResponse(BaseResponse(status=True).model_dump_json())
 
     def inner(
-        func: Callable[P, T],
+        func: Callable[[Request, BaseModel], T],
     ) -> Callable[[Request], Coroutine[None, None, Response]]:
 
         @functools.wraps(func)
+        @requires([*permission])
         async def wrapper(request: Request) -> Response:
+
             if request_model is not None:
-                data = await request.json()
                 try:
-                    request_model.model_validate_json(data)
-                except ValidationError:
-                    return HTMLResponse()
+                    data = await request.json()
+                    parsed_model = request_model.model_validate(data)
+                except (JSONDecodeError, ValidationError):
+                    return bad_response
 
-            user: PulsarityUser = request.user
+                endpoint_result = await ensure_async(func, request, parsed_model)
 
-            endpoint_result = await _run_endpoint(func)
+            else:
+                endpoint_result = await ensure_async(func, request)
 
-            if response_model is not None and endpoint_result is not None:
+            if response_model is not None:
                 try:
-                    response_model.model_validate(endpoint_result)
+                    model = response_model.model_validate(endpoint_result)
                 except ValidationError:
-                    return HTMLResponse()
-                return JSONResponse(endpoint_result)
+                    return bad_response
+                return JSONResponse(model.model_dump_json())
 
-            return HTMLResponse()
+            return good_response
 
         return wrapper
 

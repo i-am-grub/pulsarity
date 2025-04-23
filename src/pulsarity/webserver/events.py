@@ -46,31 +46,45 @@ async def lifespan(_app: Starlette):
 
     :param _app: The application
     """
-    loop = asyncio.get_running_loop()
-    loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
-    loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
     logger.info("Starting Pulsarity...")
-
-    async with asyncio.TaskGroup() as tg:
-        executor.set_executor()
-        tg.create_task(database_startup())
-
-    await event_broker.trigger(SpecialEvt.STARTUP, {})
+    await server_starup_workflow()
     logger.info("Pulsarity startup completed...")
 
     yield
 
     logger.info("Stopping Pulsarity...")
-    await event_broker.trigger(SpecialEvt.SHUTDOWN, {})
+    await server_shutdown_workflow()
+    logger.info("Pulsarity shutdown completed...")
+
+
+async def server_starup_workflow() -> None:
+    """
+    Startup workflow
+    """
+    loop = asyncio.get_running_loop()
+    loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
+    loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
+
+    executor.set_executor()
+
+    async with asyncio.TaskGroup() as tg:
+        tg.create_task(database_startup())
+
+    event_broker.trigger(SpecialEvt.STARTUP, {})
+
+
+async def server_shutdown_workflow() -> None:
+    """
+    Shutdown workflow
+    """
+    event_broker.trigger(SpecialEvt.SHUTDOWN, {})
 
     await background_tasks.shutdown(5)
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(executor.shutdown_executor())
         tg.create_task(database_shutdown())
-
-    logger.info("Pulsarity shutdown completed...")
 
 
 async def database_startup() -> None:

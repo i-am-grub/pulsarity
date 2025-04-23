@@ -5,10 +5,10 @@ Webserver Components
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
-from starlette.middleware.sessions import SessionMiddleware
+from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddleware
 
 from ..utils.config import configs
-from .auth import AuthenticationBackend
+from .auth import PulsarityAuthBackend
 from .events import lifespan as _lifespan
 from .routes import routes as http_routes
 from .websockets import routes as ws_routes
@@ -24,10 +24,15 @@ def generate_application() -> Starlette:
     middleware = [
         Middleware(
             SessionMiddleware,
-            secret_key=str(configs.get_config("SECRETS", "SECRET_KEY")),
-            domain=str(configs.get_config("WEBSERVER", "HOST")),
+            store=CookieStore(
+                secret_key=str(configs.get_config("SECRETS", "SECRET_KEY"))
+            ),
+            cookie_https_only=bool(configs.get_config("SECRETS", "FORCE_REDIRECTS")),
+            rolling=True,
+            lifetime=30,
         ),
-        Middleware(AuthenticationMiddleware, backend=AuthenticationBackend()),
+        Middleware(SessionAutoloadMiddleware),
+        Middleware(AuthenticationMiddleware, backend=PulsarityAuthBackend()),
     ]
 
     all_routes = http_routes + ws_routes

@@ -2,16 +2,13 @@
 Authorization and permission enforcement
 """
 
-import asyncio
-import base64
-import binascii
 from uuid import UUID
 
 from starlette.authentication import (
     AuthCredentials,
     AuthenticationBackend,
-    AuthenticationError,
     BaseUser,
+    UnauthenticatedUser,
 )
 
 from ..database.permission import UserPermission
@@ -76,46 +73,18 @@ class PulsarityAuthBackend(AuthenticationBackend):
     Authentication middleware
     """
 
+    # pylint: disable=R0903
+
     async def authenticate(self, conn):
         """
-        Temporarily utilize basic auth example
+        Checks session info to verify if the user is authenticated or not
         """
+        if (uuid_hex := conn.session.get("auth_id")) is not None:
+            user_uuid = UUID(hex=uuid_hex)
+            user = await User.get_by_uuid(user_uuid)
 
-        if "Authorization" not in conn.headers:
-            return
+            if user is not None:
+                permissions = await user.permissions
+                return AuthCredentials(permissions), PulsarityUser(user)
 
-        auth = conn.headers["Authorization"]
-        try:
-            scheme, credentials = auth.split()
-            if scheme.lower() != "basic":
-                return
-            decoded = base64.b64decode(credentials).decode("ascii")
-        except (ValueError, UnicodeDecodeError, binascii.Error) as exc:
-            raise AuthenticationError("Invalid basic auth credentials") from exc
-
-        username, _, password = decoded.partition(":")
-
-        return await self.verify_credentials(username, password)
-
-    async def verify_credentials(
-        self, username, password
-    ) -> tuple[AuthCredentials, BaseUser] | None:
-        """
-        Checks the username and password against a set of database values
-
-        :param username: The username to search for
-        :param password: The password of the user to verify
-        :return: The credentials and authenticated user
-        """
-
-        user = await User.get_or_none(username=username)
-
-        if user is not None and await user.verify_password(password):
-            permissions = list(await user.permissions)
-
-            asyncio.create_task(user.update_user_login_time())
-            asyncio.create_task(user.check_for_rehash(password))
-
-            return AuthCredentials(permissions), PulsarityUser(user)
-
-        return None
+        return AuthCredentials(), UnauthenticatedUser()
