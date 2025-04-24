@@ -6,7 +6,6 @@ import logging
 from uuid import UUID
 
 from starlette.requests import Request
-from starlette.responses import JSONResponse
 from starlette.routing import Mount, Route
 from starsessions.session import regenerate_session_id
 
@@ -113,8 +112,7 @@ async def get_pilot(request: Request):
     pilot = await Pilot.get_by_id(pilot_id)
 
     if pilot is not None:
-        model = await PilotModel.from_tortoise_orm(pilot)
-        return JSONResponse(model)
+        return await PilotModel.from_tortoise_orm(pilot)
 
 
 PilotModelList = Pilot.generate_pydaantic_queryset()
@@ -124,7 +122,7 @@ PilotModelList = Pilot.generate_pydaantic_queryset()
     SystemDefaultPerms.READ_PILOTS,
     response_model=PilotModelList,
 )
-async def get_pilots(_request: Request):
+async def get_pilots():
     """
     A streaming route for getting all pilots currently stored in the
     database.
@@ -132,21 +130,14 @@ async def get_pilots(_request: Request):
     :yield: A generator yielding pilots converted
     to a encoded JSON object.
     """
-    model = await PilotModelList.from_queryset(Pilot.all())
-    return JSONResponse(model)
+    return await PilotModelList.from_queryset(Pilot.all())
 
 
 routes = [
     Route("/", endpoint=check_auth),
-    Mount(
-        "/auth",
-        routes=[
-            Route("/login", endpoint=login, methods=["POST"]),
-            Route("/logout", endpoint=logout),
-            Route("/reset-password", endpoint=reset_password, methods=["POST"]),
-        ],
-        name="auth",
-    ),
+    Route("/login", endpoint=login, methods=["POST"]),
+    Route("/logout", endpoint=logout),
+    Route("/reset-password", endpoint=reset_password, methods=["POST"]),
     Mount(
         "/api",
         routes=[

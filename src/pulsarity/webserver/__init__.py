@@ -29,7 +29,7 @@ def generate_application() -> Starlette:
             ),
             cookie_https_only=bool(configs.get_config("SECRETS", "FORCE_REDIRECTS")),
             rolling=True,
-            lifetime=30,
+            lifetime=60 * 30,
         ),
         Middleware(SessionAutoloadMiddleware),
         Middleware(AuthenticationMiddleware, backend=PulsarityAuthBackend()),

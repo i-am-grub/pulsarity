@@ -3,9 +3,10 @@ Endpoint wrappers
 """
 
 import functools
+import inspect
 from collections.abc import Callable, Coroutine
 from json.decoder import JSONDecodeError
-from typing import ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 from pydantic import BaseModel, ValidationError
 from starlette.authentication import requires
@@ -43,6 +44,10 @@ def endpoint(
         @requires([*permission])
         async def wrapper(request: Request) -> Response:
 
+            kwargs_: dict[str, Any] = {
+                "request": request,
+            }
+
             if request_model is not None:
                 try:
                     data = await request.json()
@@ -50,10 +55,19 @@ def endpoint(
                 except (JSONDecodeError, ValidationError):
                     return bad_response
 
-                endpoint_result = await ensure_async(func, request, parsed_model)
+                kwargs_["data"] = parsed_model
 
-            else:
-                endpoint_result = await ensure_async(func, request)
+            params_set = set(inspect.signature(func).parameters.keys())
+            kwargs_set = set(kwargs_.keys())
+
+            try:
+                assert params_set <= kwargs_set
+            except AssertionError as ex:
+                raise KeyError("Endpoint does not contain valid args") from ex
+
+            kwargs = {u: kwargs_[u] for u in (params_set & kwargs_set)}
+
+            endpoint_result = await ensure_async(func, **kwargs)
 
             if response_model is not None:
                 try:
