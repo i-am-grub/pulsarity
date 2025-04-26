@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
@@ -12,7 +14,7 @@ from pulsarity.utils.config import get_configs_defaults
 from pulsarity.webserver import generate_application
 
 
-@pytest_asyncio.fixture(name="database")
+@pytest_asyncio.fixture(name="database", scope="function")
 async def database_init():
 
     await Tortoise.init(
@@ -48,15 +50,18 @@ async def database_init():
     await connections.close_all()
 
 
-@pytest_asyncio.fixture(name="app")
+@pytest_asyncio.fixture(name="app", scope="function")
 async def application(database):
+
+    loop = asyncio.get_running_loop()
+    background_tasks.set_event_loop(loop)
 
     yield generate_application(test_mode=True)
 
     await background_tasks.shutdown(5)
 
 
-@pytest_asyncio.fixture(name="client")
+@pytest_asyncio.fixture(name="client", scope="function")
 async def unauthenticated_client(app: Starlette):
     transport = ASGITransport(app=app)
     async with AsyncClient(

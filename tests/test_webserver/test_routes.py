@@ -1,7 +1,10 @@
+import asyncio
 import json
 
 import pytest
 from httpx import AsyncClient
+
+from pulsarity.utils.background import background_tasks
 
 
 async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
@@ -20,6 +23,7 @@ async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
 
 @pytest.mark.asyncio
 async def test_webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
+
     await webserver_login_valid(client, user_creds)
 
 
@@ -58,6 +62,11 @@ async def test_password_reset_invalid(client: AsyncClient, user_creds: tuple[str
 
 @pytest.mark.asyncio
 async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str]):
+
+    # IDK why this needs to be set
+    loop = asyncio.get_running_loop()
+    background_tasks.set_event_loop(loop)
+
     new_password = "new_password"
 
     reset_required = await webserver_login_valid(client, user_creds)
@@ -78,3 +87,5 @@ async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str])
 
     reset_required = await webserver_login_valid(client, new_creds)
     assert reset_required is False
+
+    await background_tasks.shutdown(5)

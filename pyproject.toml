@@ -92,7 +92,9 @@ description = "run unit tests"
 deps = [
     "pytest>=8",
     "pytest-asyncio",
-    "pytest-cov"
+    "pytest-cov",
+    "httpx",
+    "httpx-ws"
 ]
 commands = [["pytest", {cov="src",  replace = "posargs", default = ["tests"], extend = true }]]
 

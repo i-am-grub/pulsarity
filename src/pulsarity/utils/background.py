@@ -4,7 +4,8 @@ Background task manager
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Coroutine
+from concurrent.futures import Future
 from typing import Any
 
 from .asyncio import ensure_async
@@ -19,6 +20,30 @@ class BackgroundTaskManager:
 
     def __init__(self) -> None:
         self._tasks: set[asyncio.Task] = set()
+        self._loop: asyncio.AbstractEventLoop | None
+
+    def set_event_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+        """
+        Sets event loop to use for creating tasks
+
+        :param loop: _description_
+        """
+        self._loop = loop
+
+    def run_coroutine_from_thread(self, coro: Coroutine) -> Future:
+        """
+        Schedules a coroutine to run in the set event loop. Threadsafe
+        when scheduling coroutines from other threads
+
+        :param coro: The coroutine to run
+        :raises RuntimeError: When an event loop is not set
+        :return: A `concurrent.futures` Future
+        """
+
+        if self._loop is None:
+            raise RuntimeError("Event loop not set")
+
+        return asyncio.run_coroutine_threadsafe(coro, self._loop)
 
     def add_background_task(self, func: Callable, *args: Any, **kwargs: Any) -> None:
         """
@@ -31,7 +56,10 @@ class BackgroundTaskManager:
             await awaitable
 
         awaitable = ensure_async(func, *args, **kwargs)
-        task = asyncio.create_task(_wrapper(awaitable))
+        if self._loop is not None:
+            task = self._loop.create_task(_wrapper(awaitable))
+        else:
+            task = asyncio.create_task(_wrapper(awaitable))
 
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)

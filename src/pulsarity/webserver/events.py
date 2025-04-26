@@ -66,6 +66,7 @@ async def server_starup_workflow() -> None:
     loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
     loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
+    background_tasks.set_event_loop(loop)
     executor.set_executor()
 
     async with asyncio.TaskGroup() as tg:

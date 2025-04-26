@@ -94,6 +94,8 @@ async def test_event_async_callback():
     """
     Test running callbacks upon a event triggering
     """
+    loop = asyncio.get_running_loop()
+    background_tasks.set_event_loop(loop)
 
     broker = EventBroker()
 
@@ -124,6 +126,8 @@ async def disable_test_event_sync_callback():
     """
     Test running callbacks upon a event triggering
     """
+    loop = asyncio.get_running_loop()
+    background_tasks.set_event_loop(loop)
 
     broker = EventBroker()
 
