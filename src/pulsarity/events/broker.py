@@ -13,6 +13,8 @@ from collections.abc import AsyncGenerator, Callable
 from typing import Any
 
 from ..database.permission import UserPermission
+from ..utils.asyncio import ensure_async
+from ..utils.background import background_tasks
 from .enums import EvtPriority, _ApplicationEvt
 
 
@@ -51,7 +53,7 @@ class EventBroker:
         for connection in self._connections:
             connection.put_nowait(payload)
 
-    async def trigger(
+    def trigger(
         self,
         event: _ApplicationEvt,
         data: dict[str, Any],
@@ -69,15 +71,22 @@ class EventBroker:
         self.publish(event, data, uuid_=uuid_)
 
         callbacks = copy.copy(self._callbacks[event.id])
+        background_tasks.add_background_task(self._callback_runner, callbacks, data)
 
+    async def _callback_runner(
+        self, callbacks: list[tuple[int, Callable, dict[str, Any]]], data: dict
+    ) -> None:
+        """
+        Run all procided callbacks sequentially
+
+        :param callbacks: The list of callbacks to run
+        :param data: The additional data to provide for each callback
+
+        """
         for callback in callbacks:
             kwargs = callback[2] | data
-
             callable_ = callback[1]
-            if asyncio.iscoroutinefunction(callable_):
-                await callable_(**kwargs)
-            else:
-                await asyncio.to_thread(callable_, **kwargs)
+            await ensure_async(callable_, **kwargs)
 
     def register_event_callback(
         self,

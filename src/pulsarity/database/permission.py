@@ -4,8 +4,8 @@ ORM classes for Permission data
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from enum import StrEnum, auto
+from typing import TYPE_CHECKING
 
 from tortoise import fields
 
@@ -83,6 +83,8 @@ class SystemDefaultPerms(UserPermission):
     """
     Default user permissions for the system
     """
+
+    AUTHENTICATED = auto()
 
     EVENT_WEBSOCKET = auto()
     SYSTEM_CONTROL = auto()

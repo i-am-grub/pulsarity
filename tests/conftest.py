@@ -1,30 +1,21 @@
+import asyncio
+
 import pytest
 import pytest_asyncio
-
+from httpx import ASGITransport, AsyncClient
+from starlette.applications import Starlette
 from tortoise import Tortoise, connections
 
-from pulsarity.webserver import generate_app
-from pulsarity.extensions import PulsarityApp
 from pulsarity.database import setup_default_objects
-from pulsarity.race.manager import RaceManager
-
 from pulsarity.database.raceformat import RaceSchedule
-
+from pulsarity.race.manager import RaceManager
+from pulsarity.utils.background import background_tasks
 from pulsarity.utils.config import get_configs_defaults
+from pulsarity.webserver import generate_application
 
 
-@pytest.fixture()
-def app():
-    yield generate_app(test_mode=True)
-
-
-@pytest.fixture()
-def client(app: PulsarityApp):
-    yield app.test_client()
-
-
-@pytest_asyncio.fixture(name="_setup_database")
-async def setup_database():
+@pytest_asyncio.fixture(name="database", scope="function")
+async def database_init():
 
     await Tortoise.init(
         {
@@ -59,20 +50,40 @@ async def setup_database():
     await connections.close_all()
 
 
-@pytest_asyncio.fixture(name="race_manager", scope="function")
-def race_manager():
-    return RaceManager()
+@pytest_asyncio.fixture(name="app", scope="function")
+async def application(database):
+
+    loop = asyncio.get_running_loop()
+    background_tasks.set_event_loop(loop)
+
+    yield generate_application(test_mode=True)
+
+    await background_tasks.shutdown(5)
 
 
-@pytest.fixture()
+@pytest_asyncio.fixture(name="client", scope="function")
+async def unauthenticated_client(app: Starlette):
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport, base_url="https://localhost", verify=False, timeout=5
+    ) as client_:
+        yield client_
+
+
+@pytest.fixture(name="user_creds")
 def default_user_creds():
 
     configs = get_configs_defaults()
 
-    username = configs["SECRETS"]["DEFAULT_USERNAME"]
-    password = configs["SECRETS"]["DEFAULT_PASSWORD"]
+    username = str(configs["SECRETS"]["DEFAULT_USERNAME"])
+    password = str(configs["SECRETS"]["DEFAULT_PASSWORD"])
 
     return username, password
+
+
+@pytest_asyncio.fixture(name="race_manager")
+def race_manager():
+    yield RaceManager()
 
 
 @pytest.fixture()

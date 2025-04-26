@@ -2,11 +2,11 @@
 Database objects and access
 """
 
-from .user import User
-from .role import Role
-from .permission import Permission
+from .permission import Permission, SystemDefaultPerms
 from .pilot import Pilot, PilotAttribute
 from .raceformat import RaceFormat, RaceSchedule
+from .role import Role
+from .user import User
 
 __all__ = [
     "User",
@@ -16,6 +16,7 @@ __all__ = [
     "PilotAttribute",
     "RaceFormat",
     "RaceSchedule",
+    "SystemDefaultPerms",
 ]
 
 

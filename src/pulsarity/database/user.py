@@ -2,27 +2,24 @@
 ORM classes for User data
 """
 
-import logging
 import asyncio
-from typing import Self
+import logging
 from datetime import datetime
+from typing import Self
 from uuid import UUID, uuid4
-
-from tortoise import fields
 
 from argon2 import PasswordHasher
 from argon2.exceptions import (
-    VerifyMismatchError,
     HashingError,
-    VerificationError,
     InvalidHashError,
+    VerificationError,
+    VerifyMismatchError,
 )
+from tortoise import fields
 
 from ..utils.config import configs
-
 from .base import _PulsarityBase
 from .role import Role
-
 
 logger = logging.Logger(__name__)
 
@@ -38,7 +35,7 @@ class User(_PulsarityBase):
 
     auth_id = fields.UUIDField(default=uuid4)
     """The UUID associated with the user"""
-    username = fields.CharField(max_length=32, unique=True, null=True)
+    username = fields.CharField(max_length=32, unique=True)
     """Username of user"""
     first_name = fields.CharField(max_length=32, null=True)
     """First name of user"""
@@ -62,6 +59,21 @@ class User(_PulsarityBase):
 
         app = "system"
         table = "user"
+
+    @property
+    def display_name(self) -> str:
+        """
+        The display name for the user when authenticated
+
+        :return: The name to display
+        """
+        if self.first_name is not None and self.last_name is not None:
+            return f"{self.first_name} {self.last_name}"
+
+        if self.first_name is not None:
+            return f"{self.first_name}"
+
+        return self.username
 
     @property
     async def permissions(self) -> set[str]:

@@ -6,16 +6,10 @@ import asyncio
 import logging
 from collections.abc import Generator
 from random import random
-from typing import TYPE_CHECKING
 
 from ..database.raceformat import RaceSchedule
 from ..events import RaceSequenceEvt, event_broker
 from .enums import RaceStatus
-
-if TYPE_CHECKING:
-    from ..extensions import current_app
-else:
-    from quart import current_app
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +48,7 @@ class RaceManager:
         start_time = assigned_start + start_delay
 
         if all(self._staging_checks(assigned_start)):
-            self._program_handle = current_app.schedule_background_task(
+            self._program_handle = loop.call_at(
                 assigned_start, self._stage, start_time, schedule
             )
             self.status = RaceStatus.SCHEDULED
@@ -62,7 +56,7 @@ class RaceManager:
         else:
             logger.warning("All conditions are not met to program race")
 
-    async def stop_race(self) -> None:
+    def stop_race(self) -> None:
         """
         Stop the race
         """
@@ -76,16 +70,16 @@ class RaceManager:
 
         elif self.status == RaceStatus.RACING:
             data: dict = {}
-            await event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
-            await event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+            event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
+            event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
             self.status = RaceStatus.STOPPED
 
         elif self.status == RaceStatus.OVERTIME:
             data = {}
-            await event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+            event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
             self.status = RaceStatus.STOPPED
 
-    async def _stage(self, start_time: float, schedule: RaceSchedule) -> None:
+    def _stage(self, start_time: float, schedule: RaceSchedule) -> None:
         """
         Put the system into staging mode and schedules the start
         state.
@@ -94,14 +88,14 @@ class RaceManager:
         :param schedule: The format's race schedule
         """
         data: dict = {}
-        await event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
+        event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
         self.status = RaceStatus.STAGING
 
-        self._program_handle = current_app.schedule_background_task(
+        self._program_handle = asyncio.get_running_loop().call_at(
             start_time, self._start, schedule
         )
 
-    async def _start(self, schedule: RaceSchedule) -> None:
+    def _start(self, schedule: RaceSchedule) -> None:
         """
         Put the system into race mode. Schedules the next
         state if applicable.
@@ -109,18 +103,18 @@ class RaceManager:
         :param schedule: The format's race schedule
         """
         data: dict = {}
-        await event_broker.trigger(RaceSequenceEvt.RACE_START, data)
+        event_broker.trigger(RaceSequenceEvt.RACE_START, data)
         self.status = RaceStatus.RACING
 
         if not schedule.unlimited_time:
-            self._program_handle = current_app.delay_background_task(
+            self._program_handle = asyncio.get_running_loop().call_later(
                 schedule.race_time_sec, self._finish, schedule
             )
 
         else:
             self._program_handle = None
 
-    async def _finish(self, schedule: RaceSchedule) -> None:
+    def _finish(self, schedule: RaceSchedule) -> None:
         """
         Put the system into overtime mode. Schedules or runs the next
         state if applicable.
@@ -128,26 +122,26 @@ class RaceManager:
         :param schedule: The format's race schedule
         """
         data: dict = {}
-        await event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
+        event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
         self.status = RaceStatus.OVERTIME
 
         if schedule.overtime_sec > 0:
-            self._program_handle = current_app.delay_background_task(
+            self._program_handle = asyncio.get_running_loop().call_later(
                 schedule.overtime_sec, self._stop
             )
 
         elif schedule.overtime_sec == 0:
-            await self._stop()
+            self._stop()
 
         else:
             self._program_handle = None
 
-    async def _stop(self) -> None:
+    def _stop(self) -> None:
         """
         Put the system into race stop mode
         """
         data: dict = {}
-        await event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+        event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
         self.status = RaceStatus.STOPPED
 
         self._program_handle = None
