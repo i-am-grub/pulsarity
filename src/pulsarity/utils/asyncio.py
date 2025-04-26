@@ -3,14 +3,14 @@ Asyncio helpers
 """
 
 import asyncio
-from collections.abc import Callable, Coroutine
+from collections.abc import Awaitable, Callable
 from typing import ParamSpec, TypeVar
 
 T = TypeVar("T")
 P = ParamSpec("P")
 
 
-def ensure_async(func: Callable[P, T], *args, **kwargs) -> Coroutine[None, None, T]:
+def ensure_async(func: Callable[P, T], *args, **kwargs) -> Awaitable[T]:
     """
     Ensures that the provided function is ran asynchronously
 
@@ -20,4 +20,5 @@ def ensure_async(func: Callable[P, T], *args, **kwargs) -> Coroutine[None, None,
     if asyncio.iscoroutinefunction(func):
         return func(*args, **kwargs)
 
-    return asyncio.to_thread(func, *args, **kwargs)
+    loop = asyncio.get_running_loop()
+    return loop.run_in_executor(None, func, *args, **kwargs)

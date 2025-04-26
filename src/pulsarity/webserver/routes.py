@@ -134,9 +134,9 @@ async def get_pilots():
 
 
 routes = [
-    Route("/", endpoint=check_auth),
     Route("/login", endpoint=login, methods=["POST"]),
     Route("/logout", endpoint=logout),
+    Route("/auth-check", endpoint=check_auth),
     Route("/reset-password", endpoint=reset_password, methods=["POST"]),
     Mount(
         "/api",

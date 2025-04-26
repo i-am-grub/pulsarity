@@ -19,6 +19,8 @@ from ..database.permission import SystemDefaultPerms, UserPermission
 from ..database.raceformat import RaceSchedule
 from ..events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt, event_broker
 from ..race import race_manager
+from ..utils.asyncio import ensure_async
+from ..utils.background import background_tasks
 from .auth import PulsarityUser
 
 T = TypeVar("T")
@@ -71,9 +73,9 @@ async def handle_ws_event(ws_data: WSEventData, permissions: set[str]):
 
             signature = inspect.signature(route)
             if "ws_data" in signature.parameters:
-                await route(ws_data)
+                await ensure_async(route, ws_data)
             else:
-                await route()
+                await ensure_async(route)
 
     else:
         logger.debug("Route not available for websocket data")
@@ -94,7 +96,9 @@ async def server_event_ws(websocket: WebSocket):
             except ValidationError:
                 logger.debug("Error validating websocket data: %s", data)
             else:
-                asyncio.create_task(handle_ws_event(model, permissions))
+                background_tasks.add_background_task(
+                    handle_ws_event, model, permissions
+                )
 
     async def write_data() -> None:
         async for event in event_broker.subscribe():
@@ -179,7 +183,7 @@ async def race_stop():
 
     :param _ws_data: Recieved websocket event data
     """
-    await race_manager.stop_race()
+    race_manager.stop_race()
 
 
 routes = [

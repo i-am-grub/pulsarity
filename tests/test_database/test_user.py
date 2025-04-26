@@ -4,7 +4,7 @@ from pulsarity.database.user import User
 
 
 @pytest.mark.asyncio
-async def test_user_create(_setup_database):
+async def test_user_create(database):
     username = "foo"
 
     assert await User.get_or_none(username=username) is None
@@ -14,6 +14,5 @@ async def test_user_create(_setup_database):
 
 
 @pytest.mark.asyncio
-async def test_update_login_time():
-
+async def test_update_login_time(database):
     pass

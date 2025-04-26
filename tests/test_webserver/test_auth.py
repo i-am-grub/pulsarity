@@ -1,30 +1,23 @@
 import pytest
+from httpx import AsyncClient
 
-from quart.typing import TestClientProtocol
-
-from quart_auth import authenticated_client
-
-from pulsarity.extensions import PulsarityApp
-from pulsarity.database.permission import SystemDefaultPerms
-from pulsarity.database import User, Role, Permission
+from pulsarity.database import Permission, Role, SystemDefaultPerms, User
 
 
 @pytest.mark.asyncio
-async def test_webserver_unauthorized(client: TestClientProtocol):
+async def test_webserver_unauthorized(client: AsyncClient):
     response = await client.get("/api/pilot/all")
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_webserver_lack_permissions(app: PulsarityApp, _setup_database):
-    client: TestClientProtocol = app.test_client()
+async def test_webserver_lack_permissions(client: AsyncClient):
 
     permissions_: set[Permission] = set()
     permissions = await Permission.all()
     for permission in permissions:
         if permission.value != SystemDefaultPerms.READ_PILOTS:
             permissions_.add(permission)
-            break
 
     role = await Role.create(name="TEST")
     await role.add_permissions(*permissions_)
@@ -32,23 +25,27 @@ async def test_webserver_lack_permissions(app: PulsarityApp, _setup_database):
     roles: set[Role] = set()
     roles.add(role)
 
-    user = await User.create(username="test")
+    user = await User.create(username="foo")
     await user._roles.add(*roles)
+    await user.update_user_password("bar")
 
-    async with authenticated_client(client, user.auth_id.hex):
-        response = await client.get("/api/pilot/all")
-        assert response.status_code == 403
+    payload = {"username": "foo", "password": "bar"}
+
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+    assert response.cookies
+
+    response = await client.get("/api/pilot/all")
+    assert response.status_code == 403
 
 
 @pytest.mark.asyncio
-async def test_webserver_authorized(
-    app: PulsarityApp, default_user_creds: tuple[str], _setup_database
-):
-    client: TestClientProtocol = app.test_client()
+async def test_webserver_authorized(client: AsyncClient, user_creds: tuple[str, ...]):
+    payload = {"username": user_creds[0], "password": user_creds[1]}
 
-    user = await User.get_by_username(default_user_creds[0])
-    assert user is not None
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+    assert response.cookies
 
-    async with authenticated_client(client, user.auth_id.hex):
-        response = await client.get("/api/pilot/all")
-        assert response.status_code == 200
+    response = await client.get("/api/pilot/all")
+    assert response.status_code == 200

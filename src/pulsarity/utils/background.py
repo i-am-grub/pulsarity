@@ -4,7 +4,7 @@ Background task manager
 
 import asyncio
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from .asyncio import ensure_async
@@ -24,10 +24,14 @@ class BackgroundTaskManager:
         """
         Adds a background task.
 
-        :param func: _description_
+        :param func: The function to run as a background task
         """
-        coro = ensure_async(func, *args, **kwargs)
-        task = asyncio.create_task(coro)
+
+        async def _wrapper(awaitable: Awaitable):
+            await awaitable
+
+        awaitable = ensure_async(func, *args, **kwargs)
+        task = asyncio.create_task(_wrapper(awaitable))
 
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)

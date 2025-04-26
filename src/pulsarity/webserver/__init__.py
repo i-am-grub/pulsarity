@@ -14,7 +14,7 @@ from .routes import routes as http_routes
 from .websockets import routes as ws_routes
 
 
-def generate_application() -> Starlette:
+def generate_application(*, test_mode: bool = False) -> Starlette:
     """
     Generates the Pulsarity application
 
@@ -27,7 +27,7 @@ def generate_application() -> Starlette:
             store=CookieStore(
                 secret_key=str(configs.get_config("SECRETS", "SECRET_KEY"))
             ),
-            cookie_https_only=bool(configs.get_config("SECRETS", "FORCE_REDIRECTS")),
+            cookie_https_only=bool(configs.get_config("WEBSERVER", "FORCE_REDIRECTS")),
             rolling=True,
             lifetime=60 * 30,
         ),
@@ -37,4 +37,8 @@ def generate_application() -> Starlette:
 
     all_routes = http_routes + ws_routes
 
-    return Starlette(routes=all_routes, lifespan=_lifespan, middleware=middleware)
+    return Starlette(
+        routes=all_routes,
+        lifespan=None if test_mode else _lifespan,
+        middleware=middleware,
+    )
