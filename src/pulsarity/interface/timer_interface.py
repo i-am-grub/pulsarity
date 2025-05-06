@@ -7,7 +7,6 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum
 from typing import Generic, Protocol, TypeVar, runtime_checkable
-from uuid import UUID
 
 T = TypeVar("T", bound=int | str | bool | Enum)
 
@@ -19,7 +18,9 @@ class LapData:
     """
 
     index: int
+    """Index of the node"""
     time: float
+    """The lap time"""
 
 
 @dataclass(frozen=True)
@@ -29,7 +30,9 @@ class RssiData:
     """
 
     index: int
+    """Index of the node"""
     value: float
+    """The rssi value"""
 
 
 @dataclass(frozen=True)
@@ -39,18 +42,23 @@ class Setting(Generic[T]):
     """
 
     id_: str
+    """Setting identifier"""
     type_: type[T]
+    """The type of setting"""
     callback: Callable[[int, T], None]
+    """The callback to associate with the setting"""
 
 
 @dataclass(frozen=True)
-class Control:
+class Action:
     """
-    Control callback
+    Action callback
     """
 
     id_: str
+    """Action interface identifier"""
     callback: Callable[[], None]
+    """The callback to associate with the action"""
 
 
 @runtime_checkable
@@ -75,25 +83,32 @@ class TimerInterface(Protocol):
     into the server.
     """
 
-    identifier: UUID
-    """Identifier assigned to the interface upon ititalization"""
+    # pylint: disable=R0903
+
+    identifier: str
+    """Internal identifier"""
+    display_name: str
+    """Human readable identifier"""
     nodes: Sequence[NodeInterface]
     """Node associated with the timer"""
     num_nodes: int
     """Number of nodes set on the interface"""
     settings: Sequence[Setting]
     """Interface settings"""
-    controls: Sequence[Control]
-    """Interface controls"""
+    actions: Sequence[Action]
+    """Interface actions"""
     connected: bool
     """Connection status"""
 
-    async def process_laps(self, queue: Queue[LapData]) -> None:
+    def subscribe(self, lap_queue: Queue[LapData], rssi_queue: Queue[RssiData]) -> None:
         """
-        Process incoming lap data and add it to the provided queue
+        Subscribe to recieve lap and rssi data from the interface
+
+        :param lap_queue: The queue to provide for recieving lap data
+        :param rssi_queue: The queue to provide for recieving rssi data
         """
 
-    async def process_rssi(self, queue: Queue[RssiData]) -> None:
+    def shutdown(self):
         """
-        Process incoming rssi data and add it to the provided queue
+        Shutdown the interface connection
         """
