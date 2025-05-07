@@ -14,6 +14,7 @@ from tortoise import Tortoise, connections
 
 from ..database import setup_default_objects
 from ..events import SpecialEvt, event_broker
+from ..interface.timer_manager import interface_manager
 from ..utils.background import background_tasks
 from ..utils.config import configs
 from ..utils.executor import executor
@@ -81,6 +82,7 @@ async def server_shutdown_workflow() -> None:
     """
     event_broker.trigger(SpecialEvt.SHUTDOWN, {})
 
+    interface_manager.shutdown()
     await background_tasks.shutdown(5)
 
     async with asyncio.TaskGroup() as tg:

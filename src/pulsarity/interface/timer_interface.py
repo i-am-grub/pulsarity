@@ -2,7 +2,7 @@
 Abstract timer interface
 """
 
-from asyncio.queues import Queue
+import asyncio
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum
@@ -12,27 +12,19 @@ T = TypeVar("T", bound=int | str | bool | Enum)
 
 
 @dataclass(frozen=True)
-class LapData:
+class TimerData:
     """
-    Format for lap data
+    Parent class for incoming timer data
     """
 
-    index: int
-    """Index of the node"""
-    time: float
+    timestamp: float
     """The lap time"""
-
-
-@dataclass(frozen=True)
-class RssiData:
-    """
-    Format for rssi data
-    """
-
-    index: int
+    timer_identifier: str
+    """Identifier of the origin interface"""
+    node_index: int
     """Index of the node"""
     value: float
-    """The rssi value"""
+    """The data value"""
 
 
 @dataclass(frozen=True)
@@ -100,7 +92,12 @@ class TimerInterface(Protocol):
     connected: bool
     """Connection status"""
 
-    def subscribe(self, lap_queue: Queue[LapData], rssi_queue: Queue[RssiData]) -> None:
+    def __init__(self, identifier: str) -> None:
+        self.identifier = identifier
+
+    def subscribe(
+        self, lap_queue: asyncio.Queue[TimerData], rssi_queue: asyncio.Queue[TimerData]
+    ) -> None:
         """
         Subscribe to recieve lap and rssi data from the interface
 
@@ -110,5 +107,6 @@ class TimerInterface(Protocol):
 
     def shutdown(self):
         """
-        Shutdown the interface connection
+        Shutdown the interface connection. When called, prevent adding more data to
+        the lap and rssi queues.
         """
