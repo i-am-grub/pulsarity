@@ -3,12 +3,15 @@ Manage timer interfaces
 """
 
 import asyncio
+import logging
 import uuid
 from collections.abc import AsyncGenerator
 from dataclasses import astuple, dataclass, field
 from enum import IntEnum, auto
 
 from .timer_interface import TimerData, TimerInterface
+
+logger = logging.getLogger(__name__)
 
 
 class TimerMode(IntEnum):
@@ -58,14 +61,33 @@ class TimerInterfaceManager:
         self._shutdown_evt = asyncio.Event()
 
         self._lap_manager = _DataManager()
-        asyncio.create_task(
+        self._rssi_manager = _DataManager()
+
+        self._tasks: tuple[asyncio.Task, asyncio.Task] | None = None
+
+    def start(self) -> None:
+        """
+        Start the interface processing tasks
+        """
+        if self._tasks is not None:
+            raise RuntimeError("Timer instance manager already started")
+
+        self._shutdown_evt.clear()
+
+        lap_task = asyncio.create_task(
             self.process_queue_data(self._lap_manager), name="lap_processor"
         )
 
-        self._rssi_manager = _DataManager()
-        asyncio.create_task(
+        rssi_task = asyncio.create_task(
             self.process_queue_data(self._rssi_manager), name="rssi_processor"
         )
+
+        self._tasks = (lap_task, rssi_task)
+
+        for interface in self._active_interfaces.values():
+            interface.interface.subscribe(
+                self._lap_manager.queue, self._rssi_manager.queue
+            )
 
     async def _subscribe(
         self, manager: _DataManager
@@ -167,7 +189,9 @@ class TimerInterfaceManager:
                 uuid_ = uuid.uuid4()
 
             instance = interface(uuid_.hex)
-            instance.subscribe(self._lap_manager.queue, self._rssi_manager.queue)
+
+            if self._tasks is not None:
+                instance.subscribe(self._lap_manager.queue, self._rssi_manager.queue)
 
             self._active_interfaces[uuid_.hex] = ActiveTimer(
                 interface=instance, mode=mode, index=index
@@ -184,15 +208,28 @@ class TimerInterfaceManager:
             interface.interface.shutdown()
             self._active_interfaces.pop(uuid_.hex)
 
-    def shutdown(self) -> None:
+    async def shutdown(self, timeout: float | None = None) -> None:
         """
         Shutdown all interfaces
         """
+        if self._tasks is None:
+            raise RuntimeError("Timer instance manager not started")
+
         for interface in self._active_interfaces.values():
             interface.interface.shutdown()
 
         self._active_interfaces.clear()
         self._shutdown_evt.set()
+
+        try:
+            async with asyncio.Timeout(timeout):
+                await asyncio.gather(*self._tasks, return_exceptions=True)
+        except asyncio.TimeoutError:
+            logger.error(
+                "Timer interface manager failed to stop within the specified timeout"
+            )
+        finally:
+            self._tasks = None
 
 
 interface_manager = TimerInterfaceManager()

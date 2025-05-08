@@ -67,6 +67,7 @@ async def server_starup_workflow() -> None:
     loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
     loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
+    interface_manager.start()
     background_tasks.set_event_loop(loop)
     executor.set_executor()
 
@@ -82,7 +83,7 @@ async def server_shutdown_workflow() -> None:
     """
     event_broker.trigger(SpecialEvt.SHUTDOWN, {})
 
-    interface_manager.shutdown()
+    await interface_manager.shutdown(5)
     await background_tasks.shutdown(5)
 
     async with asyncio.TaskGroup() as tg:
