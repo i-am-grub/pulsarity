@@ -4,7 +4,7 @@ Background task manager
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable, Coroutine
+from collections.abc import Awaitable, Callable, Coroutine, Iterable
 from concurrent.futures import Future
 from typing import Any
 
@@ -77,13 +77,28 @@ class BackgroundTaskManager:
                     await asyncio.sleep(0)
 
         except asyncio.TimeoutError as ex:
-            for task in self._tasks:
-                task.cancel()
-            await asyncio.gather(*self._tasks, return_exceptions=True)
+            await handle_timeout_trigger(ex, self._tasks)
 
-            for task in self._tasks:
-                if not task.cancelled() and (task_ex := task.exception()) is not None:
-                    raise task_ex from ex
+
+async def handle_timeout_trigger(
+    ex: asyncio.TimeoutError, tasks: Iterable[asyncio.Task]
+):
+    """
+    Processes background tasks in the occurance of
+    a timeout exception
+
+    :param ex: The timeout exception
+    :param tasks: The tasks to manage
+    """
+
+    for task in tasks:
+        task.cancel()
+
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+    for task in tasks:
+        if not task.cancelled() and (task_ex := task.exception()) is not None:
+            raise task_ex from ex
 
 
 background_tasks = BackgroundTaskManager()

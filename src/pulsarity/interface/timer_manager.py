@@ -9,6 +9,7 @@ from collections.abc import AsyncGenerator
 from dataclasses import astuple, dataclass, field
 from enum import IntEnum, auto
 
+from ..utils.background import handle_timeout_trigger
 from .timer_interface import TimerData, TimerInterface
 
 logger = logging.getLogger(__name__)
@@ -227,13 +228,8 @@ class TimerInterfaceManager:
                 await asyncio.gather(*self._tasks)
 
         except asyncio.TimeoutError as ex:
-            for task in self._tasks:
-                task.cancel()
-            await asyncio.gather(*self._tasks, return_exceptions=True)
+            await handle_timeout_trigger(ex, self._tasks)
 
-            for task in self._tasks:
-                if not task.cancelled() and (task_ex := task.exception()) is not None:
-                    raise task_ex from ex
         finally:
             self._tasks = None
 
