@@ -18,7 +18,7 @@ class TimerData:
     """
 
     timestamp: float
-    """The lap time"""
+    """The time of processing the value"""
     timer_identifier: str
     """Identifier of the origin interface"""
     node_index: int
@@ -91,9 +91,6 @@ class TimerInterface(Protocol):
     """Interface actions"""
     connected: bool
     """Connection status"""
-
-    def __init__(self, identifier: str) -> None:
-        self.identifier = identifier
 
     def subscribe(
         self, lap_queue: asyncio.Queue[TimerData], rssi_queue: asyncio.Queue[TimerData]

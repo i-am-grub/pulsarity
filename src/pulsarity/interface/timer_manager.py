@@ -31,7 +31,7 @@ _ExtendedTimerData = tuple[float, str, int, float, TimerMode, int]
 
 
 @dataclass
-class ActiveTimer:
+class _ActiveTimer:
     """
     Timer interfaces with an active connection
     """
@@ -57,7 +57,7 @@ class TimerInterfaceManager:
 
     def __init__(self) -> None:
         self._interfaces: dict[str, type[TimerInterface]] = {}
-        self._active_interfaces: dict[str, ActiveTimer] = {}
+        self._active_interfaces: dict[str, _ActiveTimer] = {}
         self._shutdown_evt = asyncio.Event()
 
         self._lap_manager = _DataManager()
@@ -75,11 +75,11 @@ class TimerInterfaceManager:
         self._shutdown_evt.clear()
 
         lap_task = asyncio.create_task(
-            self.process_queue_data(self._lap_manager), name="lap_processor"
+            self._process_queue_data(self._lap_manager), name="lap_processor"
         )
 
         rssi_task = asyncio.create_task(
-            self.process_queue_data(self._rssi_manager), name="rssi_processor"
+            self._process_queue_data(self._rssi_manager), name="rssi_processor"
         )
 
         self._tasks = (lap_task, rssi_task)
@@ -88,20 +88,6 @@ class TimerInterfaceManager:
             interface.interface.subscribe(
                 self._lap_manager.queue, self._rssi_manager.queue
             )
-
-    async def _subscribe(
-        self, manager: _DataManager
-    ) -> AsyncGenerator[_ExtendedTimerData, None]:
-        """
-        Subscribe to the incoming data
-        """
-        connection: asyncio.Queue[_ExtendedTimerData] = asyncio.Queue()
-        manager.connections.add(connection)
-        try:
-            while not self._shutdown_evt.is_set():
-                yield await connection.get()
-        finally:
-            manager.connections.remove(connection)
 
     async def subscribe_laps(self) -> AsyncGenerator[_ExtendedTimerData, None]:
         """
@@ -127,7 +113,7 @@ class TimerInterfaceManager:
         finally:
             self._rssi_manager.connections.remove(connection)
 
-    async def process_queue_data(self, manager: _DataManager):
+    async def _process_queue_data(self, manager: _DataManager):
         """
         Add interface data to the incoming rimer data and pass
         along to the next stage
@@ -141,7 +127,7 @@ class TimerInterfaceManager:
             outgoing = (*astuple(recieved), interface.mode, interface.index)
 
             for connection in manager.connections:
-                connection.put_nowait(outgoing)
+                await connection.put(outgoing)
 
     def register(self, interface: type[TimerInterface]) -> None:
         """
@@ -150,18 +136,22 @@ class TimerInterfaceManager:
         :param interface: The
         :raises RuntimeError: _description_
         """
-        if interface.identifier in self._interfaces:
-            raise RuntimeError("Interface with matching identifier already registered")
 
         if isinstance(interface, TimerInterface):
+
+            if interface.identifier in self._interfaces:
+                raise RuntimeError(
+                    "Interface type with matching identifier already registered"
+                )
+
             self._interfaces[interface.identifier] = interface
 
         else:
-            raise RuntimeError("Attempted to register an invalid timer interface")
+            raise RuntimeError("Attempted to register an invalid timer interface type")
 
     def unregister(self, identifier: str) -> None:
         """
-        Unregisters an interface from the system
+        Unregisters an interface type from the system
 
         :param identifier: The identifier of the interface
         """
@@ -176,7 +166,7 @@ class TimerInterfaceManager:
         uuid_: uuid.UUID | None = None,
     ):
         """
-        Creates an instance from a defined interface
+        Creates an interface instance from a registered interface type
 
         :param identifier: The identifer of the abstract interface
         :param mode: The mode to use for the interface
@@ -188,13 +178,22 @@ class TimerInterfaceManager:
             if uuid_ is None:
                 uuid_ = uuid.uuid4()
 
-            instance = interface(uuid_.hex)
+            if uuid_.hex in self._active_interfaces:
+                raise RuntimeError(
+                    "Attempted to register with an already allocated uuid"
+                )
+
+            instance = interface()
 
             if self._tasks is not None:
                 instance.subscribe(self._lap_manager.queue, self._rssi_manager.queue)
 
-            self._active_interfaces[uuid_.hex] = ActiveTimer(
+            self._active_interfaces[uuid_.hex] = _ActiveTimer(
                 interface=instance, mode=mode, index=index
+            )
+        else:
+            raise RuntimeError(
+                "Interface class with provided identifier not registered"
             )
 
     def decommission_interface(self, uuid_: uuid.UUID):
@@ -207,6 +206,8 @@ class TimerInterfaceManager:
         if interface is not None:
             interface.interface.shutdown()
             self._active_interfaces.pop(uuid_.hex)
+        else:
+            raise RuntimeError("Interface with identifer not instantiated")
 
     async def shutdown(self, timeout: float | None = None) -> None:
         """
@@ -223,11 +224,16 @@ class TimerInterfaceManager:
 
         try:
             async with asyncio.Timeout(timeout):
-                await asyncio.gather(*self._tasks, return_exceptions=True)
-        except asyncio.TimeoutError:
-            logger.error(
-                "Timer interface manager failed to stop within the specified timeout"
-            )
+                await asyncio.gather(*self._tasks)
+
+        except asyncio.TimeoutError as ex:
+            for task in self._tasks:
+                task.cancel()
+            await asyncio.gather(*self._tasks, return_exceptions=True)
+
+            for task in self._tasks:
+                if not task.cancelled() and (task_ex := task.exception()) is not None:
+                    raise task_ex from ex
         finally:
             self._tasks = None
 
