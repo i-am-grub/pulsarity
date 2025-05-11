@@ -14,6 +14,7 @@ from tortoise import Tortoise, connections
 
 from ..database import setup_default_objects
 from ..events import SpecialEvt, event_broker
+from ..interface.timer_manager import interface_manager
 from ..utils.background import background_tasks
 from ..utils.config import configs
 from ..utils.executor import executor
@@ -66,6 +67,7 @@ async def server_starup_workflow() -> None:
     loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
     loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
+    interface_manager.start()
     background_tasks.set_event_loop(loop)
     executor.set_executor()
 
@@ -81,6 +83,7 @@ async def server_shutdown_workflow() -> None:
     """
     event_broker.trigger(SpecialEvt.SHUTDOWN, {})
 
+    await interface_manager.shutdown(5)
     await background_tasks.shutdown(5)
 
     async with asyncio.TaskGroup() as tg:
