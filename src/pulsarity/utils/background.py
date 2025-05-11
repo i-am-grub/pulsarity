@@ -76,33 +76,14 @@ class BackgroundTaskManager:
                 while self._tasks:
                     await asyncio.sleep(0)
 
-        except asyncio.TimeoutError:
-            await _cancel_tasks(self._tasks)
+        except asyncio.TimeoutError as ex:
+            for task in self._tasks:
+                task.cancel()
+            await asyncio.gather(*self._tasks, return_exceptions=True)
 
-
-async def _cancel_tasks(tasks: set[asyncio.Task]) -> None:
-    """
-    Cancel any pending, and wait for the cancellation tocomplete
-
-    :param tasks: Tasks to cancel
-    """
-
-    for task in tasks:
-        task.cancel()
-
-    await asyncio.gather(*tasks, return_exceptions=True)
-    _raise_task_exceptions(tasks)
-
-
-def _raise_task_exceptions(tasks: set[asyncio.Task]) -> None:
-    """
-    Raise any unexpected exceptions
-
-    :param tasks: Tasks to process
-    """
-    for task in tasks:
-        if not task.cancelled() and (ex := task.exception()) is not None:
-            raise ex
+            for task in self._tasks:
+                if not task.cancelled() and (task_ex := task.exception()) is not None:
+                    raise task_ex from ex
 
 
 background_tasks = BackgroundTaskManager()
