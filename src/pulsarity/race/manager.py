@@ -4,7 +4,6 @@ Race management
 
 import asyncio
 import logging
-from collections.abc import Generator
 from random import random
 
 from ..database.raceformat import RaceSchedule
@@ -13,6 +12,8 @@ from .enums import RaceStatus
 
 logger = logging.getLogger(__name__)
 
+_RaceEventRecord = tuple[RaceStatus, float]
+
 
 class RaceManager:
     """
@@ -20,14 +21,88 @@ class RaceManager:
     """
 
     _program_handle: asyncio.TimerHandle | None = None
-    status: RaceStatus = RaceStatus.READY
+    """The handle for managine the race sequence"""
+    _status: RaceStatus = RaceStatus.READY
+    """Internal status of the race"""
+    _schedule: RaceSchedule | None = None
+    """The current race schedule"""
 
-    def _staging_checks(self, assigned_start: float) -> Generator[bool, None, None]:
-        yield self.status == RaceStatus.READY
-        yield self._program_handle is None
+    def __init__(self) -> None:
+        self._race_record: list[_RaceEventRecord] = []
+        """The sequence of the race"""
+
+    @property
+    def status(self) -> RaceStatus:
+        """The current status of the race"""
+        return self._status
+
+    def get_race_start_time(self) -> float:
+        """
+        The start time of the race
+
+        :raises Runti: _description_
+        :return: _description_
+        :yield: _description_
+        """
+        for record in self._race_record:
+            if record[0] == RaceStatus.RACING:
+                return record[1]
+
+        raise RuntimeError("Race not underway")
+
+    def get_race_time(self) -> float:
+        """
+        The current time of the race
+
+        :return: The race time or not
+        """
+        # pylint: disable=W0631
+
+        race_duration: float = 0
+        race_period_start: float = 0
+        last_status: RaceStatus | None = None
+
+        if self.status in (RaceStatus.SCHEDULED, RaceStatus.STAGING, RaceStatus.READY):
+            raise RuntimeError("Race has not begun")
+
+        assert self._race_record, "Unable to retrive time from empty record"
+
+        for record in self._race_record:
+            recorded_status = record[0]
+
+            if recorded_status == RaceStatus.RACING:
+                race_period_start = record[0]
+
+            elif recorded_status == RaceStatus.OVERTIME:
+                if last_status != RaceStatus.RACING:
+                    race_period_start = record[0]
+
+            elif recorded_status == RaceStatus.PAUSED:
+                race_duration += record[1] - race_period_start
+
+            elif recorded_status == RaceStatus.STOPPED:
+                if last_status != RaceStatus.PAUSED:
+                    race_duration += record[1] - race_period_start
+                return race_duration
+
+            last_status = recorded_status
+
+        if last_status == RaceStatus.PAUSED:
+            return race_duration
 
         loop = asyncio.get_running_loop()
-        yield loop.time() < assigned_start
+        return race_duration + (loop.time() - record[1])
+
+    def _set_status(self, status: RaceStatus) -> None:
+        """
+        Set the current status of the race and create a record of
+        status change
+
+        :param status: _description_
+        """
+        self._status = status
+        loop = asyncio.get_running_loop()
+        self._race_record.append((status, loop.time()))
 
     def schedule_race(
         self, schedule: RaceSchedule, *, assigned_start: float, **_kwargs
@@ -47,11 +122,13 @@ class RaceManager:
         start_delay = schedule.stage_time_sec + _random_delay
         start_time = assigned_start + start_delay
 
-        if all(self._staging_checks(assigned_start)):
-            self._program_handle = loop.call_at(
-                assigned_start, self._stage, start_time, schedule
-            )
-            self.status = RaceStatus.SCHEDULED
+        if self.status == RaceStatus.READY:
+            assert self._program_handle is None, "A program handle is already active"
+            assert loop.time() < assigned_start, "Assigned start not in the future"
+
+            self._schedule = schedule
+            self._program_handle = loop.call_at(assigned_start, self._stage, start_time)
+            self._set_status(RaceStatus.SCHEDULED)
 
         else:
             logger.warning("All conditions are not met to program race")
@@ -66,20 +143,87 @@ class RaceManager:
             self._program_handle = None
 
         if self.status in (RaceStatus.SCHEDULED, RaceStatus.STAGING):
-            self.status = RaceStatus.READY
+            self._status = RaceStatus.READY
+            self._race_record.clear()
 
         elif self.status == RaceStatus.RACING:
             data: dict = {}
             event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
             event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
-            self.status = RaceStatus.STOPPED
+            self._set_status(RaceStatus.STOPPED)
 
         elif self.status == RaceStatus.OVERTIME:
             data = {}
             event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
-            self.status = RaceStatus.STOPPED
+            self._set_status(RaceStatus.STOPPED)
 
-    def _stage(self, start_time: float, schedule: RaceSchedule) -> None:
+        elif self.status == RaceStatus.PAUSED:
+            for record in reversed(self._race_record):
+                status = record[0]
+
+                if status in (RaceStatus.RACING, RaceStatus.OVERTIME):
+                    data = {}
+
+                    if status == RaceStatus.RACING:
+                        event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
+                        event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+                    else:
+                        event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+
+                    self._set_status(RaceStatus.STOPPED)
+                    break
+
+    def pause_race(self) -> None:
+        """
+        Pause the race
+        """
+        if self.status in (RaceStatus.RACING, RaceStatus.OVERTIME):
+            data: dict = {}
+            event_broker.trigger(RaceSequenceEvt.RACE_PAUSE, data)
+            self._set_status(RaceStatus.PAUSED)
+
+    def resume_race(self) -> None:
+        """
+        Resme the race
+        """
+        if self.status == RaceStatus.PAUSED:
+
+            assert (
+                self._schedule is not None
+            ), "Can not resume race with an unset schedule"
+
+            for record in reversed(self._race_record):
+                status = record[0]
+
+                if status in (RaceStatus.RACING, RaceStatus.OVERTIME):
+
+                    if self._schedule.unlimited_time:
+                        self._set_status(RaceStatus.RACING)
+
+                    elif (time_ := self.get_race_time()) < self._schedule.race_time_sec:
+                        remaining_duration = self._schedule.race_time_sec - time_
+                        self._program_handle = asyncio.get_running_loop().call_later(
+                            remaining_duration, self._finish
+                        )
+                        self._set_status(RaceStatus.RACING)
+
+                    else:
+                        remaining_duration = (
+                            self._schedule.race_time_sec
+                            + self._schedule.overtime_sec
+                            - time_
+                        )
+                        self._program_handle = asyncio.get_running_loop().call_later(
+                            remaining_duration, self._stop
+                        )
+                        self._set_status(RaceStatus.OVERTIME)
+
+                    data: dict = {}
+                    event_broker.trigger(RaceSequenceEvt.RACE_RESUME, data)
+
+                    break
+
+    def _stage(self, start_time: float) -> None:
         """
         Put the system into staging mode and schedules the start
         state.
@@ -89,48 +233,52 @@ class RaceManager:
         """
         data: dict = {}
         event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
-        self.status = RaceStatus.STAGING
+        self._set_status(RaceStatus.STAGING)
 
         self._program_handle = asyncio.get_running_loop().call_at(
-            start_time, self._start, schedule
+            start_time, self._start
         )
 
-    def _start(self, schedule: RaceSchedule) -> None:
+    def _start(self) -> None:
         """
         Put the system into race mode. Schedules the next
         state if applicable.
 
         :param schedule: The format's race schedule
         """
+        assert self._schedule is not None, "Can not start race with an unset schedule"
+
         data: dict = {}
         event_broker.trigger(RaceSequenceEvt.RACE_START, data)
-        self.status = RaceStatus.RACING
+        self._set_status(RaceStatus.RACING)
 
-        if not schedule.unlimited_time:
+        if not self._schedule.unlimited_time:
             self._program_handle = asyncio.get_running_loop().call_later(
-                schedule.race_time_sec, self._finish, schedule
+                self._schedule.race_time_sec, self._finish
             )
 
         else:
             self._program_handle = None
 
-    def _finish(self, schedule: RaceSchedule) -> None:
+    def _finish(self) -> None:
         """
         Put the system into overtime mode. Schedules or runs the next
         state if applicable.
 
         :param schedule: The format's race schedule
         """
+        assert self._schedule is not None, "Can not finish race with an unset schedule"
+
         data: dict = {}
         event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
-        self.status = RaceStatus.OVERTIME
+        self._set_status(RaceStatus.OVERTIME)
 
-        if schedule.overtime_sec > 0:
+        if self._schedule.overtime_sec > 0:
             self._program_handle = asyncio.get_running_loop().call_later(
-                schedule.overtime_sec, self._stop
+                self._schedule.overtime_sec, self._stop
             )
 
-        elif schedule.overtime_sec == 0:
+        elif self._schedule.overtime_sec == 0:
             self._stop()
 
         else:
@@ -142,9 +290,19 @@ class RaceManager:
         """
         data: dict = {}
         event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
-        self.status = RaceStatus.STOPPED
+        self._set_status(RaceStatus.STOPPED)
 
         self._program_handle = None
+
+    def reset(self) -> None:
+        """
+        Reset the manager for the next race
+        """
+        if self.status == RaceStatus.STOPPED:
+            assert self._program_handle is None
+            self._schedule = None
+            self._race_record.clear()
+            self._status = RaceStatus.READY
 
 
 race_manager = RaceManager()
