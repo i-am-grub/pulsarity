@@ -17,7 +17,7 @@ from starlette.applications import Starlette
 from .utils.config import configs
 from .utils.crypto import generate_self_signed_cert
 from .webserver import generate_application
-from .webserver.events import shutdown_waiter
+from .webserver.events import shutdown_signaled
 
 __version__ = importlib.metadata.version(__name__)
 
@@ -75,4 +75,4 @@ def pulsarity_webserver(
     if bool(configs.get_config("WEBSERVER", "FORCE_REDIRECTS")):
         app = HTTPToHTTPSRedirectMiddleware(app, secure_bind[0])  # type: ignore
 
-    return serve(app, webserver_config, shutdown_trigger=shutdown_waiter)  # type: ignore
+    return serve(app, webserver_config, shutdown_trigger=shutdown_signaled)  # type: ignore

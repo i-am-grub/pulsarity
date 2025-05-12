@@ -32,10 +32,10 @@ def _signal_shutdown(*_: Any) -> None:
     logger.debug("Server shutdown signaled")
 
 
-async def shutdown_waiter() -> None:
+async def shutdown_signaled() -> None:
     """
-    Async function that awaits until the server is
-    set to shutdown
+    Async function that waits until the server is
+    signaled to shutdown
     """
     await _shutdown_event.wait()
 
