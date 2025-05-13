@@ -2,10 +2,10 @@
 Enums for race management
 """
 
-from enum import IntEnum, auto
+from enum import Flag, auto
 
 
-class RaceStatus(IntEnum):
+class RaceStatus(Flag):
     """
     Current status of system.
     """
@@ -20,5 +20,15 @@ class RaceStatus(IntEnum):
     """Racing is underway"""
     OVERTIME = auto()
     """The duration of the race has been exceeded; Racing is still underway"""
+    PAUSED = auto()
+    """Racing is paused"""
     STOPPED = auto()
     """System no longer listening for lap crossings; Race results must be saved or discarded"""
+    UNDERWAY = RACING | OVERTIME
+    """Shortcut for `RACING` or `OVERTIME`"""
+    SUSPENDED = READY | SCHEDULED | STAGING | PAUSED | STOPPED
+    """Shortcut for a race not being actively underway"""
+    PRERACE = READY | SCHEDULED | STAGING
+    """Shortcut for pre-race statuses"""
+    PREPERATION = SCHEDULED | STAGING
+    """Shortcut for race preperation statuses"""

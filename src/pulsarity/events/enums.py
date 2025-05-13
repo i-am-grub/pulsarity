@@ -87,3 +87,5 @@ class RaceSequenceEvt(_ApplicationEvt):
     RACE_START = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
     RACE_FINISH = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
     RACE_STOP = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_PAUSE = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_RESUME = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
