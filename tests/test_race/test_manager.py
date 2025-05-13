@@ -254,6 +254,7 @@ async def test_racing_paused(limited_schedule: RaceSchedule, race_manager: RaceM
     assert time_ == new_time
 
     race_manager.resume_race()
+    await asyncio.sleep(0.1)
     newest_time = race_manager.get_race_time()
     assert race_manager.status == RaceStatus.RACING
     assert newest_time > time_
@@ -292,6 +293,7 @@ async def test_overtime_paused(
     assert time_ == new_time
 
     race_manager.resume_race()
+    await asyncio.sleep(0.1)
     newest_time = race_manager.get_race_time()
     assert race_manager.status == RaceStatus.OVERTIME
     assert newest_time > time_
@@ -330,6 +332,7 @@ async def test_unlimited_sequence_resume(
     assert time_ == new_time
 
     race_manager.resume_race()
+    await asyncio.sleep(0.1)
     newest_time = race_manager.get_race_time()
     assert race_manager.status == RaceStatus.RACING
     assert newest_time > time_
