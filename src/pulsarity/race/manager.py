@@ -37,35 +37,22 @@ class RaceManager:
         """The current status of the race"""
         return self._status
 
-    def get_race_start_time(self) -> float:
-        """
-        The start time of the race
-
-        :raises Runti: _description_
-        :return: _description_
-        :yield: _description_
-        """
-        for status, timestamp in self._race_record:
-            if status == RaceStatus.RACING:
-                return timestamp
-
-        raise RuntimeError("Race not underway")
-
-    def get_race_time(self) -> float:
+    @property
+    def race_time(self) -> float:
         """
         The current time of the race
 
         :return: The race time or not
         """
 
-        race_duration: float = 0
-        race_period_start: float = 0
+        race_duration: float = 0.0
+        race_period_start: float = 0.0
         last_status: RaceStatus | None = None
 
         if self.status in RaceStatus.PRERACE:
-            raise RuntimeError("Race has not begun")
+            return 0.0
 
-        assert self._race_record, "Unable to retrive time from empty record"
+        assert self._race_record, "Unexpected empty records"
 
         timestamp: float | None = None
         for status, timestamp in self._race_record:
@@ -87,14 +74,54 @@ class RaceManager:
 
             last_status = status
 
+        assert (
+            timestamp is not None
+        ), f"Unexpected state encountered: {self._race_record}"
+
         if last_status == RaceStatus.PAUSED:
             return race_duration
 
-        if timestamp is None:
-            raise RuntimeError("Unable to get timestamp from records")
-
         loop = asyncio.get_running_loop()
         return race_duration + (loop.time() - timestamp)
+
+    def get_race_start_time(self) -> float:
+        """
+        The start time of the race
+
+        :raises RuntimeError: When race is not active
+        :return: The start timestamp
+        """
+        for status, timestamp in self._race_record:
+            if status == RaceStatus.RACING:
+                return timestamp
+
+        raise RuntimeError("Race not underway")
+
+    def get_race_finish_time(self) -> float:
+        """
+        The finish time of the race
+
+        :raises RuntimeError: When race is not active
+        :return: The finish timestamp
+        """
+        for status, timestamp in self._race_record:
+            if status in RaceStatus.FINISHED:
+                return timestamp
+
+        raise RuntimeError("Race not finished")
+
+    def get_race_stop_time(self) -> float:
+        """
+        The stop time of the race
+
+        :raises RuntimeError: When race is not active
+        :return: The stop timestamp
+        """
+        for status, timestamp in self._race_record:
+            if status == RaceStatus.STOPPED:
+                return timestamp
+
+        raise RuntimeError("Race not stopped")
 
     def _set_status(self, status: RaceStatus) -> None:
         """
@@ -168,7 +195,7 @@ class RaceManager:
                 if status in RaceStatus.UNDERWAY:
                     break
             else:
-                return
+                raise RuntimeError("Underway status not found in paused race records")
 
             data = {}
 
@@ -208,12 +235,12 @@ class RaceManager:
             if status in RaceStatus.UNDERWAY:
                 break
         else:
-            return
+            raise RuntimeError("Underway status not found in paused race records")
 
         if self._schedule.unlimited_time:
             self._set_status(RaceStatus.RACING)
 
-        elif (time_ := self.get_race_time()) < self._schedule.race_time_sec:
+        elif (time_ := self.race_time) < self._schedule.race_time_sec:
             remaining_duration = self._schedule.race_time_sec - time_
             self._program_handle = asyncio.get_running_loop().call_later(
                 remaining_duration, self._finish

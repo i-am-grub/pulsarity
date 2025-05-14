@@ -26,6 +26,8 @@ class RaceStatus(Flag):
     """System no longer listening for lap crossings; Race results must be saved or discarded"""
     UNDERWAY = RACING | OVERTIME
     """Shortcut for `RACING` or `OVERTIME`"""
+    FINISHED = OVERTIME | STOPPED
+    """Shortcut for `OVERTIME` or `STOPPED`"""
     SUSPENDED = READY | SCHEDULED | STAGING | PAUSED | STOPPED
     """Shortcut for a race not being actively underway"""
     PRERACE = READY | SCHEDULED | STAGING
