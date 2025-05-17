@@ -17,7 +17,7 @@ from ..events import SpecialEvt, event_broker
 from ..interface.timer_manager import interface_manager
 from ..utils.background import background_tasks
 from ..utils.config import configs
-from ..utils.executor import executor
+from ..utils.executor import executor_manager
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ async def server_starup_workflow() -> None:
 
     interface_manager.start()
     background_tasks.set_event_loop(loop)
-    executor.set_executor()
+    executor_manager.set_executor()
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(database_startup())
@@ -87,7 +87,7 @@ async def server_shutdown_workflow() -> None:
     await background_tasks.shutdown(5)
 
     async with asyncio.TaskGroup() as tg:
-        tg.create_task(executor.shutdown_executor())
+        tg.create_task(executor_manager.shutdown_executor())
         tg.create_task(database_shutdown())
 
 

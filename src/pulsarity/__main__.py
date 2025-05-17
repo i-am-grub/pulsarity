@@ -2,14 +2,14 @@
 Pulsarity server entry point
 """
 
-import os
-import sys
-import multiprocessing
 import logging
 import logging.config
+import multiprocessing
+import os
+import sys
 
-from . import pulsarity_webserver
 from .utils.config import configs
+from .webserver import generate_webserver_coroutine
 
 # pylint: disable=E0401
 
@@ -47,7 +47,8 @@ def main() -> None:
     _setup_logging()
     logger = logging.getLogger(__name__)
 
-    run(pulsarity_webserver())
+    coro = generate_webserver_coroutine()
+    run(coro)
 
     if os.environ["REBOOT_PULSARITY_FLAG"] == "active":
         logger.info("Automatically rebooting server")

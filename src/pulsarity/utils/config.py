@@ -2,26 +2,26 @@
 Global configurations
 """
 
-import logging
 import asyncio
-import datetime
 import copy
+import datetime
+import logging
 from secrets import token_urlsafe
-from typing import Literal, Any
+from typing import Any, Literal
 
 import anyio
 import tomlkit
 
 from .logging import generate_default_config
 
-_DEFAULT_CONFIG_FILE_NAME = "config.toml"
+DEFAULT_CONFIG_FILE_NAME = "config.toml"
 
-_SECTIONS = Literal["SECRETS", "WEBSERVER", "GENERAL", "LOGGING", "DATABASE"]
+ConfigSections = Literal["SECRETS", "WEBSERVER", "GENERAL", "LOGGING", "DATABASE"]
 
 _logger = logging.getLogger(__name__)
 
 
-def get_configs_defaults() -> dict[_SECTIONS, dict]:
+def get_configs_defaults() -> dict[ConfigSections, dict]:
     """
     Provides the server default configurations
 
@@ -67,7 +67,7 @@ def get_configs_defaults() -> dict[_SECTIONS, dict]:
         },
     }
 
-    config: dict[_SECTIONS, dict[str, Any]] = {
+    config: dict[ConfigSections, dict[str, Any]] = {
         "SECRETS": secrets,
         "WEBSERVER": webserver,
         "GENERAL": general,
@@ -83,12 +83,12 @@ class ConfigManager:
     Manager for dealing with the application config file
     """
 
-    _configs: dict[_SECTIONS, dict] | None = None
+    _configs: dict[ConfigSections, dict] | None = None
 
     def __init__(self, filename: str) -> None:
         self._config_filename = filename
 
-    def _write_file_config(self, configs_: dict[_SECTIONS, dict]):
+    def _write_file_config(self, configs_: dict[ConfigSections, dict]):
         """
         Writes configs to a file synchronously. This should only be used before the
         webserver has been started.
@@ -101,7 +101,7 @@ class ConfigManager:
         with open(self._config_filename, "w", encoding="utf-8") as file:
             file.write(tomlkit.dumps(configs_))
 
-    async def _write_file_config_async(self, configs_: dict[_SECTIONS, dict]):
+    async def _write_file_config_async(self, configs_: dict[ConfigSections, dict]):
         """
         Writes configs to a file asynchronously. This should only be used after
         the webserver has started.
@@ -116,7 +116,7 @@ class ConfigManager:
         ) as file:
             await file.write(tomlkit.dumps(configs_))
 
-    def _load_config_from_file(self) -> dict[_SECTIONS, dict]:
+    def _load_config_from_file(self) -> dict[ConfigSections, dict]:
         """
         Loads configs to a file synchronously. This should only be used before the
         webserver has been started.
@@ -146,7 +146,7 @@ class ConfigManager:
 
     def get_config(
         self,
-        section: _SECTIONS,
+        section: ConfigSections,
         key: str,
     ) -> str | bool | int | float | None:
         """
@@ -168,7 +168,7 @@ class ConfigManager:
 
     def get_section(
         self,
-        section: _SECTIONS,
+        section: ConfigSections,
     ) -> dict[str, Any] | None:
         """
         Gets a section from the config file.
@@ -186,7 +186,7 @@ class ConfigManager:
 
         return section_
 
-    def set_config(self, section: _SECTIONS, key: str, value) -> None:
+    def set_config(self, section: ConfigSections, key: str, value) -> None:
         """
         Sets a setting from the config file asynchronously.
 
@@ -206,7 +206,7 @@ class ConfigManager:
         else:
             loop.create_task(self._write_file_config_async(self._configs))
 
-    def get_sharable_config(self) -> dict[_SECTIONS, dict]:
+    def get_sharable_config(self) -> dict[ConfigSections, dict]:
         """
         Generates a copy of the config file with the `SECRETS`
         section cleared
@@ -222,4 +222,4 @@ class ConfigManager:
         return configs_
 
 
-configs = ConfigManager(_DEFAULT_CONFIG_FILE_NAME)
+configs = ConfigManager(DEFAULT_CONFIG_FILE_NAME)

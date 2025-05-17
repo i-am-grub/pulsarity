@@ -2,14 +2,14 @@
 Executor for Parallel Processing
 """
 
-import sys
-import os
 import asyncio
+import os
+import sys
 from asyncio import Future
-from concurrent.futures import Executor, ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import Executor, ProcessPoolExecutor, ThreadPoolExecutor
 
 
-class ExecutorManager:
+class ParallelExecutorManager:
     """
     Manager for the system pool executor
     """
@@ -17,7 +17,7 @@ class ExecutorManager:
     _executor: Future[Executor] | None = None
     """The serverwide executor pool to use for parallel computations"""
 
-    def set_executor(self) -> None:
+    def set_executor(self, *, loop: asyncio.AbstractEventLoop | None = None) -> None:
         """
         Sets the global executor.
 
@@ -29,9 +29,10 @@ class ExecutorManager:
         # pylint: disable=E1101,W0212
 
         if self._executor is None:
-            self._executor = asyncio.get_running_loop().create_future()
+            _loop = loop if loop is not None else asyncio.get_running_loop()
+            self._executor = _loop.create_future()
         else:
-            return
+            raise RuntimeError("Executor already set")
 
         if sys.version_info >= (3, 13):
             count = os.process_cpu_count()
@@ -82,6 +83,8 @@ class ExecutorManager:
             pool_exec = await self._executor
             await asyncio.to_thread(pool_exec.shutdown)
             self._executor = None
+        else:
+            raise RuntimeError("Executor not set")
 
 
-executor = ExecutorManager()
+executor_manager = ParallelExecutorManager()

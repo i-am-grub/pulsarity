@@ -20,15 +20,15 @@ class BackgroundTaskManager:
 
     def __init__(self) -> None:
         self._tasks: set[asyncio.Task] = set()
-        self._loop: asyncio.AbstractEventLoop | None
+        self._loop: asyncio.AbstractEventLoop | None = None
 
-    def set_event_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+    def set_event_loop(self, loop: asyncio.AbstractEventLoop | None = None) -> None:
         """
         Sets event loop to use for creating tasks
 
         :param loop: _description_
         """
-        self._loop = loop
+        self._loop = loop if loop is not None else asyncio.get_running_loop()
 
     def run_coroutine_from_thread(self, coro: Coroutine) -> Future:
         """

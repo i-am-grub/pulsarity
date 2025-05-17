@@ -31,6 +31,16 @@ class RaceManager:
     def __init__(self) -> None:
         self._race_record: list[_RaceEventRecord] = []
         """The sequence of the race"""
+        self._loop: asyncio.AbstractEventLoop | None = None
+        """The abstract event loop used to assign callbacks to"""
+
+    def set_event_loop(self, loop: asyncio.AbstractEventLoop | None = None) -> None:
+        """
+        Sets event loop to use for creating tasks
+
+        :param loop: _description_
+        """
+        self._loop = loop if loop is not None else asyncio.get_running_loop()
 
     @property
     def status(self) -> RaceStatus:
@@ -81,8 +91,12 @@ class RaceManager:
         if last_status == RaceStatus.PAUSED:
             return race_duration
 
-        loop = asyncio.get_running_loop()
-        return race_duration + (loop.time() - timestamp)
+        if self._loop is None:
+            self.set_event_loop()
+
+        assert self._loop is not None, "Event loop unexpectedly not set"
+
+        return race_duration + (self._loop.time() - timestamp)
 
     def get_race_start_time(self) -> float:
         """
@@ -131,8 +145,8 @@ class RaceManager:
         :param status: _description_
         """
         self._status = status
-        loop = asyncio.get_running_loop()
-        self._race_record.append((status, loop.time()))
+        assert self._loop is not None, "Event loop not set"
+        self._race_record.append((status, self._loop.time()))
 
     def schedule_race(
         self, schedule: RaceSchedule, *, assigned_start: float, **_kwargs
@@ -144,8 +158,12 @@ class RaceManager:
         :param assigned_start: The event loop start time of the race.
         Currently equivalent to monotonic time
         """
-        loop = asyncio.get_running_loop()
-        if assigned_start < loop.time():
+        if self._loop is None:
+            self.set_event_loop()
+
+        assert self._loop is not None, "Event loop unexpectedly not set"
+
+        if assigned_start < self._loop.time():
             raise ValueError("Assigned start is in the past")
 
         _random_delay = schedule.random_stage_delay * random() * 0.001
@@ -154,10 +172,14 @@ class RaceManager:
 
         if self.status == RaceStatus.READY:
             assert self._program_handle is None, "A program handle is already active"
-            assert loop.time() < assigned_start, "Assigned start not in the future"
+            assert (
+                self._loop.time() < assigned_start
+            ), "Assigned start not in the future"
 
             self._schedule = schedule
-            self._program_handle = loop.call_at(assigned_start, self._stage, start_time)
+            self._program_handle = self._loop.call_at(
+                assigned_start, self._stage, start_time
+            )
             self._set_status(RaceStatus.SCHEDULED)
 
         else:
@@ -237,12 +259,17 @@ class RaceManager:
         else:
             raise RuntimeError("Underway status not found in paused race records")
 
+        if self._loop is None:
+            self.set_event_loop()
+
+        assert self._loop is not None, "Event loop unexpectedly not set"
+
         if self._schedule.unlimited_time:
             self._set_status(RaceStatus.RACING)
 
         elif (time_ := self.race_time) < self._schedule.race_time_sec:
             remaining_duration = self._schedule.race_time_sec - time_
-            self._program_handle = asyncio.get_running_loop().call_later(
+            self._program_handle = self._loop.call_later(
                 remaining_duration, self._finish
             )
             self._set_status(RaceStatus.RACING)
@@ -251,9 +278,7 @@ class RaceManager:
             remaining_duration = (
                 self._schedule.race_time_sec + self._schedule.overtime_sec - time_
             )
-            self._program_handle = asyncio.get_running_loop().call_later(
-                remaining_duration, self._stop
-            )
+            self._program_handle = self._loop.call_later(remaining_duration, self._stop)
             self._set_status(RaceStatus.OVERTIME)
 
         data: dict = {}
@@ -273,9 +298,8 @@ class RaceManager:
         self._set_status(RaceStatus.STAGING)
         logger.info("Race scheduled for %d", start_time)
 
-        self._program_handle = asyncio.get_running_loop().call_at(
-            start_time, self._start
-        )
+        assert self._loop is not None, "Event loop unexpectedly not set"
+        self._program_handle = self._loop.call_at(start_time, self._start)
 
     def _start(self) -> None:
         """
@@ -292,7 +316,8 @@ class RaceManager:
         logger.info("Race started")
 
         if not self._schedule.unlimited_time:
-            self._program_handle = asyncio.get_running_loop().call_later(
+            assert self._loop is not None, "Event loop unexpectedly not set"
+            self._program_handle = self._loop.call_later(
                 self._schedule.race_time_sec, self._finish
             )
 
@@ -312,7 +337,8 @@ class RaceManager:
         event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
 
         if self._schedule.overtime_sec > 0:
-            self._program_handle = asyncio.get_running_loop().call_later(
+            assert self._loop is not None, "Event loop unexpectedly not set"
+            self._program_handle = self._loop.call_later(
                 self._schedule.overtime_sec, self._stop
             )
 
