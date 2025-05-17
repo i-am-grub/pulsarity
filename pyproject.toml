@@ -53,6 +53,7 @@ dev = [
     "ruff>=0.11.10",
     "tox>=4.26.0",
     "tox-gh-actions>=3.3.0",
+    "tox-uv>=1.25.0",
 ]
 
 [tool.mypy]
@@ -68,8 +69,8 @@ testpaths = ["tests"]
 ignore = "tests"
 
 [tool.tox]
-requires = ["tox>=4"]
-env_list = ["pylint", "black", "mypy", "3.13", "3.12", "3.11"]
+requires = ["tox-uv>=1"]
+env_list = ["pylint", "mypy", "3.13", "3.12", "3.11"]
 
 [tool.tox.env_run_base]
 description = "run unit tests"
@@ -81,12 +82,6 @@ deps = [
     "httpx-ws"
 ]
 commands = [["pytest", {cov="src",  replace = "posargs", default = ["tests"], extend = true }]]
-
-[tool.tox.env.style]
-description = "run black"
-skip_install = true
-deps = ["black"]
-commands = [["black", { replace = "posargs", default = ["src/pulsarity"], extend = true} ]]
 
 [tool.tox.env.mypy]
 description = "run mypy"
