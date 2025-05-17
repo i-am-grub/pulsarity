@@ -8,7 +8,6 @@ from tortoise import Tortoise, connections
 
 from pulsarity.database import setup_default_objects
 from pulsarity.database.raceformat import RaceSchedule
-from pulsarity.race.manager import RaceManager
 from pulsarity.utils.background import background_tasks
 from pulsarity.utils.config import get_configs_defaults
 from pulsarity.webserver import generate_application
@@ -79,11 +78,6 @@ def default_user_creds():
     password = str(configs["SECRETS"]["DEFAULT_PASSWORD"])
 
     return username, password
-
-
-@pytest_asyncio.fixture(name="race_manager")
-def race_manager():
-    yield RaceManager()
 
 
 @pytest.fixture()

@@ -6,7 +6,6 @@ import pytest
 from pulsarity.database import RaceSchedule
 from pulsarity.race.enums import RaceStatus
 from pulsarity.race.manager import RaceManager
-from pulsarity.utils.background import background_tasks
 
 
 def future_schedule(limited_schedule_: RaceSchedule, race_manager: RaceManager):
@@ -19,21 +18,23 @@ def future_schedule(limited_schedule_: RaceSchedule, race_manager: RaceManager):
 
 
 @pytest.mark.asyncio
-async def test_default_status(race_manager: RaceManager):
+async def test_default_status():
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     assert race_manager.status == RaceStatus.READY
     race_manager.stop_race()
     assert race_manager.status == RaceStatus.READY
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_past_schedule(limited_schedule: RaceSchedule, race_manager: RaceManager):
+async def test_past_schedule(limited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     assert race_manager.status == RaceStatus.READY
 
@@ -44,15 +45,13 @@ async def test_past_schedule(limited_schedule: RaceSchedule, race_manager: RaceM
 
     assert race_manager.status == RaceStatus.READY
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_limited_sequence(
-    limited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_limited_sequence(limited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(limited_schedule, race_manager)
 
@@ -78,15 +77,13 @@ async def test_limited_sequence(
     race_manager.reset()
     assert race_manager.status == RaceStatus.READY
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_scheduled_stopped(
-    limited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_scheduled_stopped(limited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     future_schedule(limited_schedule, race_manager)
 
@@ -97,15 +94,13 @@ async def test_scheduled_stopped(
     assert race_manager.status == RaceStatus.READY
     assert race_manager._program_handle is None
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_staging_stopped(
-    limited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_staging_stopped(limited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(limited_schedule, race_manager)
 
@@ -120,15 +115,13 @@ async def test_staging_stopped(
     assert race_manager.status == RaceStatus.READY
     assert race_manager._program_handle is None
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_racing_stopped(
-    limited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_racing_stopped(limited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(limited_schedule, race_manager)
 
@@ -145,15 +138,13 @@ async def test_racing_stopped(
     assert race_manager.status == RaceStatus.STOPPED
     assert race_manager._program_handle is None
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_overtime_stopped(
-    limited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_overtime_stopped(limited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(limited_schedule, race_manager)
 
@@ -172,15 +163,13 @@ async def test_overtime_stopped(
     assert race_manager.status == RaceStatus.STOPPED
     assert race_manager._program_handle is None
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_no_overtime(
-    limited_no_ot_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_no_overtime(limited_no_ot_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(limited_no_ot_schedule, race_manager)
 
@@ -197,15 +186,13 @@ async def test_no_overtime(
     assert race_manager.status == RaceStatus.STOPPED
     assert race_manager._program_handle is None
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_unlimited_sequence(
-    unlimited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_unlimited_sequence(unlimited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(unlimited_schedule, race_manager)
 
@@ -224,13 +211,13 @@ async def test_unlimited_sequence(
     assert race_manager.status == RaceStatus.RACING
     assert race_manager._program_handle is None
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_racing_paused(limited_schedule: RaceSchedule, race_manager: RaceManager):
+async def test_racing_paused(limited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(limited_schedule, race_manager)
 
@@ -259,15 +246,13 @@ async def test_racing_paused(limited_schedule: RaceSchedule, race_manager: RaceM
     assert race_manager.status == RaceStatus.RACING
     assert newest_time > time_
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_overtime_paused(
-    limited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_overtime_paused(limited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(limited_schedule, race_manager)
 
@@ -298,15 +283,12 @@ async def test_overtime_paused(
     assert race_manager.status == RaceStatus.OVERTIME
     assert newest_time > time_
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_unlimited_sequence_resume(
-    unlimited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_unlimited_sequence_resume(unlimited_schedule: RaceSchedule):
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(unlimited_schedule, race_manager)
 
@@ -337,15 +319,13 @@ async def test_unlimited_sequence_resume(
     assert race_manager.status == RaceStatus.RACING
     assert newest_time > time_
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_racing_paused_stopped(
-    limited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_racing_paused_stopped(limited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(limited_schedule, race_manager)
 
@@ -372,15 +352,12 @@ async def test_racing_paused_stopped(
     assert race_manager.status == RaceStatus.STOPPED
     assert race_manager._program_handle is None
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_overtime_paused_stopped(
-    limited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_overtime_paused_stopped(limited_schedule: RaceSchedule):
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(limited_schedule, race_manager)
 
@@ -409,15 +386,13 @@ async def test_overtime_paused_stopped(
     assert race_manager.status == RaceStatus.STOPPED
     assert race_manager._program_handle is None
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_limited_sequence_pause_resume_fail(
-    limited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_limited_sequence_pause_resume_fail(limited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(limited_schedule, race_manager)
 
@@ -459,15 +434,13 @@ async def test_limited_sequence_pause_resume_fail(
     race_manager.resume_race()
     assert race_manager.status == RaceStatus.STOPPED
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_get_race_start(
-    unlimited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_get_race_start(unlimited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(unlimited_schedule, race_manager)
 
@@ -486,15 +459,13 @@ async def test_get_race_start(
     assert race_manager.status == RaceStatus.RACING
     assert race_manager.race_time > 0.0
 
-    await background_tasks.shutdown(5)
-
 
 @pytest.mark.asyncio
-async def test_get_race_time(
-    unlimited_schedule: RaceSchedule, race_manager: RaceManager
-):
+async def test_get_race_time(unlimited_schedule: RaceSchedule):
+
     loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
+    race_manager = RaceManager()
+    race_manager.set_event_loop(loop)
 
     offset = future_schedule(unlimited_schedule, race_manager)
 
@@ -518,5 +489,3 @@ async def test_get_race_time(
     race_manager.stop_race()
     assert race_manager.status == RaceStatus.STOPPED
     assert race_manager.race_time > 0.0
-
-    await background_tasks.shutdown(5)
