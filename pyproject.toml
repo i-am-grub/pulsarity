@@ -33,43 +33,27 @@ repository = "https://github.com/i-am-grub/Pulsarity"
 [project.optional-dependencies]
 pgsql = [ "asyncpg>=0.30,<0.31" ]
 
-[tool.poetry]
-package-mode = true
-include = ["src/pulsarity/py.typed"]
-
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.7.5,<0.8.0"]
+build-backend = "uv_build"
 
-[tool.poetry.scripts]
-start = "pulsarity.__main__:main"
+[tool.uv.build-backend]
+source-include = ["**/py.typed"]
 
-[tool.poetry.group.dev]
-optional = true
-
-[tool.poetry.group.dev.dependencies]
-pytest = "*"
-pytest-asyncio = "*"
-pytest-cov = "*"
-black = "^24.10.0"
-mypy = "^1.13.0"
-tox = "^4.23.2"
-tox-gh-actions = "^3.2.0"
-pylint = "^3.3.2"
-ruff = "^0.9.7"
-httpx = "^0.28.1"
-httpx-ws = "^0.7.2"
-
-[tool.poetry.group.docs]
-optional = true
-
-[tool.poetry.group.docs.dependencies]
-sphinx = "*"
-Sphinx-Substitution-Extensions = "*"
-sphinx-copybutton = "*"
-myst-parser = "^4.0.0"
-sphinx-book-theme = "^1.1.3"
-sphinx-intl = "^2.3.1"
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "httpx>=0.28.1",
+    "httpx-ws>=0.7.2",
+    "mypy>=1.15.0",
+    "pylint>=3.3.7",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "pytest-cov>=6.1.1",
+    "ruff>=0.11.10",
+    "tox>=4.26.0",
+    "tox-gh-actions>=3.3.0",
+]
 
 [tool.mypy]
 exclude = ["tests"]
