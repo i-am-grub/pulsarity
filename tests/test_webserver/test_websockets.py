@@ -3,7 +3,28 @@ import uuid
 
 import httpx_ws
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
+from httpx_ws.transport import ASGIWebSocketTransport
+
+from pulsarity.webserver import generate_application
+
+
+@pytest_asyncio.fixture(name="websocket_client", loop_scope="function")
+async def authenticated_websocket_client(user_creds: tuple[str]):
+    """
+    Generates a client capable of using websockets
+    """
+
+    transport = ASGIWebSocketTransport(app=generate_application(test_mode=True))
+    async with AsyncClient(
+        transport=transport, base_url="https://localhost"
+    ) as client_:
+        login_data = {"username": user_creds[0], "password": user_creds[1]}
+        response = await client_.post("/login", json=login_data)
+        assert response.status_code == 200
+
+        yield client_
 
 
 @pytest.mark.asyncio
@@ -18,22 +39,15 @@ async def test_server_websocket_unauth(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def _test_server_websocket_auth(
-    client: AsyncClient,
-    user_creds: tuple[str],
-):
+async def test_server_websocket_auth(websocket_client: AsyncClient):
     """
     Test accessing a websocket route while being logged in
     """
 
-    login_data = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=login_data)
-    assert response.status_code == 200
-
     payload = {"id": str(uuid.uuid4()), "event_id": "heartbeat", "data": {"foo": "bar"}}
 
-    async with httpx_ws.aconnect_ws("/server", client) as ws:
-        await asyncio.sleep(2)  # wait for permissions to set
+    async with httpx_ws.aconnect_ws("/server", websocket_client) as ws:
+        await asyncio.sleep(0.5)  # wait for permissions to set
 
         await ws.send_json(payload)
 

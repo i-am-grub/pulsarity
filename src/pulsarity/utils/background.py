@@ -38,6 +38,17 @@ def add_background_task(
     return task
 
 
+def add_pregenerated_task(task: asyncio.Task):
+    """
+    Adds a pre-generated task. Typically used to make sure tasks are shutdown
+    with the server
+
+    :param task: The task to add to the background manager
+    """
+    _tasks.add(task)
+    task.add_done_callback(_tasks.discard)
+
+
 async def shutdown(timeout: float) -> None:
     """
     Wait for all background tasks to complete. If not completed within

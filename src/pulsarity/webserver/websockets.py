@@ -22,7 +22,6 @@ from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt, event
 from pulsarity.race import race_manager
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
-from pulsarity.webserver.auth import PulsarityUser
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -57,7 +56,72 @@ def ws_event(event: _ApplicationEvt):
     return inner
 
 
-async def handle_ws_event(ws_data: WSEventData, permissions: set[str]):
+@requires(SystemDefaultPerms.EVENT_WEBSOCKET)
+async def server_event_ws(websocket: WebSocket):
+    """
+    The full duplex websocket connection for clients
+    """
+
+    ctx.websocket_ctx.set(websocket)
+    ctx.user_ctx.set(websocket.user)
+
+    permissions = await ctx.user_ctx.get().get_permissions()
+    ctx.user_permsissions_ctx.set(permissions)
+
+    await websocket.accept()
+
+    try:
+        async with asyncio.TaskGroup() as tg:
+            background.add_pregenerated_task(tg.create_task(_recieve_data()))
+            background.add_pregenerated_task(tg.create_task(_write_data()))
+    except* WebSocketDisconnect:
+        ...
+    finally:
+        await websocket.close()
+
+
+async def _recieve_data() -> None:
+    """
+    Handles recieved data over the websocket
+    """
+    websocket = ctx.websocket_ctx.get()
+    while True:
+        data = await websocket.receive_json()
+
+        try:
+            model = WSEventData.model_validate(data)
+        except ValidationError:
+            logger.debug("Error validating websocket data: %s", data)
+        else:
+            background.add_background_task(handle_ws_event, model)
+
+
+async def _write_data() -> None:
+    """
+    Handles writing event data over the websocket
+    """
+    websocket = ctx.websocket_ctx.get()
+    user = ctx.user_ctx.get()
+    permissions = ctx.user_permsissions_ctx.get()
+
+    async for event in event_broker.subscribe():
+        if permissions is None:
+            continue
+
+        if event.evt.id == SpecialEvt.PERMISSIONS_UPDATE.id:
+            temp = await user.get_permissions()
+
+            permissions.clear()
+            permissions.update(temp)
+
+        elif event.evt.permission in permissions:
+            evt_data = WSEventData(
+                id=event.uuid, event_id=event.evt.id, data=event.data
+            )
+            await websocket.send_text(evt_data.model_dump_json())
+
+
+async def handle_ws_event(ws_data: WSEventData):
     """
     Handle the event identified in the websocket data while enforcing
     the its permissions
@@ -69,7 +133,7 @@ async def handle_ws_event(ws_data: WSEventData, permissions: set[str]):
     if ws_data.event_id in _wse_routes:
         permission, route = _wse_routes[ws_data.event_id]
 
-        if permission in permissions:
+        if permission in ctx.user_permsissions_ctx.get():
             signature = inspect.signature(route)
             if "ws_data" in signature.parameters:
                 await ensure_async(route, ws_data)
@@ -78,57 +142,6 @@ async def handle_ws_event(ws_data: WSEventData, permissions: set[str]):
 
     else:
         logger.debug("Route not available for websocket data")
-
-
-@requires(SystemDefaultPerms.EVENT_WEBSOCKET)
-async def server_event_ws(websocket: WebSocket):
-    """
-    The full duplex websocket connection for clients
-    """
-    ctx.websocket_ctx.set(websocket)
-    ctx.user_ctx.set(websocket.user)
-
-    async def recieve_data() -> None:
-        while True:
-            data = await websocket.receive_json()
-
-            try:
-                model = WSEventData.model_validate(data)
-            except ValidationError:
-                logger.debug("Error validating websocket data: %s", data)
-            else:
-                background.add_background_task(handle_ws_event, model, permissions)
-
-    async def write_data() -> None:
-        async for event in event_broker.subscribe():
-            if permissions is None:
-                continue
-
-            if event.evt.id == SpecialEvt.PERMISSIONS_UPDATE.id:
-                user: PulsarityUser = websocket.user
-                temp = await user.get_permissions()
-
-                permissions.clear()
-                permissions.update(temp)
-
-            elif event.evt.permission in permissions:
-                evt_data = WSEventData(
-                    id=event.uuid, event_id=event.evt.id, data=event.data
-                )
-                await websocket.send_text(evt_data.model_dump_json())
-
-    user: PulsarityUser = websocket.user
-    permissions = await user.get_permissions()
-    await websocket.accept()
-
-    try:
-        async with asyncio.TaskGroup() as tg:
-            tg.create_task(recieve_data())
-            tg.create_task(write_data())
-    except* WebSocketDisconnect:
-        ...
-    finally:
-        await websocket.close()
 
 
 @ws_event(SpecialEvt.HEARTBEAT)

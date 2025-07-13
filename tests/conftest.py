@@ -19,7 +19,7 @@ async def context_and_cleanup():
 
     yield
 
-    background.shutdown(5)
+    await background.shutdown(5)
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -61,7 +61,7 @@ async def database_init():
 async def unauthenticated_client():
     transport = ASGITransport(app=generate_application(test_mode=True))
     async with AsyncClient(
-        transport=transport, base_url="https://localhost", verify=False, timeout=5
+        transport=transport, base_url="https://localhost"
     ) as client_:
         yield client_
 
