@@ -42,18 +42,13 @@ source-include = ["**/py.typed"]
 
 [dependency-groups]
 dev = [
-    "black>=25.1.0",
     "httpx>=0.28.1",
     "httpx-ws>=0.7.2",
-    "mypy>=1.15.0",
-    "pylint>=3.3.7",
     "pytest>=8.3.5",
     "pytest-asyncio>=0.26.0",
     "pytest-cov>=6.1.1",
-    "ruff>=0.11.10",
     "tox>=4.26.0",
     "tox-gh-actions>=3.3.0",
-    "tox-uv>=1.25.0",
 ]
 docs = [
     "myst-parser>=4.0.1",
@@ -76,26 +71,11 @@ testpaths = ["tests"]
 ignore = "tests"
 
 [tool.tox]
-requires = ["tox-uv>=1"]
-env_list = ["pylint", "mypy", "3.13", "3.12", "3.11"]
+requires = ["tox>=4", "tox-uv>=1.26"]
+env_list = ["3.13", "3.12", "3.11"]
 
 [tool.tox.env_run_base]
+runner = "uv-venv-lock-runner"
 description = "run unit tests"
-deps = [
-    "pytest>=8",
-    "pytest-asyncio",
-    "pytest-cov",
-    "httpx",
-    "httpx-ws"
-]
+dependency_groups = ["dev"]
 commands = [["pytest", {cov="src",  replace = "posargs", default = ["tests"], extend = true }]]
-
-[tool.tox.env.mypy]
-description = "run mypy"
-deps = ["mypy"]
-commands = [["mypy", { replace = "posargs", default = ["src/pulsarity"], extend = true} ]]
-
-[tool.tox.env.pylint]
-description = "run pylint"
-deps = ["pylint"]
-commands = [["pylint", "--recursive=y", { replace = "posargs", default = ["src/pulsarity"], extend = true} ]]
