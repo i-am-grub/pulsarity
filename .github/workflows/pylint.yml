@@ -25,7 +25,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install uv
         uv venv
-        uv sync
+        uv sync --group dev
     - name: Analysing the code with pylint
       run: |
         uv run pylint $(git ls-files 'src/pulsarity')
