@@ -767,7 +767,6 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "tox" },
-    { name = "tox-gh-actions" },
 ]
 docs = [
     { name = "myst-parser" },
@@ -803,7 +802,6 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
     { name = "pytest-cov", specifier = ">=6.1.1" },
     { name = "tox", specifier = ">=4.26.0" },
-    { name = "tox-gh-actions", specifier = ">=3.3.0" },
 ]
 docs = [
     { name = "myst-parser", specifier = ">=4.0.1" },
@@ -1332,18 +1330,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/fd/3c/dcec0c00321a107f7f697fd00754c5112572ea6dcacb40b16d8c3eea7c37/tox-4.26.0.tar.gz", hash = "sha256:a83b3b67b0159fa58e44e646505079e35a43317a62d2ae94725e0586266faeca", size = 197260, upload-time = "2025-05-13T15:04:28.481Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/de/14/f58b4087cf248b18c795b5c838c7a8d1428dfb07cb468dad3ec7f54041ab/tox-4.26.0-py3-none-any.whl", hash = "sha256:75f17aaf09face9b97bd41645028d9f722301e912be8b4c65a3f938024560224", size = 172761, upload-time = "2025-05-13T15:04:26.207Z" },
-]
-
-[[package]]
-name = "tox-gh-actions"
-version = "3.3.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "tox" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6d/79/825b2551498a8a339699b87da52ee23fc80cae3f89a5cf7d48b46325fbb3/tox_gh_actions-3.3.0.tar.gz", hash = "sha256:6933775dd7ab98649de5134283277e604fecfd4eb44bf31150c1c6ba2b1092ef", size = 19205, upload-time = "2025-02-22T15:10:44.019Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/c7/1cf26c90539746a2bdb8217f13c29e15e33a525f13595b690150bceb5bef/tox_gh_actions-3.3.0-py2.py3-none-any.whl", hash = "sha256:0e1f9db7a775d04b6d94ab801c60d2d482929a934136262969791eb0ccac65a4", size = 9948, upload-time = "2025-02-22T15:10:42.77Z" },
 ]
 
 [[package]]
