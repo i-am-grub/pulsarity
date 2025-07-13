@@ -5,38 +5,35 @@ HTTP Rest API Routes
 import logging
 from uuid import UUID
 
-from starlette.requests import Request
 from starlette.routing import Mount, Route
 from starsessions.session import regenerate_session_id
 
+from pulsarity import ctx
 from pulsarity.database.permission import SystemDefaultPerms
 from pulsarity.database.pilot import Pilot
 from pulsarity.database.user import User
 from pulsarity.utils import background
 from pulsarity.webserver import validation
-from pulsarity.webserver.auth import PulsarityUser
 from pulsarity.webserver.wrapper import endpoint
 
 logger = logging.getLogger(__name__)
 
 
 @endpoint(response_model=validation.BaseResponse)
-async def check_auth(request: Request) -> validation.BaseResponse:
+async def check_auth() -> validation.BaseResponse:
     """
     Check if a user is authenticated
 
     :return: The user's authentication status
     """
-    auth_user: PulsarityUser = request.user
+    auth_user = ctx.user_ctx.get()
     return validation.BaseResponse(status=auth_user.is_authenticated)
 
 
 @endpoint(
     request_model=validation.LoginRequest, response_model=validation.LoginResponse
 )
-async def login(
-    request: Request, data: validation.LoginRequest
-) -> validation.LoginResponse | None:
+async def login(data: validation.LoginRequest) -> validation.LoginResponse | None:
     """
     Pass the user credentials to log the user into the server
 
@@ -45,6 +42,7 @@ async def login(
     user = await User.get_or_none(username=data.username)
 
     if user is not None and await user.verify_password(data.password):
+        request = ctx.request_ctx.get()
         request.session.update({"auth_id": user.auth_id.hex})
         regenerate_session_id(request)
 
@@ -61,16 +59,16 @@ async def login(
 
 
 @endpoint(SystemDefaultPerms.AUTHENTICATED, response_model=validation.BaseResponse)
-async def logout(request: Request) -> validation.BaseResponse:
+async def logout() -> validation.BaseResponse:
     """
     Logout the currently connected client
 
     :return: JSON containing the status of the request
     """
-    auth_user: PulsarityUser = request.user
+    auth_user = ctx.user_ctx.get()
     logger.info("Logging out user %s", auth_user.identity)
 
-    request.session.clear()
+    ctx.request_ctx.get().session.clear()
     return validation.BaseResponse(status=True)
 
 
@@ -80,14 +78,14 @@ async def logout(request: Request) -> validation.BaseResponse:
     response_model=validation.BaseResponse,
 )
 async def reset_password(
-    request: Request, data: validation.ResetPasswordRequest
+    data: validation.ResetPasswordRequest,
 ) -> validation.BaseResponse:
     """
     Resets the password for the client user
 
     :return: JSON containing the status of the request
     """
-    auth_user: PulsarityUser = request.user
+    auth_user = ctx.user_ctx.get()
     uuid = UUID(hex=auth_user.identity)
     user = await User.get_by_uuid(uuid)
 
@@ -106,17 +104,14 @@ async def reset_password(
 PilotModel = Pilot.generate_pydaantic_model()
 
 
-@endpoint(
-    SystemDefaultPerms.READ_PILOTS,
-    response_model=PilotModel,
-)
-async def get_pilot(request: Request):
+@endpoint(SystemDefaultPerms.READ_PILOTS, response_model=PilotModel)
+async def get_pilot():
     """
     Get the pilot by id
 
     :return: Pilot data.
     """
-    pilot_id: int = request.path_params["id"]
+    pilot_id = ctx.request_ctx.get().path_params["id"]
     pilot = await Pilot.get_by_id(pilot_id)
 
     if pilot is not None:

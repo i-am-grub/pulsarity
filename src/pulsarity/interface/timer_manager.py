@@ -10,7 +10,7 @@ from dataclasses import astuple, dataclass, field
 from enum import IntEnum, auto
 
 from pulsarity.interface.timer_interface import TimerData, TimerInterface
-from pulsarity.utils.background import handle_timeout_trigger
+from pulsarity.utils import background
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +57,6 @@ class TimerInterfaceManager:
     """
 
     def __init__(self) -> None:
-        self._loop: asyncio.AbstractEventLoop | None = None
-
         self._interfaces: dict[str, type[TimerInterface]] = {}
         self._active_interfaces: dict[str, _ActiveTimer] = {}
         self._shutdown_evt = asyncio.Event()
@@ -68,23 +66,21 @@ class TimerInterfaceManager:
 
         self._tasks: tuple[asyncio.Task, asyncio.Task] | None = None
 
-    def start(self, *, loop: asyncio.AbstractEventLoop | None = None) -> None:
+    def start(self) -> None:
         """
         Start the interface processing tasks
         """
-        self._loop = loop if loop is not None else asyncio.get_running_loop()
-
         if self._tasks is not None:
             raise RuntimeError("Timer instance manager already started")
 
         self._shutdown_evt.clear()
 
-        lap_task = self._loop.create_task(
-            self._process_queue_data(self._lap_manager), name="lap_processor"
+        lap_task = background.add_background_task(
+            self._process_queue_data, self._lap_manager
         )
 
-        rssi_task = self._loop.create_task(
-            self._process_queue_data(self._rssi_manager), name="rssi_processor"
+        rssi_task = background.add_background_task(
+            self._process_queue_data, self._rssi_manager
         )
 
         self._tasks = (lap_task, rssi_task)
@@ -232,7 +228,7 @@ class TimerInterfaceManager:
                 await asyncio.gather(*self._tasks)
 
         except asyncio.TimeoutError as ex:
-            await handle_timeout_trigger(ex, self._tasks)
+            await background.handle_timeout_trigger(ex, self._tasks)
 
         finally:
             self._tasks = None

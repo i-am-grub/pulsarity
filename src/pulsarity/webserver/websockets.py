@@ -86,6 +86,7 @@ async def server_event_ws(websocket: WebSocket):
     The full duplex websocket connection for clients
     """
     ctx.websocket_ctx.set(websocket)
+    ctx.user_ctx.set(websocket.user)
 
     async def recieve_data() -> None:
         while True:

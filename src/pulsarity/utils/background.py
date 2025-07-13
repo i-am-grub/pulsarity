@@ -27,14 +27,7 @@ def add_background_task(
     """
 
     async def _wrapper(awaitable: Awaitable[_T]) -> _T:
-        if asyncio.iscoroutine(awaitable):
-            return await awaitable
-
-        if asyncio.isfuture(awaitable):
-            await awaitable
-            return awaitable.result()
-
-        raise RuntimeError("incompatible awaitable")
+        return await awaitable
 
     awaitable = ensure_async(func, *args, **kwargs)
 

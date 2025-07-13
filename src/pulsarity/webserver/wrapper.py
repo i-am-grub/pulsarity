@@ -6,19 +6,22 @@ import functools
 import inspect
 from collections.abc import Callable, Coroutine
 from json.decoder import JSONDecodeError
-from typing import Any, ParamSpec, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 from starlette.authentication import requires
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from pulsarity import ctx
 from pulsarity.database.permission import UserPermission
 from pulsarity.utils.asyncio import ensure_async
 from pulsarity.webserver.validation import BaseResponse
 
-T = TypeVar("T")
-P = ParamSpec("P")
+_T = TypeVar("_T")
+
+_bad_response = JSONResponse(BaseResponse(status=False).model_dump_json())
+_good_response = JSONResponse(BaseResponse(status=True).model_dump_json())
 
 
 def endpoint(
@@ -30,51 +33,74 @@ def endpoint(
     Decorator for validating request data, user permissions, and
     response data for a route
 
-    :param request_model: _description_, defaults to None
-    :param response_model: _description_, defaults to None
+    :param permission: The permissions required to access the route
+    :param request_model: The model to use to validate the request, defaults to None
+    :param response_model: The model to use to validate teh respones, defaults to None
     """
-    bad_response = JSONResponse(BaseResponse(status=False).model_dump_json())
-    good_response = JSONResponse(BaseResponse(status=True).model_dump_json())
 
     def inner(
-        func: Callable[[Request, BaseModel], T],
+        func: Callable[[BaseModel], _T],
     ) -> Callable[[Request], Coroutine[None, None, Response]]:
+        num_args = len(inspect.signature(func).parameters.keys())
+        try:
+            if request_model is not None:
+                assert num_args == 1
+            else:
+                assert num_args == 0
+        except AssertionError as ex:
+            raise KeyError(
+                f"{func.__name__} does not contain valid number of args"
+            ) from ex
+
+        for perm in permission:
+            try:
+                assert isinstance(perm, UserPermission)
+            except AssertionError as ex:
+                raise KeyError(
+                    f"{perm} is not a valid {UserPermission.__name__}"
+                ) from ex
+
+        if request_model is not None:
+            try:
+                assert issubclass(request_model, BaseModel)
+            except AssertionError as ex:
+                raise ValueError(
+                    f"{func.__name__} request model is not a subclass of {BaseModel.__name__}"
+                ) from ex
+
+        if response_model is not None:
+            try:
+                assert issubclass(response_model, BaseModel)
+            except AssertionError as ex:
+                raise ValueError(
+                    f"{func.__name__}response model is not a subclass of {BaseModel.__name__}"
+                ) from ex
+
         @functools.wraps(func)
         @requires([*permission])
         async def wrapper(request: Request) -> Response:
-            kwargs_: dict[str, Any] = {
-                "request": request,
-            }
+            ctx.request_ctx.set(request)
+            ctx.user_ctx.set(request.user)
 
             if request_model is not None:
                 try:
                     data = await request.json()
                     parsed_model = request_model.model_validate(data)
                 except (JSONDecodeError, ValidationError):
-                    return bad_response
+                    return _bad_response
 
-                kwargs_["data"] = parsed_model
-
-            params_set = set(inspect.signature(func).parameters.keys())
-            kwargs_set = set(kwargs_.keys())
-
-            try:
-                assert params_set <= kwargs_set
-            except AssertionError as ex:
-                raise KeyError("Endpoint does not contain valid args") from ex
-
-            kwargs = {u: kwargs_[u] for u in (params_set & kwargs_set)}
-
-            endpoint_result = await ensure_async(func, **kwargs)
+                endpoint_result = await ensure_async(func, parsed_model)
+            else:
+                endpoint_result = await ensure_async(func)
 
             if response_model is not None:
                 try:
                     model = response_model.model_validate(endpoint_result)
                 except ValidationError:
-                    return bad_response
+                    return _bad_response
                 return JSONResponse(model.model_dump_json())
 
-            return good_response
+            return _good_response
 
         return wrapper
 
