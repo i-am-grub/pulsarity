@@ -23,7 +23,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install the project
-      run: uv sync --locked --all-extras --dev
+      run: uv sync --group dev
     
     - name: Analysing the code with pylint
       run: uv run pylint $(git ls-files 'src/pulsarity')
