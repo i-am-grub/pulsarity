@@ -8,7 +8,9 @@ import threading
 import pytest
 
 from pulsarity.events import EventBroker, EventSetupEvt, RaceSequenceEvt
-from pulsarity.utils.background import background_tasks
+from pulsarity.utils import background
+
+# pylint: disable=W0212
 
 
 async def broker_subscriber(broker: EventBroker, check_values: list):
@@ -21,7 +23,6 @@ async def broker_subscriber(broker: EventBroker, check_values: list):
 
     num_processed = 0
     async for message in broker.subscribe():
-
         assert message[4] == check_values.pop(0)
         num_processed += 1
 
@@ -94,8 +95,6 @@ async def test_event_async_callback():
     """
     Test running callbacks upon a event triggering
     """
-    loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
 
     broker = EventBroker()
 
@@ -116,7 +115,7 @@ async def test_event_async_callback():
 
     await broker_publish_test(broker, event_values, values, use_trigger=True)
 
-    await background_tasks.shutdown(5)
+    await background.shutdown(5)
 
     assert flag.is_set()
 
@@ -126,8 +125,6 @@ async def disable_test_event_sync_callback():
     """
     Test running callbacks upon a event triggering
     """
-    loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
 
     broker = EventBroker()
 
@@ -148,7 +145,7 @@ async def disable_test_event_sync_callback():
 
     await broker_publish_test(broker, event_values, values, use_trigger=True)
 
-    await background_tasks.shutdown(5)
+    await background.shutdown(5)
 
     assert flag.is_set()
 

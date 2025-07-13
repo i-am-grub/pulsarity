@@ -12,12 +12,13 @@ from typing import Any
 from starlette.applications import Starlette
 from tortoise import Tortoise, connections
 
-from ..database import setup_default_objects
-from ..events import SpecialEvt, event_broker
-from ..interface.timer_manager import interface_manager
-from ..utils.background import background_tasks
-from ..utils.config import configs
-from ..utils.executor import executor_manager
+from pulsarity import ctx
+from pulsarity.database import setup_default_objects
+from pulsarity.events import SpecialEvt, event_broker
+from pulsarity.interface.timer_manager import interface_manager
+from pulsarity.utils import background
+from pulsarity.utils.config import configs
+from pulsarity.utils.executor import executor_manager
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +65,11 @@ async def server_starup_workflow() -> None:
     Startup workflow
     """
     loop = asyncio.get_running_loop()
+    ctx.loop_ctx.set(loop)
     loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
     loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
     interface_manager.start()
-    background_tasks.set_event_loop(loop)
     executor_manager.set_executor()
 
     async with asyncio.TaskGroup() as tg:
@@ -84,7 +85,7 @@ async def server_shutdown_workflow() -> None:
     event_broker.trigger(SpecialEvt.SHUTDOWN, {})
 
     await interface_manager.shutdown(5)
-    await background_tasks.shutdown(5)
+    await background.shutdown(5)
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(executor_manager.shutdown_executor())

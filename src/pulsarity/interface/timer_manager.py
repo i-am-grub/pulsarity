@@ -9,8 +9,8 @@ from collections.abc import AsyncGenerator
 from dataclasses import astuple, dataclass, field
 from enum import IntEnum, auto
 
-from ..utils.background import handle_timeout_trigger
-from .timer_interface import TimerData, TimerInterface
+from pulsarity.interface.timer_interface import TimerData, TimerInterface
+from pulsarity.utils.background import handle_timeout_trigger
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +143,6 @@ class TimerInterfaceManager:
         """
 
         if isinstance(interface, TimerInterface):
-
             if interface.identifier in self._interfaces:
                 raise RuntimeError(
                     "Interface type with matching identifier already registered"

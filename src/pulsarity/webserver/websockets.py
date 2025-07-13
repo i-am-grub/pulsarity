@@ -15,13 +15,14 @@ from starlette.authentication import requires
 from starlette.routing import WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from ..database.permission import SystemDefaultPerms, UserPermission
-from ..database.raceformat import RaceSchedule
-from ..events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt, event_broker
-from ..race import race_manager
-from ..utils.asyncio import ensure_async
-from ..utils.background import background_tasks
-from .auth import PulsarityUser
+from pulsarity import ctx
+from pulsarity.database.permission import SystemDefaultPerms, UserPermission
+from pulsarity.database.raceformat import RaceSchedule
+from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt, event_broker
+from pulsarity.race import race_manager
+from pulsarity.utils import background
+from pulsarity.utils.asyncio import ensure_async
+from pulsarity.webserver.auth import PulsarityUser
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -49,7 +50,6 @@ def ws_event(event: _ApplicationEvt):
     """
 
     def inner(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
-
         _wse_routes[event.id] = (event.permission, func)
 
         return func
@@ -70,7 +70,6 @@ async def handle_ws_event(ws_data: WSEventData, permissions: set[str]):
         permission, route = _wse_routes[ws_data.event_id]
 
         if permission in permissions:
-
             signature = inspect.signature(route)
             if "ws_data" in signature.parameters:
                 await ensure_async(route, ws_data)
@@ -86,6 +85,7 @@ async def server_event_ws(websocket: WebSocket):
     """
     The full duplex websocket connection for clients
     """
+    ctx.websocket_ctx.set(websocket)
 
     async def recieve_data() -> None:
         while True:
@@ -96,9 +96,7 @@ async def server_event_ws(websocket: WebSocket):
             except ValidationError:
                 logger.debug("Error validating websocket data: %s", data)
             else:
-                background_tasks.add_background_task(
-                    handle_ws_event, model, permissions
-                )
+                background.add_background_task(handle_ws_event, model, permissions)
 
     async def write_data() -> None:
         async for event in event_broker.subscribe():

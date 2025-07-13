@@ -1,13 +1,14 @@
-import asyncio
 import json
 
 import pytest
 from httpx import AsyncClient
 
-from pulsarity.utils.background import background_tasks
-
 
 async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
+    """
+    Sends the provided credentials to the login api to check if they are
+    valid
+    """
 
     login_data = {"username": user_creds[0], "password": user_creds[1]}
     response = await client.post("/login", json=login_data)
@@ -23,13 +24,17 @@ async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
 
 @pytest.mark.asyncio
 async def test_webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
-
+    """
+    Test to see if the base credentials are valid through the api
+    """
     await webserver_login_valid(client, user_creds)
 
 
 @pytest.mark.asyncio
 async def test_webserver_login_invalid(client: AsyncClient, user_creds: tuple[str]):
-
+    """
+    Test to see if the api detects bad credentials
+    """
     fake_password = "fake_password"
     login_data = {"username": user_creds[0], "password": fake_password}
     response = await client.post("/login", json=login_data)
@@ -43,7 +48,9 @@ async def test_webserver_login_invalid(client: AsyncClient, user_creds: tuple[st
 
 @pytest.mark.asyncio
 async def test_password_reset_invalid(client: AsyncClient, user_creds: tuple[str]):
-
+    """
+    Test reseting a password while providing invalid credentials
+    """
     login_data = {"username": user_creds[0], "password": user_creds[1]}
     response = await client.post("/login", json=login_data)
     assert response.status_code == 200
@@ -62,11 +69,9 @@ async def test_password_reset_invalid(client: AsyncClient, user_creds: tuple[str
 
 @pytest.mark.asyncio
 async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str]):
-
-    # IDK why this needs to be set
-    loop = asyncio.get_running_loop()
-    background_tasks.set_event_loop(loop)
-
+    """
+    Test reseting a password while providing valid credentials
+    """
     new_password = "new_password"
 
     reset_required = await webserver_login_valid(client, user_creds)
@@ -87,5 +92,3 @@ async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str])
 
     reset_required = await webserver_login_valid(client, new_creds)
     assert reset_required is False
-
-    await background_tasks.shutdown(5)

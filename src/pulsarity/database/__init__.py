@@ -2,11 +2,11 @@
 Database objects and access
 """
 
-from .permission import Permission, SystemDefaultPerms
-from .pilot import Pilot, PilotAttribute
-from .raceformat import RaceFormat, RaceSchedule
-from .role import Role
-from .user import User
+from pulsarity.database.permission import Permission, SystemDefaultPerms
+from pulsarity.database.pilot import Pilot, PilotAttribute
+from pulsarity.database.raceformat import RaceFormat, RaceSchedule
+from pulsarity.database.role import Role
+from pulsarity.database.user import User
 
 __all__ = [
     "User",

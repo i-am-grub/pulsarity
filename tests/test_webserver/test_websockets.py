@@ -8,6 +8,9 @@ from httpx import AsyncClient
 
 @pytest.mark.asyncio
 async def test_server_websocket_unauth(client: AsyncClient):
+    """
+    Test accessing a websocket route without being logged in
+    """
 
     with pytest.raises(httpx_ws.WebSocketUpgradeError):
         async with httpx_ws.aconnect_ws("/server", client):
@@ -15,10 +18,13 @@ async def test_server_websocket_unauth(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def disable_test_server_websocket_auth(
+async def _test_server_websocket_auth(
     client: AsyncClient,
     user_creds: tuple[str],
 ):
+    """
+    Test accessing a websocket route while being logged in
+    """
 
     login_data = {"username": user_creds[0], "password": user_creds[1]}
     response = await client.post("/login", json=login_data)

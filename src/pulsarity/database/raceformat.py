@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from tortoise import fields
 
-from .base import _PulsarityBase
+from pulsarity.database._base import PulsarityBase
 
 
 @dataclass
@@ -28,7 +28,7 @@ class RaceSchedule:
     """Overtime duration in seconds, -1 for unlimited, unused if unlimited_time is True"""
 
 
-class RaceFormat(_PulsarityBase):
+class RaceFormat(PulsarityBase):
     """
     Race formats are profiles of properties used to define parameters of individual races.
     Every race has an assigned format. A race formats may be assigned to a race class,

@@ -8,8 +8,8 @@ import multiprocessing
 import os
 import sys
 
-from .utils.config import configs
-from .webserver import generate_webserver_coroutine
+from pulsarity.utils.config import configs
+from pulsarity.webserver import generate_webserver_coroutine
 
 # pylint: disable=E0401
 

@@ -8,6 +8,8 @@ import sys
 from asyncio import Future
 from concurrent.futures import Executor, ProcessPoolExecutor, ThreadPoolExecutor
 
+from pulsarity import ctx
+
 
 class ParallelExecutorManager:
     """
@@ -17,7 +19,7 @@ class ParallelExecutorManager:
     _executor: Future[Executor] | None = None
     """The serverwide executor pool to use for parallel computations"""
 
-    def set_executor(self, *, loop: asyncio.AbstractEventLoop | None = None) -> None:
+    def set_executor(self) -> None:
         """
         Sets the global executor.
 
@@ -26,11 +28,10 @@ class ParallelExecutorManager:
         to allow at a time. Ideally, this should prevent the webserver from
         being blocked while running parallel computations.
         """
-        # pylint: disable=E1101,W0212
+        # pylint: disable=W0212
 
         if self._executor is None:
-            _loop = loop if loop is not None else asyncio.get_running_loop()
-            self._executor = _loop.create_future()
+            self._executor = ctx.loop_ctx.get().create_future()
         else:
             raise RuntimeError("Executor already set")
 

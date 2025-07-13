@@ -3,15 +3,25 @@ from httpx import AsyncClient
 
 from pulsarity.database import Permission, Role, SystemDefaultPerms, User
 
+# pylint: disable=W0212
+
 
 @pytest.mark.asyncio
 async def test_webserver_unauthorized(client: AsyncClient):
+    """
+    Test accessing the ability to access a privileged route without
+    being logged in
+    """
     response = await client.get("/api/pilot/all")
     assert response.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_webserver_lack_permissions(client: AsyncClient):
+    """
+    Test accessing a priviledged route while being logged in,
+    but without proper permissions
+    """
 
     permissions_: set[Permission] = set()
     permissions = await Permission.all()
@@ -41,6 +51,9 @@ async def test_webserver_lack_permissions(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_webserver_authorized(client: AsyncClient, user_creds: tuple[str, ...]):
+    """
+    Test accessing a route while being logged in with proper permissions
+    """
     payload = {"username": user_creds[0], "password": user_creds[1]}
 
     response = await client.post("/login", json=payload)

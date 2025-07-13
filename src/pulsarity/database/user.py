@@ -17,16 +17,16 @@ from argon2.exceptions import (
 )
 from tortoise import fields
 
-from ..utils.config import configs
-from .base import _PulsarityBase
-from .role import Role
+from pulsarity.database._base import PulsarityBase
+from pulsarity.database.role import Role
+from pulsarity.utils.config import configs
 
 logger = logging.Logger(__name__)
 
 _ph = PasswordHasher()
 
 
-class User(_PulsarityBase):
+class User(PulsarityBase):
     """
     User for the application
     """

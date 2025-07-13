@@ -5,7 +5,7 @@ Enums for system events
 from dataclasses import dataclass
 from enum import Enum, IntEnum, auto
 
-from ..database.permission import SystemDefaultPerms, UserPermission
+from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 
 
 class EvtPriority(IntEnum):

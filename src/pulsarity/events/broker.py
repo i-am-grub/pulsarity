@@ -12,10 +12,10 @@ from collections import defaultdict
 from collections.abc import AsyncGenerator, Callable
 from typing import Any
 
-from ..database.permission import UserPermission
-from ..utils.asyncio import ensure_async
-from ..utils.background import background_tasks
-from .enums import EvtPriority, _ApplicationEvt
+from pulsarity.database.permission import UserPermission
+from pulsarity.events.enums import EvtPriority, _ApplicationEvt
+from pulsarity.utils import background
+from pulsarity.utils.asyncio import ensure_async
 
 
 class EventBroker:
@@ -71,7 +71,7 @@ class EventBroker:
         self.publish(event, data, uuid_=uuid_)
 
         callbacks = copy.copy(self._callbacks[event.id])
-        background_tasks.add_background_task(self._callback_runner, callbacks, data)
+        background.add_background_task(self._callback_runner, callbacks, data)
 
     async def _callback_runner(
         self, callbacks: list[tuple[int, Callable, dict[str, Any]]], data: dict

@@ -14,7 +14,7 @@ from tortoise.contrib.pydantic import (
 from tortoise.models import Model
 
 
-class _PulsarityBase(Model):
+class PulsarityBase(Model):
     """
     Base ORM Class for all database objects
     """

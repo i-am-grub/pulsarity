@@ -9,13 +9,13 @@ from typing import TYPE_CHECKING
 
 from tortoise import fields
 
-from .base import _PulsarityBase
+from pulsarity.database._base import PulsarityBase
 
 if TYPE_CHECKING:
-    from .role import Role
+    from pulsarity.database.role import Role
 
 
-class Permission(_PulsarityBase):
+class Permission(PulsarityBase):
     """
     Role for the application
     """
@@ -59,11 +59,9 @@ class Permission(_PulsarityBase):
         permissions_add = []
 
         for permission_class in UserPermission.__subclasses__():
-
             persistent = permission_class is SystemDefaultPerms
 
             for enum in permission_class:
-
                 if enum not in permissions:
                     permissions_add.append(Permission(enum, persistent=persistent))
 

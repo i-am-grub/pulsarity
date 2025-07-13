@@ -2,7 +2,8 @@
 Hardware Interfaces
 """
 
-from .timer_interface import Action, Setting, TimerData
+from pulsarity.interface.timer_interface import Action, Setting, TimerData
+
 from .timer_manager import TimerInterfaceManager, TimerMode, interface_manager
 
 __all__ = [

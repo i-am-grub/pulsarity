@@ -14,13 +14,13 @@ from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddleware
 
-from ..utils.config import configs
-from ..utils.crypto import generate_self_signed_cert
-from .auth import PulsarityAuthBackend
-from .events import lifespan as _lifespan
-from .events import shutdown_signaled
-from .routes import routes as http_routes
-from .websockets import routes as ws_routes
+from pulsarity.utils.config import configs
+from pulsarity.utils.crypto import generate_self_signed_cert
+from pulsarity.webserver.auth import PulsarityAuthBackend
+from pulsarity.webserver.events import lifespan as _lifespan
+from pulsarity.webserver.events import shutdown_signaled
+from pulsarity.webserver.routes import routes as http_routes
+from pulsarity.webserver.websockets import routes as ws_routes
 
 logger = logging.getLogger(__name__)
 

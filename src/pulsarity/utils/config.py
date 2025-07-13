@@ -12,7 +12,7 @@ from typing import Any, Literal
 import anyio
 import tomlkit
 
-from .logging import generate_default_config
+from pulsarity.utils.logging import generate_default_config
 
 DEFAULT_CONFIG_FILE_NAME = "config.toml"
 

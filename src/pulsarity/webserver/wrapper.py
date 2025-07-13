@@ -13,9 +13,9 @@ from starlette.authentication import requires
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from ..database.permission import UserPermission
-from ..utils.asyncio import ensure_async
-from .validation import BaseResponse
+from pulsarity.database.permission import UserPermission
+from pulsarity.utils.asyncio import ensure_async
+from pulsarity.webserver.validation import BaseResponse
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -39,11 +39,9 @@ def endpoint(
     def inner(
         func: Callable[[Request, BaseModel], T],
     ) -> Callable[[Request], Coroutine[None, None, Response]]:
-
         @functools.wraps(func)
         @requires([*permission])
         async def wrapper(request: Request) -> Response:
-
             kwargs_: dict[str, Any] = {
                 "request": request,
             }

@@ -8,14 +8,14 @@ from typing import TYPE_CHECKING
 
 from tortoise import fields
 
-from .base import _PulsarityBase
-from .permission import Permission
+from pulsarity.database._base import PulsarityBase
+from pulsarity.database.permission import Permission
 
 if TYPE_CHECKING:
-    from .user import User
+    from pulsarity.database.user import User
 
 
-class Role(_PulsarityBase):
+class Role(PulsarityBase):
     """
     Role for the application
     """

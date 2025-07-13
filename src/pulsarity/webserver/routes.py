@@ -9,30 +9,34 @@ from starlette.requests import Request
 from starlette.routing import Mount, Route
 from starsessions.session import regenerate_session_id
 
-from ..database.permission import SystemDefaultPerms
-from ..database.pilot import Pilot
-from ..database.user import User
-from ..utils.background import background_tasks
-from .auth import PulsarityUser
-from .validation import BaseResponse, LoginRequest, LoginResponse, ResetPasswordRequest
-from .wrapper import endpoint
+from pulsarity.database.permission import SystemDefaultPerms
+from pulsarity.database.pilot import Pilot
+from pulsarity.database.user import User
+from pulsarity.utils import background
+from pulsarity.webserver import validation
+from pulsarity.webserver.auth import PulsarityUser
+from pulsarity.webserver.wrapper import endpoint
 
 logger = logging.getLogger(__name__)
 
 
-@endpoint(response_model=BaseResponse)
-async def check_auth(request: Request) -> BaseResponse:
+@endpoint(response_model=validation.BaseResponse)
+async def check_auth(request: Request) -> validation.BaseResponse:
     """
     Check if a user is authenticated
 
     :return: The user's authentication status
     """
     auth_user: PulsarityUser = request.user
-    return BaseResponse(status=auth_user.is_authenticated)
+    return validation.BaseResponse(status=auth_user.is_authenticated)
 
 
-@endpoint(request_model=LoginRequest, response_model=LoginResponse)
-async def login(request: Request, data: LoginRequest) -> LoginResponse | None:
+@endpoint(
+    request_model=validation.LoginRequest, response_model=validation.LoginResponse
+)
+async def login(
+    request: Request, data: validation.LoginRequest
+) -> validation.LoginResponse | None:
     """
     Pass the user credentials to log the user into the server
 
@@ -46,16 +50,18 @@ async def login(request: Request, data: LoginRequest) -> LoginResponse | None:
 
         logger.info("%s has been authenticated to the server", user.auth_id.hex)
 
-        background_tasks.add_background_task(user.update_user_login_time)
-        background_tasks.add_background_task(user.check_for_rehash, data.password)
+        background.add_background_task(user.update_user_login_time)
+        background.add_background_task(user.check_for_rehash, data.password)
 
-        return LoginResponse(status=True, password_reset_required=user.reset_required)
+        return validation.LoginResponse(
+            status=True, password_reset_required=user.reset_required
+        )
 
     return None
 
 
-@endpoint(SystemDefaultPerms.AUTHENTICATED, response_model=BaseResponse)
-async def logout(request: Request) -> BaseResponse:
+@endpoint(SystemDefaultPerms.AUTHENTICATED, response_model=validation.BaseResponse)
+async def logout(request: Request) -> validation.BaseResponse:
     """
     Logout the currently connected client
 
@@ -65,15 +71,17 @@ async def logout(request: Request) -> BaseResponse:
     logger.info("Logging out user %s", auth_user.identity)
 
     request.session.clear()
-    return BaseResponse(status=True)
+    return validation.BaseResponse(status=True)
 
 
 @endpoint(
     SystemDefaultPerms.AUTHENTICATED,
-    request_model=ResetPasswordRequest,
-    response_model=BaseResponse,
+    request_model=validation.ResetPasswordRequest,
+    response_model=validation.BaseResponse,
 )
-async def reset_password(request: Request, data: ResetPasswordRequest) -> BaseResponse:
+async def reset_password(
+    request: Request, data: validation.ResetPasswordRequest
+) -> validation.BaseResponse:
     """
     Resets the password for the client user
 
@@ -88,11 +96,11 @@ async def reset_password(request: Request, data: ResetPasswordRequest) -> BaseRe
 
         logger.info("Password reset for %s completed", auth_user.identity)
 
-        background_tasks.add_background_task(user.update_password_required, False)
+        background.add_background_task(user.update_password_required, False)
 
-        return BaseResponse(status=True)
+        return validation.BaseResponse(status=True)
 
-    return BaseResponse(status=False)
+    return validation.BaseResponse(status=False)
 
 
 PilotModel = Pilot.generate_pydaantic_model()

@@ -11,8 +11,8 @@ from starlette.authentication import (
     UnauthenticatedUser,
 )
 
-from ..database.permission import UserPermission
-from ..database.user import User
+from pulsarity.database.permission import UserPermission
+from pulsarity.database.user import User
 
 
 class PulsarityUser(BaseUser):
