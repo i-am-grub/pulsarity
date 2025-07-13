@@ -150,8 +150,9 @@ class TimerInterfaceManager:
 
             self._interfaces[interface.identifier] = interface
 
-        else:
-            raise RuntimeError("Attempted to register an invalid timer interface type")
+            return interface
+
+        raise RuntimeError("Attempted to register an invalid timer interface type")
 
     def unregister(self, identifier: str) -> None:
         """
