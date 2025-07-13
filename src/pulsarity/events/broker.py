@@ -5,17 +5,31 @@ System event distribution to clients
 import asyncio
 import bisect
 import copy
-import dataclasses
 import functools
+import itertools
 import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator, Callable
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Self
 
-from pulsarity.database.permission import UserPermission
 from pulsarity.events.enums import EvtPriority, _ApplicationEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
+
+
+@dataclass(frozen=True)
+class _QueuedEvtData:
+    _counter = itertools.count()
+
+    evt: _ApplicationEvt
+    uuid: uuid.UUID
+    data: dict
+
+    _id: int = field(default=next(_counter))
+
+    def __lt__(self, other: Self):
+        return (self.evt.priority, self._id) < (other.evt.priority, other._id)
 
 
 class EventBroker:
@@ -24,11 +38,13 @@ class EventBroker:
     triggering server side event callbacks.
     """
 
+    counter = itertools.count()
+
     def __init__(self) -> None:
         """
         Class initialization
         """
-        self._connections: set[asyncio.PriorityQueue] = set()
+        self._connections: set[asyncio.PriorityQueue[_QueuedEvtData]] = set()
         self._callbacks: dict[str, list[tuple[int, Callable, dict[str, Any]]]] = (
             defaultdict(list)
         )
@@ -49,7 +65,7 @@ class EventBroker:
         """
         uid = uuid.uuid4() if uuid_ is None else uuid_
 
-        payload = (*dataclasses.astuple(event), uid, data)
+        payload = _QueuedEvtData(event, uid, data)
         for connection in self._connections:
             connection.put_nowait(payload)
 
@@ -133,7 +149,7 @@ class EventBroker:
 
     async def subscribe(
         self,
-    ) -> AsyncGenerator[tuple[EvtPriority, UserPermission, str, uuid.UUID, dict], None]:
+    ) -> AsyncGenerator[_QueuedEvtData, None]:
         """
         Subscribe to recieve server events. Typically used for client connections
 

@@ -23,7 +23,7 @@ async def broker_subscriber(broker: EventBroker, check_values: list):
 
     num_processed = 0
     async for message in broker.subscribe():
-        assert message[4] == check_values.pop(0)
+        assert message.data == check_values.pop(0)
         num_processed += 1
 
         if len(check_values) == 0:

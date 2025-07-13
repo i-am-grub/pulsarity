@@ -101,20 +101,20 @@ async def server_event_ws(websocket: WebSocket):
 
     async def write_data() -> None:
         async for event in event_broker.subscribe():
-            _, permission, event_id, event_uuid, data = event
-
             if permissions is None:
                 continue
 
-            if event_id == SpecialEvt.PERMISSIONS_UPDATE.id:
+            if event.evt.id == SpecialEvt.PERMISSIONS_UPDATE.id:
                 user: PulsarityUser = websocket.user
                 temp = await user.get_permissions()
 
                 permissions.clear()
                 permissions.update(temp)
 
-            elif permission in permissions:
-                evt_data = WSEventData(id=event_uuid, event_id=event_id, data=data)
+            elif event.evt.permission in permissions:
+                evt_data = WSEventData(
+                    id=event.uuid, event_id=event.evt.id, data=event.data
+                )
                 await websocket.send_text(evt_data.model_dump_json())
 
     user: PulsarityUser = websocket.user
