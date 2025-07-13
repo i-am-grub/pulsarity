@@ -1,5 +1,5 @@
 [project]
-name = "Pulsarity"
+name = "pulsarity"
 version = "0.1.0-dev"
 description = "A demonstrator project for a RotorHazard variant"
 authors = [

@@ -1,5 +1,5 @@
 """
-A demonstrator project for an asynchronous RotorHazard framework
+A race timing and event management application built on asyncio
 """
 
 from __future__ import annotations

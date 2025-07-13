@@ -173,7 +173,7 @@ config.toml
 *.db-shm
 *.db-wal
 *.pem
-logs/*
+logs
 
 # uv
 .python-version
