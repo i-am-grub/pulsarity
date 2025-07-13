@@ -10,7 +10,7 @@ from httpx_ws.transport import ASGIWebSocketTransport
 from pulsarity.webserver import generate_application
 
 
-@pytest_asyncio.fixture(name="websocket_client", loop_scope="function")
+@pytest_asyncio.fixture(name="websocket_client")
 async def authenticated_websocket_client(user_creds: tuple[str]):
     """
     Generates a client capable of using websockets
@@ -24,7 +24,12 @@ async def authenticated_websocket_client(user_creds: tuple[str]):
         response = await client_.post("/login", json=login_data)
         assert response.status_code == 200
 
-        yield client_
+        # https://github.com/frankie567/httpx-ws/discussions/79#discussioncomment-12205278
+        try:
+            yield client_
+            transport.exit_stack = None
+        finally:
+            await asyncio.sleep(0)
 
 
 @pytest.mark.asyncio

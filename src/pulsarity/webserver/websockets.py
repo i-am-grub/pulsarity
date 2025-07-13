@@ -61,14 +61,13 @@ async def server_event_ws(websocket: WebSocket):
     """
     The full duplex websocket connection for clients
     """
+    await websocket.accept()
 
     ctx.websocket_ctx.set(websocket)
     ctx.user_ctx.set(websocket.user)
 
     permissions = await ctx.user_ctx.get().get_permissions()
     ctx.user_permsissions_ctx.set(permissions)
-
-    await websocket.accept()
 
     try:
         async with asyncio.TaskGroup() as tg:
