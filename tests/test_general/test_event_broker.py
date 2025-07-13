@@ -108,7 +108,7 @@ async def test_event_async_callback():
         flag.set()
 
     broker.register_event_callback(
-        EventSetupEvt.PILOT_ADD, test_cb, default_kwargs={"flag": flag}
+        test_cb, EventSetupEvt.PILOT_ADD, default_kwargs={"flag": flag}
     )
 
     assert not flag.is_set()
@@ -138,7 +138,7 @@ async def disable_test_event_sync_callback():
         flag.set()
 
     broker.register_event_callback(
-        EventSetupEvt.PILOT_ADD, test_cb, default_kwargs={"flag": flag}
+        test_cb, EventSetupEvt.PILOT_ADD, default_kwargs={"flag": flag}
     )
 
     assert not flag.is_set()
@@ -161,11 +161,11 @@ async def test_event_callback_unregister_pass():
     async def test_cb(**_):
         pass
 
-    broker.register_event_callback(EventSetupEvt.PILOT_ADD, test_cb)
+    broker.register_event_callback(test_cb, EventSetupEvt.PILOT_ADD)
 
     assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.id]) != 0
 
-    broker.unregister_event_callback(EventSetupEvt.PILOT_ADD, test_cb)
+    broker.unregister_event_callback(test_cb, EventSetupEvt.PILOT_ADD)
 
     assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.id]) == 0
 
@@ -184,4 +184,4 @@ async def test_event_callback_unregister_fail():
     assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.id]) == 0
 
     with pytest.raises(RuntimeError):
-        broker.unregister_event_callback(EventSetupEvt.PILOT_ADD, test_cb)
+        broker.unregister_event_callback(test_cb, EventSetupEvt.PILOT_ADD)

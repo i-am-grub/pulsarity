@@ -11,7 +11,6 @@ import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator, Callable
 from dataclasses import dataclass, field
-from functools import partial
 from typing import Any, Self
 
 from pulsarity.events.enums import EvtPriority, _ApplicationEvt
@@ -21,15 +20,21 @@ from pulsarity.utils.asyncio import ensure_async
 
 @dataclass(frozen=True)
 class _QueuedEvtData:
-    _counter = itertools.count()
+    """
+    Dataclass used for containing event data across the queue
+    """
 
     evt: _ApplicationEvt
     uuid: uuid.UUID
     data: dict
 
-    _id: int = field(default_factory=partial(next, _counter))
+    _counter = itertools.count()
+    _id: int = field(default_factory=functools.partial(next, _counter))
 
     def __lt__(self, other: Self):
+        """
+        Enables proper sorting in a priority queue
+        """
         return (self.evt.priority, self._id) < (other.evt.priority, other._id)
 
 
@@ -107,8 +112,8 @@ class EventBroker:
 
     def register_event_callback(
         self,
-        event: _ApplicationEvt,
         callback: Callable,
+        event: _ApplicationEvt,
         *,
         priority: EvtPriority = EvtPriority.LOWEST,
         default_kwargs: dict[str, Any] | None = None,
@@ -116,8 +121,8 @@ class EventBroker:
         """
         Register a callback to run when when an event is published
 
-        :param event: The id of the event to register the callback against
         :param callback: The callback to run
+        :param event: The id of the event to register the callback against
         :param priority: The priority associated with scheduling the callback.
         :param default_kwargs: Default key word arguments to use and/or include
         when the event is triggered
@@ -132,13 +137,15 @@ class EventBroker:
         )
 
     def unregister_event_callback(
-        self, event: _ApplicationEvt, callback: Callable
+        self,
+        callback: Callable,
+        event: _ApplicationEvt,
     ) -> None:
         """
         Unregister an event callback
 
-        :param event_id: The identifier of the event to register the callback against
         :param callback: The callback to remove
+        :param event_id: The identifier of the event to register the callback against
         """
         callbacks = self._callbacks[event.id]
         for callback_ in callbacks:
@@ -189,7 +196,9 @@ def register_as_callback(
     @functools.wraps
     def inner(func):
         event_broker.register_event_callback(
-            event, func, priority=priority, default_kwargs=default_kwargs
+            func, event, priority=priority, default_kwargs=default_kwargs
         )
+
+        return func
 
     return inner
