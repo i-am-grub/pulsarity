@@ -33,43 +33,30 @@ repository = "https://github.com/i-am-grub/Pulsarity"
 [project.optional-dependencies]
 pgsql = [ "asyncpg>=0.30,<0.31" ]
 
-[tool.poetry]
-package-mode = true
-include = ["src/pulsarity/py.typed"]
-
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.7.5,<0.8.0"]
+build-backend = "uv_build"
 
-[tool.poetry.scripts]
-start = "pulsarity.__main__:main"
+[tool.uv.build-backend]
+source-include = ["**/py.typed"]
 
-[tool.poetry.group.dev]
-optional = true
-
-[tool.poetry.group.dev.dependencies]
-pytest = "*"
-pytest-asyncio = "*"
-pytest-cov = "*"
-black = "^24.10.0"
-mypy = "^1.13.0"
-tox = "^4.23.2"
-tox-gh-actions = "^3.2.0"
-pylint = "^3.3.2"
-ruff = "^0.9.7"
-httpx = "^0.28.1"
-httpx-ws = "^0.7.2"
-
-[tool.poetry.group.docs]
-optional = true
-
-[tool.poetry.group.docs.dependencies]
-sphinx = "*"
-Sphinx-Substitution-Extensions = "*"
-sphinx-copybutton = "*"
-myst-parser = "^4.0.0"
-sphinx-book-theme = "^1.1.3"
-sphinx-intl = "^2.3.1"
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "httpx-ws>=0.7.2",
+    "pylint>=3.3.7",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+    "pytest-cov>=6.1.1",
+    "tox>=4.26.0",
+]
+docs = [
+    "myst-parser>=4.0.1",
+    "sphinx>=8.2.3",
+    "sphinx-book-theme>=1.1.4",
+    "sphinx-copybutton>=0.5.2",
+    "sphinx-substitution-extensions>=2025.6.6",
+]
 
 [tool.mypy]
 exclude = ["tests"]
@@ -84,32 +71,11 @@ testpaths = ["tests"]
 ignore = "tests"
 
 [tool.tox]
-requires = ["tox>=4"]
-env_list = ["pylint", "black", "mypy", "3.13", "3.12", "3.11"]
+requires = ["tox>=4", "tox-uv>=1.26"]
+env_list = ["3.13", "3.12", "3.11"]
 
 [tool.tox.env_run_base]
+runner = "uv-venv-lock-runner"
 description = "run unit tests"
-deps = [
-    "pytest>=8",
-    "pytest-asyncio",
-    "pytest-cov",
-    "httpx",
-    "httpx-ws"
-]
+dependency_groups = ["dev"]
 commands = [["pytest", {cov="src",  replace = "posargs", default = ["tests"], extend = true }]]
-
-[tool.tox.env.style]
-description = "run black"
-skip_install = true
-deps = ["black"]
-commands = [["black", { replace = "posargs", default = ["src/pulsarity"], extend = true} ]]
-
-[tool.tox.env.mypy]
-description = "run mypy"
-deps = ["mypy"]
-commands = [["mypy", { replace = "posargs", default = ["src/pulsarity"], extend = true} ]]
-
-[tool.tox.env.pylint]
-description = "run pylint"
-deps = ["pylint"]
-commands = [["pylint", "--recursive=y", { replace = "posargs", default = ["src/pulsarity"], extend = true} ]]
