@@ -28,7 +28,7 @@ class ParallelExecutorManager:
         to allow at a time. Ideally, this should prevent the webserver from
         being blocked while running parallel computations.
         """
-        # pylint: disable=W0212
+        # pylint: disable=E1101,W0212
 
         if self._executor is None:
             self._executor = ctx.loop_ctx.get().create_future()
