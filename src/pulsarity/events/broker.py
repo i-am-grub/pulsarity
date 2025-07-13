@@ -7,6 +7,7 @@ import bisect
 import copy
 import functools
 import itertools
+import logging
 import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator, Callable
@@ -16,6 +17,8 @@ from typing import Any, Self
 from pulsarity.events.enums import EvtPriority, _ApplicationEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -33,9 +36,29 @@ class _QueuedEvtData:
 
     def __lt__(self, other: Self):
         """
-        Enables proper sorting in a priority queue
+        Enables the use of builtin sorting algorithms
         """
         return (self.evt.priority, self._id) < (other.evt.priority, other._id)
+
+
+@dataclass(frozen=True)
+class _EvtCallbackData:
+    """
+    Dataclass used for containing event callback data
+    """
+
+    priority: int
+    func: Callable
+    default_data: dict[str, Any]
+
+    _counter = itertools.count()
+    _id: int = field(default_factory=functools.partial(next, _counter))
+
+    def __lt__(self, other: Self):
+        """
+        Enables the use of builtin sorting algorithms
+        """
+        return (self.priority, self._id) < (other.priority, other._id)
 
 
 class EventBroker:
@@ -51,9 +74,7 @@ class EventBroker:
         Class initialization
         """
         self._connections: set[asyncio.PriorityQueue[_QueuedEvtData]] = set()
-        self._callbacks: dict[str, list[tuple[int, Callable, dict[str, Any]]]] = (
-            defaultdict(list)
-        )
+        self._callbacks: dict[str, list[_EvtCallbackData]] = defaultdict(list)
 
     def publish(
         self,
@@ -96,7 +117,7 @@ class EventBroker:
         background.add_background_task(self._callback_runner, callbacks, data)
 
     async def _callback_runner(
-        self, callbacks: list[tuple[int, Callable, dict[str, Any]]], data: dict
+        self, callbacks: list[_EvtCallbackData], data: dict
     ) -> None:
         """
         Run all procided callbacks sequentially
@@ -106,9 +127,14 @@ class EventBroker:
 
         """
         for callback in callbacks:
-            kwargs = callback[2] | data
-            callable_ = callback[1]
-            await ensure_async(callable_, **kwargs)
+            kwargs = callback.default_data | data
+            try:
+                await ensure_async(callback.func, **kwargs)
+            except asyncio.CancelledError:
+                raise
+            except BaseException:  # pylint: disable=W0718
+                logger.exception("Encountered error running callback")
+                continue
 
     def register_event_callback(
         self,
@@ -132,9 +158,8 @@ class EventBroker:
         else:
             default_kwargs_ = {}
 
-        bisect.insort_right(
-            self._callbacks[event.id], (priority, callback, default_kwargs_)
-        )
+        evt_cb = _EvtCallbackData(priority, callback, default_kwargs_)
+        bisect.insort_right(self._callbacks[event.id], evt_cb)
 
     def unregister_event_callback(
         self,
@@ -149,7 +174,7 @@ class EventBroker:
         """
         callbacks = self._callbacks[event.id]
         for callback_ in callbacks:
-            if callback is callback_[1]:
+            if callback is callback_.func:
                 callbacks.remove(callback_)
                 break
         else:
