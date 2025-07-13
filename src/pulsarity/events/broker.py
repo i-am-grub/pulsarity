@@ -11,6 +11,7 @@ import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator, Callable
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Any, Self
 
 from pulsarity.events.enums import EvtPriority, _ApplicationEvt
@@ -26,7 +27,7 @@ class _QueuedEvtData:
     uuid: uuid.UUID
     data: dict
 
-    _id: int = field(default=next(_counter))
+    _id: int = field(default_factory=partial(next, _counter))
 
     def __lt__(self, other: Self):
         return (self.evt.priority, self._id) < (other.evt.priority, other._id)
