@@ -6,7 +6,7 @@ import pytest_asyncio
 
 from pulsarity.database import RaceFormat
 from pulsarity.race.enums import RaceStatus
-from pulsarity.race.time_manager import RaceManager
+from pulsarity.race.state import RaceStateManager
 from pulsarity.utils import background
 
 # pylint: disable=W0212
@@ -51,13 +51,13 @@ def _unlimited_schedule():
 @pytest_asyncio.fixture(name="race_manager", loop_scope="function")
 async def _race_manager():
     """
-    Setup the RaceManager and shutdown background tasks
+    Setup the RaceStateManager and shutdown background tasks
     """
     # pylint: disable=W0613
-    yield RaceManager()
+    yield RaceStateManager()
 
 
-def future_schedule(limited_schedule_: RaceFormat, race_manager: RaceManager):
+def future_schedule(limited_schedule_: RaceFormat, race_manager: RaceStateManager):
     """
     Schedules a race 1 second into the future
     """
@@ -71,7 +71,7 @@ def future_schedule(limited_schedule_: RaceFormat, race_manager: RaceManager):
 
 
 @pytest.mark.asyncio
-async def test_default_status(race_manager: RaceManager):
+async def test_default_status(race_manager: RaceStateManager):
     """
     Test stopping a race when a race isn't running
     """
@@ -81,7 +81,9 @@ async def test_default_status(race_manager: RaceManager):
 
 
 @pytest.mark.asyncio
-async def test_past_schedule(race_manager: RaceManager, limited_schedule: RaceFormat):
+async def test_past_schedule(
+    race_manager: RaceStateManager, limited_schedule: RaceFormat
+):
     """
     Test scheduling a race that was set to start in the past
     """
@@ -97,7 +99,7 @@ async def test_past_schedule(race_manager: RaceManager, limited_schedule: RaceFo
 
 @pytest.mark.asyncio
 async def test_limited_sequence(
-    race_manager: RaceManager, limited_schedule: RaceFormat
+    race_manager: RaceStateManager, limited_schedule: RaceFormat
 ):
     """
     Test a full race sequenece with limited time schedule
@@ -131,7 +133,7 @@ async def test_limited_sequence(
 
 @pytest.mark.asyncio
 async def test_scheduled_stopped(
-    race_manager: RaceManager, limited_schedule: RaceFormat
+    race_manager: RaceStateManager, limited_schedule: RaceFormat
 ):
     """
     Test scheduling a race and stopping it before it started
@@ -149,7 +151,9 @@ async def test_scheduled_stopped(
 
 
 @pytest.mark.asyncio
-async def test_staging_stopped(race_manager: RaceManager, limited_schedule: RaceFormat):
+async def test_staging_stopped(
+    race_manager: RaceStateManager, limited_schedule: RaceFormat
+):
     """
     Test stopping a staging race
     """
@@ -168,7 +172,9 @@ async def test_staging_stopped(race_manager: RaceManager, limited_schedule: Race
 
 
 @pytest.mark.asyncio
-async def test_racing_stopped(race_manager: RaceManager, limited_schedule: RaceFormat):
+async def test_racing_stopped(
+    race_manager: RaceStateManager, limited_schedule: RaceFormat
+):
     """
     Test stopping running race
     """
@@ -190,7 +196,7 @@ async def test_racing_stopped(race_manager: RaceManager, limited_schedule: RaceF
 
 @pytest.mark.asyncio
 async def test_overtime_stopped(
-    race_manager: RaceManager, limited_schedule: RaceFormat
+    race_manager: RaceStateManager, limited_schedule: RaceFormat
 ):
     """
     Test stopping running race in overtime
@@ -215,7 +221,7 @@ async def test_overtime_stopped(
 
 @pytest.mark.asyncio
 async def test_no_overtime(
-    race_manager: RaceManager, limited_no_ot_schedule: RaceFormat
+    race_manager: RaceStateManager, limited_no_ot_schedule: RaceFormat
 ):
     """
     Test running a race schedule that doesn't have overtime
@@ -238,7 +244,7 @@ async def test_no_overtime(
 
 @pytest.mark.asyncio
 async def test_unlimited_sequence(
-    race_manager: RaceManager, unlimited_schedule: RaceFormat
+    race_manager: RaceStateManager, unlimited_schedule: RaceFormat
 ):
     """
     Test running a race schedule that doesn't stop the race automatically
@@ -263,7 +269,9 @@ async def test_unlimited_sequence(
 
 
 @pytest.mark.asyncio
-async def test_racing_paused(race_manager: RaceManager, limited_schedule: RaceFormat):
+async def test_racing_paused(
+    race_manager: RaceStateManager, limited_schedule: RaceFormat
+):
     """
     Tests pausing the race while the race is running
     """
@@ -296,7 +304,9 @@ async def test_racing_paused(race_manager: RaceManager, limited_schedule: RaceFo
 
 
 @pytest.mark.asyncio
-async def test_overtime_paused(race_manager: RaceManager, limited_schedule: RaceFormat):
+async def test_overtime_paused(
+    race_manager: RaceStateManager, limited_schedule: RaceFormat
+):
     """
     Tests pausing the race when it has entered overtime
     """
@@ -332,7 +342,7 @@ async def test_overtime_paused(race_manager: RaceManager, limited_schedule: Race
 
 @pytest.mark.asyncio
 async def test_unlimited_sequence_resume(
-    race_manager: RaceManager, unlimited_schedule: RaceFormat
+    race_manager: RaceStateManager, unlimited_schedule: RaceFormat
 ):
     """
     Tests resuming a race after it has been paused while racing
@@ -369,7 +379,7 @@ async def test_unlimited_sequence_resume(
 
 @pytest.mark.asyncio
 async def test_racing_paused_stopped(
-    race_manager: RaceManager, limited_schedule: RaceFormat
+    race_manager: RaceStateManager, limited_schedule: RaceFormat
 ):
     """
     Tests stopping a race after it has been paused
@@ -402,7 +412,7 @@ async def test_racing_paused_stopped(
 
 @pytest.mark.asyncio
 async def test_overtime_paused_stopped(
-    race_manager: RaceManager, limited_schedule: RaceFormat
+    race_manager: RaceStateManager, limited_schedule: RaceFormat
 ):
     """
     Stopping a race after it was paused in overtime
@@ -438,7 +448,7 @@ async def test_overtime_paused_stopped(
 
 @pytest.mark.asyncio
 async def test_limited_sequence_pause_resume_fail(
-    race_manager: RaceManager, limited_schedule: RaceFormat
+    race_manager: RaceStateManager, limited_schedule: RaceFormat
 ):
     """
     Tests pausing a race after the race has been stopped
@@ -486,7 +496,7 @@ async def test_limited_sequence_pause_resume_fail(
 
 @pytest.mark.asyncio
 async def test_get_race_start(
-    race_manager: RaceManager, unlimited_schedule: RaceFormat
+    race_manager: RaceStateManager, unlimited_schedule: RaceFormat
 ):
     """
     Tests the race time increments at race start
@@ -510,7 +520,9 @@ async def test_get_race_start(
 
 
 @pytest.mark.asyncio
-async def test_get_race_time(race_manager: RaceManager, unlimited_schedule: RaceFormat):
+async def test_get_race_time(
+    race_manager: RaceStateManager, unlimited_schedule: RaceFormat
+):
     """
     Tests the race time increments with state
     """

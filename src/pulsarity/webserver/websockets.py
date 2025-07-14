@@ -19,7 +19,7 @@ from pulsarity import ctx
 from pulsarity.database import RaceFormat
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt, event_broker
-from pulsarity.race import race_manager
+from pulsarity.race import race_state_manager
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
 
@@ -177,8 +177,8 @@ async def schedule_race(ws_data: WSEventData):
 
     :param ws_data: Recieved websocket event data
     """
-    schedule = RaceFormat("temp")
-    race_manager.schedule_race(schedule, **ws_data.data)
+    format_ = RaceFormat("temp")
+    race_state_manager.schedule_race(format_, **ws_data.data)
 
 
 @ws_event(RaceSequenceEvt.RACE_STOP)
@@ -188,7 +188,7 @@ async def race_stop():
 
     :param _ws_data: Recieved websocket event data
     """
-    race_manager.stop_race()
+    race_state_manager.stop_race()
 
 
 routes = [
