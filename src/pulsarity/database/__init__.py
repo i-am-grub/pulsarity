@@ -4,7 +4,7 @@ Database objects and access
 
 from pulsarity.database.permission import Permission, SystemDefaultPerms
 from pulsarity.database.pilot import Pilot, PilotAttribute
-from pulsarity.database.raceformat import RaceFormat, RaceSchedule
+from pulsarity.database.raceformat import RaceFormat
 from pulsarity.database.role import Role
 from pulsarity.database.user import User
 
@@ -15,7 +15,6 @@ __all__ = [
     "Pilot",
     "PilotAttribute",
     "RaceFormat",
-    "RaceSchedule",
     "SystemDefaultPerms",
 ]
 

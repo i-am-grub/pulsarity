@@ -16,8 +16,8 @@ from starlette.routing import WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from pulsarity import ctx
+from pulsarity.database import RaceFormat
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
-from pulsarity.database.raceformat import RaceSchedule
 from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt, event_broker
 from pulsarity.race import race_manager
 from pulsarity.utils import background
@@ -177,13 +177,7 @@ async def schedule_race(ws_data: WSEventData):
 
     :param ws_data: Recieved websocket event data
     """
-    schedule = RaceSchedule(
-        stage_time_sec=3,
-        random_stage_delay=0,
-        unlimited_time=False,
-        race_time_sec=60,
-        overtime_sec=0,
-    )
+    schedule = RaceFormat("temp")
     race_manager.schedule_race(schedule, **ws_data.data)
 
 
