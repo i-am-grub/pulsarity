@@ -28,8 +28,8 @@ class RaceFormat(PulsarityBase):
     """Race clock duration in seconds, unused if unlimited_time is True"""
     overtime_sec = fields.IntField(default=0)
     """Overtime duration in seconds, -1 for unlimited, unused if unlimited_time is True"""
-    ruleset_id = fields.CharField(max_length=16, nullable=True)
-    """The identifer for the format's ruleset"""
+    processor_id = fields.CharField(max_length=32, nullable=True)
+    """The identifer for the format's processor"""
 
     class Meta:
         """Tortoise ORM metadata"""
@@ -46,7 +46,7 @@ class RaceFormat(PulsarityBase):
         unlimited_time: bool = False,
         race_time_sec: int = 60,
         overtime_sec: int = 0,
-        ruleset_id: str | None = None,
+        processor_id: str | None = None,
     ):
         """
         Class initialization
@@ -63,5 +63,5 @@ class RaceFormat(PulsarityBase):
         self.race_time_sec = race_time_sec
         self.overtime_sec = overtime_sec
 
-        if ruleset_id is not None:
-            self.ruleset_id = ruleset_id
+        if processor_id is not None:
+            self.ruleset_id = processor_id
