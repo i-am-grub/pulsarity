@@ -4,12 +4,13 @@ import uuid
 
 import pytest
 
-from pulsarity.interface import TimerData, TimerInterfaceManager, TimerMode
+from pulsarity.interface import TimerData, TimerMode
+from pulsarity.interface.timer_manager import _TimerInterfaceManager
 
 
 @pytest.fixture(name="interface_manager")
 def _interface_manager():
-    yield TimerInterfaceManager()
+    yield _TimerInterfaceManager()
 
 
 class BadTimerInterface: ...
@@ -62,7 +63,7 @@ class TestTimerInterface:
             self.rssi_queue.put_nowait(data)
 
 
-def test_register_interface_error(interface_manager: TimerInterfaceManager):
+def test_register_interface_error(interface_manager: _TimerInterfaceManager):
     """
     Test for registration of a bad interface
     """
@@ -71,7 +72,7 @@ def test_register_interface_error(interface_manager: TimerInterfaceManager):
         interface_manager.register(BadTimerInterface)
 
 
-def test_register_interface_duplicate_error(interface_manager: TimerInterfaceManager):
+def test_register_interface_duplicate_error(interface_manager: _TimerInterfaceManager):
     """
     Test for the registration of duplicate interfaces
     """
@@ -81,7 +82,7 @@ def test_register_interface_duplicate_error(interface_manager: TimerInterfaceMan
         interface_manager.register(TestTimerInterface)
 
 
-def test_unregister_interface(interface_manager: TimerInterfaceManager):
+def test_unregister_interface(interface_manager: _TimerInterfaceManager):
     """
     Test unregistering an interface
     """
@@ -89,7 +90,7 @@ def test_unregister_interface(interface_manager: TimerInterfaceManager):
     interface_manager.unregister(TestTimerInterface.identifier)
 
 
-def test_unregister_interface_error(interface_manager: TimerInterfaceManager):
+def test_unregister_interface_error(interface_manager: _TimerInterfaceManager):
     """
     Test unregister an interface that wasn't registered
     """
@@ -98,7 +99,7 @@ def test_unregister_interface_error(interface_manager: TimerInterfaceManager):
         interface_manager.unregister(TestTimerInterface.identifier)
 
 
-def test_already_instantiated_interface(interface_manager: TimerInterfaceManager):
+def test_already_instantiated_interface(interface_manager: _TimerInterfaceManager):
     """
     Test multiple instantiation of interface with the same data
     """
@@ -114,7 +115,7 @@ def test_already_instantiated_interface(interface_manager: TimerInterfaceManager
         )
 
 
-def test_instantiate_interface_error(interface_manager: TimerInterfaceManager):
+def test_instantiate_interface_error(interface_manager: _TimerInterfaceManager):
     """
     Tests instantiating an interface that wasn't previously registered
     """
@@ -125,7 +126,7 @@ def test_instantiate_interface_error(interface_manager: TimerInterfaceManager):
 
 
 @pytest.mark.asyncio
-async def test_manager_lifespan(interface_manager: TimerInterfaceManager):
+async def test_manager_lifespan(interface_manager: _TimerInterfaceManager):
     """
     Tests the lifespan of the interface manager
     """
@@ -134,14 +135,14 @@ async def test_manager_lifespan(interface_manager: TimerInterfaceManager):
 
 
 @pytest.mark.asyncio
-async def test_manager_register_decorator(interface_manager: TimerInterfaceManager):
+async def test_manager_register_decorator(interface_manager: _TimerInterfaceManager):
     """
     Tests the usage of the `interface_manager.register` method
     as a decorator
     """
     # pylint: disable=C0115,W0612,W0212
 
-    interface_manager = TimerInterfaceManager()
+    interface_manager = _TimerInterfaceManager()
 
     num_interfaces = len(interface_manager._interfaces)
     assert num_interfaces == 0

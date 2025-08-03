@@ -7,7 +7,7 @@ import logging
 from random import random
 
 from pulsarity import ctx
-from pulsarity.database.raceformat import RaceSchedule
+from pulsarity.database.raceformat import RaceFormat
 from pulsarity.events import RaceSequenceEvt, event_broker
 from pulsarity.race.enums import RaceStatus
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 _RaceEventRecord = tuple[RaceStatus, float]
 
 
-class RaceManager:
+class RaceStateManager:
     """
     Manager for conducting races. Acts as a finite state
     machine.
@@ -26,8 +26,8 @@ class RaceManager:
     """The handle for managine the race sequence"""
     _status: RaceStatus = RaceStatus.READY
     """Internal status of the race"""
-    _schedule: RaceSchedule | None = None
-    """The current race schedule"""
+    _format: RaceFormat | None = None
+    """The current race format"""
 
     def __init__(self) -> None:
         self._race_record: list[_RaceEventRecord] = []
@@ -133,7 +133,7 @@ class RaceManager:
         self._race_record.append((status, ctx.loop_ctx.get().time()))
 
     def schedule_race(
-        self, schedule: RaceSchedule, *, assigned_start: float, **_kwargs
+        self, format_: RaceFormat, *, assigned_start: float, **_kwargs
     ) -> None:
         """
         Schedule the sequence of events for the race
@@ -145,12 +145,12 @@ class RaceManager:
         if assigned_start < ctx.loop_ctx.get().time():
             raise ValueError("Assigned start is in the past")
 
-        _random_delay = schedule.random_stage_delay * random() * 0.001
-        start_delay = schedule.stage_time_sec + _random_delay
+        _random_delay = format_.random_stage_delay * random() * 0.001
+        start_delay = format_.stage_time_sec + _random_delay
         start_time = assigned_start + start_delay
 
         if self.status == RaceStatus.READY:
-            self._schedule = schedule
+            self._format = format_
             self._program_handle = ctx.loop_ctx.get().call_at(
                 assigned_start, self._stage, start_time
             )
@@ -225,7 +225,7 @@ class RaceManager:
         if self.status != RaceStatus.PAUSED:
             return
 
-        assert self._schedule is not None, "Can not resume race with an unset schedule"
+        assert self._format is not None, "Can not resume race with an unset schedule"
 
         for status, _ in reversed(self._race_record):
             if status in RaceStatus.UNDERWAY:
@@ -233,11 +233,11 @@ class RaceManager:
         else:
             raise RuntimeError("Underway status not found in paused race records")
 
-        if self._schedule.unlimited_time:
+        if self._format.unlimited_time:
             self._set_status(RaceStatus.RACING)
 
-        elif (time_ := self.race_time) < self._schedule.race_time_sec:
-            remaining_duration = self._schedule.race_time_sec - time_
+        elif (time_ := self.race_time) < self._format.race_time_sec:
+            remaining_duration = self._format.race_time_sec - time_
             self._program_handle = ctx.loop_ctx.get().call_later(
                 remaining_duration, self._finish
             )
@@ -245,7 +245,7 @@ class RaceManager:
 
         else:
             remaining_duration = (
-                self._schedule.race_time_sec + self._schedule.overtime_sec - time_
+                self._format.race_time_sec + self._format.overtime_sec - time_
             )
             self._program_handle = ctx.loop_ctx.get().call_later(
                 remaining_duration, self._stop
@@ -278,16 +278,16 @@ class RaceManager:
 
         :param schedule: The format's race schedule
         """
-        assert self._schedule is not None, "Can not start race with an unset schedule"
+        assert self._format is not None, "Can not start race with an unset schedule"
 
         data: dict = {}
         event_broker.trigger(RaceSequenceEvt.RACE_START, data)
         self._set_status(RaceStatus.RACING)
         logger.info("Race started")
 
-        if not self._schedule.unlimited_time:
+        if not self._format.unlimited_time:
             self._program_handle = ctx.loop_ctx.get().call_later(
-                self._schedule.race_time_sec, self._finish
+                self._format.race_time_sec, self._finish
             )
 
         else:
@@ -300,20 +300,20 @@ class RaceManager:
 
         :param schedule: The format's race schedule
         """
-        assert self._schedule is not None, "Can not finish race with an unset schedule"
+        assert self._format is not None, "Can not finish race with an unset schedule"
 
         data: dict = {}
         event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
 
-        if self._schedule.overtime_sec > 0:
+        if self._format.overtime_sec > 0:
             self._program_handle = ctx.loop_ctx.get().call_later(
-                self._schedule.overtime_sec, self._stop
+                self._format.overtime_sec, self._stop
             )
 
             self._set_status(RaceStatus.OVERTIME)
             logger.info("Entering race overtime")
 
-        elif self._schedule.overtime_sec == 0:
+        elif self._format.overtime_sec == 0:
             self._stop()
 
         else:
@@ -335,10 +335,10 @@ class RaceManager:
         """
         if self.status == RaceStatus.STOPPED:
             assert self._program_handle is None
-            self._schedule = None
+            self._format = None
             self._race_record.clear()
             self._status = RaceStatus.READY
             logger.info("Race manager reset")
 
 
-race_manager = RaceManager()
+race_state_manager = RaceStateManager()

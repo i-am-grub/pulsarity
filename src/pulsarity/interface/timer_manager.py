@@ -6,7 +6,7 @@ import asyncio
 import logging
 import uuid
 from collections.abc import AsyncGenerator
-from dataclasses import astuple, dataclass, field
+from dataclasses import dataclass, field
 from enum import IntEnum, auto
 
 from pulsarity.interface.timer_interface import TimerData, TimerInterface
@@ -28,7 +28,25 @@ class TimerMode(IntEnum):
     """A failover in the event the primary fails"""
 
 
-_ExtendedTimerData = tuple[float, str, int, float, TimerMode, int]
+@dataclass(frozen=True)
+class ExtendedTimerData:
+    """
+    Dataclass for passing timer data to other parts of the
+    system
+    """
+
+    timestamp: float
+    """The time of processing the value"""
+    timer_identifier: str
+    """Identifier of the origin interface"""
+    node_index: int
+    """Index of the node"""
+    value: float
+    """The data value"""
+    interface_mode: TimerMode
+    """The mode of the interface"""
+    interface_index: int
+    """The index of the interface"""
 
 
 @dataclass
@@ -45,13 +63,13 @@ class _ActiveTimer:
     """The index of the timer. Used for ordering split timers"""
 
 
-@dataclass
+@dataclass(frozen=True)
 class _DataManager:
     queue: asyncio.Queue[TimerData] = field(default_factory=asyncio.Queue)
-    connections: set[asyncio.Queue[_ExtendedTimerData]] = field(default_factory=set)
+    connections: set[asyncio.Queue[ExtendedTimerData]] = field(default_factory=set)
 
 
-class TimerInterfaceManager:
+class _TimerInterfaceManager:
     """
     Manages the abstract and active timer interfaces
     """
@@ -90,11 +108,11 @@ class TimerInterfaceManager:
                 self._lap_manager.queue, self._rssi_manager.queue
             )
 
-    async def subscribe_laps(self) -> AsyncGenerator[_ExtendedTimerData, None]:
+    async def subscribe_laps(self) -> AsyncGenerator[ExtendedTimerData, None]:
         """
         Subscribe to the incoming lap data
         """
-        connection: asyncio.Queue[_ExtendedTimerData] = asyncio.Queue()
+        connection: asyncio.Queue[ExtendedTimerData] = asyncio.Queue()
         self._lap_manager.connections.add(connection)
         try:
             while not self._shutdown_evt.is_set():
@@ -102,11 +120,11 @@ class TimerInterfaceManager:
         finally:
             self._lap_manager.connections.remove(connection)
 
-    async def subscribe_rssi(self) -> AsyncGenerator[_ExtendedTimerData, None]:
+    async def subscribe_rssi(self) -> AsyncGenerator[ExtendedTimerData, None]:
         """
         Subscribe to the incoming rssi data
         """
-        connection: asyncio.Queue[_ExtendedTimerData] = asyncio.Queue()
+        connection: asyncio.Queue[ExtendedTimerData] = asyncio.Queue()
         self._rssi_manager.connections.add(connection)
         try:
             while not self._shutdown_evt.is_set():
@@ -125,7 +143,14 @@ class TimerInterfaceManager:
         while not self._shutdown_evt.is_set():
             recieved = await manager.queue.get()
             interface = self._active_interfaces[recieved.timer_identifier]
-            outgoing = (*astuple(recieved), interface.mode, interface.index)
+            outgoing = ExtendedTimerData(
+                recieved.timestamp,
+                recieved.timer_identifier,
+                recieved.node_index,
+                recieved.value,
+                interface.mode,
+                interface.index,
+            )
 
             for connection in manager.connections:
                 await connection.put(outgoing)
@@ -234,4 +259,15 @@ class TimerInterfaceManager:
             self._tasks = None
 
 
-interface_manager = TimerInterfaceManager()
+interface_manager = _TimerInterfaceManager()
+
+
+def register_interface(interface_class: type[TimerInterface]) -> type[TimerInterface]:
+    """
+    Decorator used for registering TimerInterface classes
+
+    :param interface_class: The timer interface class to register
+    :return: The registered timer interface
+    """
+    interface_manager.register(interface_class)
+    return interface_class
