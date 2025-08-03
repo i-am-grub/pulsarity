@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from typing import Protocol, runtime_checkable
 
 from pulsarity.database.raceformat import RaceFormat
+from pulsarity.interface.timer_manager import ExtendedTimerData
 
 
 @runtime_checkable
@@ -25,7 +26,7 @@ class RaceProcessor(Protocol):
         :param race_format: The active race format
         """
 
-    def add_lap_record(self, slot: int, record) -> None:
+    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> None:
         """
         Add lap record to the supervisor instance
 
@@ -33,12 +34,12 @@ class RaceProcessor(Protocol):
         :param lap_data: Lap data
         """
 
-    def remove_lap_record(self, slot: int, record) -> None:
+    def remove_lap_record(self, slot: int, index: int) -> None:
         """
         Remove lap record from the supervisor instance
 
         :param slot: Slot where the lap record is stored
-        :param lap_data: Lap data
+        :param index: The index of the slot lap record
         """
 
     def is_slot_done(self, slot_num: int) -> bool:
