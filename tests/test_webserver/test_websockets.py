@@ -52,8 +52,6 @@ async def test_server_websocket_auth(websocket_client: AsyncClient):
     payload = {"id": str(uuid.uuid4()), "event_id": "heartbeat", "data": {"foo": "bar"}}
 
     async with httpx_ws.aconnect_ws("/server", websocket_client) as ws:
-        await asyncio.sleep(0.5)  # wait for permissions to set
-
         await ws.send_json(payload)
 
         async with asyncio.timeout(2):
