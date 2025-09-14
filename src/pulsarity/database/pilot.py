@@ -31,10 +31,7 @@ class PilotAttribute(PulsarityBase):
 
 class Pilot(PulsarityBase):
     """
-    A pilot is an individual participant. In order to participate in races,
-    pilots can be assigned to multiple heats.
-
-    The sentinel value :atts:`RHUtils.PILOT_ID_NONE` should be used when no pilot is defined.
+    Database content for event participants
     """
 
     callsign = fields.CharField(max_length=80)
