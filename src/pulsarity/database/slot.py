@@ -69,7 +69,7 @@ class Slot(PulsarityBase):
         unique_together = (("heat", "index"),)
 
 
-@dataclass
+@dataclass(frozen=True)
 class SlotHistoryRecord:
     """
     Slot history entry
@@ -79,12 +79,21 @@ class SlotHistoryRecord:
     value: float
 
     @classmethod
-    def from_list(cls, data: list[float]) -> Self:
+    def from_sequence(cls, data: Sequence[float]) -> Self:
+        """
+        Parses a record from a sequence
+        """
         delta = timedelta(seconds=data[0])
         return cls(time=delta, value=data[1])
 
+    def __lt__(self, obj: Self) -> bool:
+        """
+        Less than operation definition. Allows for sorting instances by time.
+        """
+        return self.time < obj.time
 
-def _history_encoder(history_series: Sequence[SlotHistoryRecord]) -> str:
+
+def history_encoder(history_series: Sequence[SlotHistoryRecord]) -> str:
     """
     Encodes a time series sequence to a storable value
 
@@ -95,7 +104,7 @@ def _history_encoder(history_series: Sequence[SlotHistoryRecord]) -> str:
     return json.dumps(data)
 
 
-def _history_decoder(encoded_data: str | bytes) -> tuple[SlotHistoryRecord, ...]:
+def history_decoder(encoded_data: str | bytes) -> tuple[SlotHistoryRecord, ...]:
     """
     Decodes a time series sequence from a storable value
 
@@ -103,7 +112,7 @@ def _history_decoder(encoded_data: str | bytes) -> tuple[SlotHistoryRecord, ...]
     :return: The sequence of records
     """
     data = json.loads(encoded_data)
-    return tuple(SlotHistoryRecord.from_list(x) for x in data)
+    return tuple(SlotHistoryRecord.from_sequence(x) for x in data)
 
 
 class SlotHistory(PulsarityBase):
@@ -114,7 +123,7 @@ class SlotHistory(PulsarityBase):
     slot: fields.OneToOneRelation[Slot] = fields.OneToOneField("event.Slot", "history")
     """The slot the history belongs to"""
     history: fields.JSONField[tuple[SlotHistoryRecord, ...]] = fields.JSONField(
-        _history_encoder, _history_decoder
+        history_encoder, history_decoder
     )
     """The series of history for the slot"""
 

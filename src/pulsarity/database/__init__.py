@@ -2,11 +2,11 @@
 Database objects and access
 """
 
-from pulsarity.database.event import Event, EventAttribute
 from pulsarity.database.heat import Heat, HeatAttribute
 from pulsarity.database.permission import Permission, SystemDefaultPerms
 from pulsarity.database.pilot import Pilot, PilotAttribute
 from pulsarity.database.raceclass import RaceClass, RaceClassAttribute
+from pulsarity.database.raceevent import RaceEvent, RaceEventAttribute
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.database.role import Role
 from pulsarity.database.round import Round, RoundAttribute
@@ -21,8 +21,8 @@ __all__ = [
     "PilotAttribute",
     "RaceFormat",
     "SystemDefaultPerms",
-    "Event",
-    "EventAttribute",
+    "RaceEvent",
+    "RaceEventAttribute",
     "RaceClass",
     "RaceClassAttribute",
     "Round",

@@ -11,7 +11,7 @@ from tortoise import fields
 from pulsarity.database._base import PulsarityBase
 
 if TYPE_CHECKING:
-    from pulsarity.database.event import Event
+    from pulsarity.database.raceevent import RaceEvent
     from pulsarity.database.raceformat import RaceFormat
     from pulsarity.database.round import Round
 
@@ -43,8 +43,8 @@ class RaceClass(PulsarityBase):
 
     name = fields.CharField(max_length=120)
     """The name of the raceclass"""
-    event: fields.ForeignKeyRelation[Event] = fields.ForeignKeyField(
-        "event.Event", related_name="raceclasses"
+    event: fields.ForeignKeyRelation[RaceEvent] = fields.ForeignKeyField(
+        "event.RaceEvent", related_name="raceclasses"
     )
     """The event the raceclass is assigned to"""
     raceclass_num = fields.IntField(null=False)
@@ -63,3 +63,15 @@ class RaceClass(PulsarityBase):
         app = "event"
         table = "raceclass"
         unique_together = (("event", "raceclass_num"),)
+
+    @property
+    def display_name(self) -> str:
+        """
+        Generates the displayed name for the user
+
+        :return: The user's display name
+        """
+        if self.name:
+            return self.name
+
+        return f"Race Class {self.id}"
