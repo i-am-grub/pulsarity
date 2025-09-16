@@ -4,9 +4,11 @@ ORM classes for round data
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
 from tortoise import fields
+from tortoise.functions import Max
 
 from pulsarity.database._base import PulsarityBase
 
@@ -40,6 +42,9 @@ class Round(PulsarityBase):
     Database content for rounds within a raceclass
     """
 
+    lock = asyncio.Lock()
+    """Use when claiming a new `round_num` during initial creation"""
+
     raceclass: fields.ForeignKeyRelation[RaceClass] = fields.ForeignKeyField(
         "event.RaceClass", related_name="rounds"
     )
@@ -57,3 +62,29 @@ class Round(PulsarityBase):
         app = "event"
         table = "round"
         unique_together = (("raceclass", "round_num"),)
+
+    @property
+    async def max_heat_num(self) -> int | None:
+        """
+        Gets the maximum value number used as a `raceclass_num` in an events
+        raceclasses
+        """
+        value = await self.heats.all().annotate(max=Max("heat_num")).first()
+
+        if value is not None:
+            return getattr(value, "max")
+
+        return None
+
+    async def get_next_heat_num(self) -> int:
+        """
+        The next recommend `raceclass_num` to use
+
+        :return: The recommended integer
+        """
+        value = await self.max_heat_num
+
+        if value is None:
+            return 1
+
+        return value + 1

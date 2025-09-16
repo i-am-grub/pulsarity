@@ -177,7 +177,7 @@ async def schedule_race(ws_data: WSEventData):
 
     :param ws_data: Recieved websocket event data
     """
-    format_ = RaceFormat("temp")
+    format_ = RaceFormat()
     race_state_manager.schedule_race(format_, **ws_data.data)
 
 

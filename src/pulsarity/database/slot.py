@@ -4,12 +4,12 @@ ORM classes for round data
 
 from __future__ import annotations
 
-import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import TYPE_CHECKING, Self
 
+import orjson
 from tortoise import fields
 
 from pulsarity.database._base import PulsarityBase
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from pulsarity.database.lap import Lap
 
 
-# pylint: disable=R0903,E1136
+# pylint: disable=R0903,E1136, E1101
 
 
 class SlotAttribute(PulsarityBase):
@@ -101,7 +101,7 @@ def history_encoder(history_series: Sequence[SlotHistoryRecord]) -> str:
     :return: The formated time series
     """
     data = [(x.time.total_seconds(), x.value) for x in history_series]
-    return json.dumps(data)
+    return orjson.dumps(data).decode()
 
 
 def history_decoder(encoded_data: str | bytes) -> tuple[SlotHistoryRecord, ...]:
@@ -111,7 +111,7 @@ def history_decoder(encoded_data: str | bytes) -> tuple[SlotHistoryRecord, ...]:
     :param history_series: The encoded data
     :return: The sequence of records
     """
-    data = json.loads(encoded_data)
+    data: list[list[float]] = orjson.loads(encoded_data)
     return tuple(SlotHistoryRecord.from_sequence(x) for x in data)
 
 

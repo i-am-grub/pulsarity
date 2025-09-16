@@ -4,9 +4,11 @@ ORM classes for race class data
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
 from tortoise import fields
+from tortoise.functions import Max
 
 from pulsarity.database._base import PulsarityBase
 
@@ -41,13 +43,16 @@ class RaceClass(PulsarityBase):
     Database content for raceclasses
     """
 
+    lock = asyncio.Lock()
+    """Use when claiming a new `raceclass_num` during initial creation"""
+
     name = fields.CharField(max_length=120)
     """The name of the raceclass"""
     event: fields.ForeignKeyRelation[RaceEvent] = fields.ForeignKeyField(
         "event.RaceEvent", related_name="raceclasses"
     )
     """The event the raceclass is assigned to"""
-    raceclass_num = fields.IntField(null=False)
+    raceclass_num = fields.IntField()
     """The numerical identifier of the race class in the event"""
     rounds: fields.ReverseRelation[Round]
     """The rounds assigned to the race class"""
@@ -75,3 +80,29 @@ class RaceClass(PulsarityBase):
             return self.name
 
         return f"Race Class {self.id}"
+
+    @property
+    async def max_round_num(self) -> int | None:
+        """
+        Gets the maximum value number used as a `raceclass_num` in an events
+        raceclasses
+        """
+        value = await self.rounds.all().annotate(max=Max("round_num")).first()
+
+        if value is not None:
+            return getattr(value, "max")
+
+        return None
+
+    async def get_next_round_num(self) -> int:
+        """
+        The next recommend `raceclass_num` to use
+
+        :return: The recommended integer
+        """
+        value = await self.max_round_num
+
+        if value is None:
+            return 1
+
+        return value + 1

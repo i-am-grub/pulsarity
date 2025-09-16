@@ -4,9 +4,10 @@ ORM classes for event data
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from tortoise import fields
+from tortoise.functions import Max
 
 from pulsarity.database._base import PulsarityBase
 
@@ -41,6 +42,8 @@ class RaceEvent(PulsarityBase):
 
     name = fields.CharField(max_length=120)
     """The name of the event"""
+    date = fields.DatetimeField(auto_now_add=True)
+    """The date of the event"""
     raceclasses: fields.ReverseRelation[RaceClass]
     """The race classes assigned to the event"""
     attributes: fields.ReverseRelation[RaceEventAttribute]
@@ -59,7 +62,39 @@ class RaceEvent(PulsarityBase):
 
         :return: The user's display name
         """
-        if self.name:
+        if self.name is not None:
             return self.name
 
         return f"RaceEvent {self.id}"
+
+    @property
+    async def max_raceclass_num(self) -> int | None:
+        """
+        Gets the maximum value number used as a `raceclass_num` in an events
+        raceclasses
+        """
+        value = await self.raceclasses.all().annotate(max=Max("raceclass_num")).first()
+
+        if value is not None:
+            return getattr(value, "max")
+
+        return None
+
+    async def get_next_raceclass_num(self) -> int:
+        """
+        The next recommend `raceclass_num` to use
+
+        :return: The recommended integer
+        """
+        value = await self.max_raceclass_num
+
+        if value is None:
+            return 1
+
+        return value + 1
+
+    def __lt__(self, obj: Self) -> bool:
+        """
+        Less than comparsion operator. Enables sorting by dates
+        """
+        return self.date < obj.date

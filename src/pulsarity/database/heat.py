@@ -4,6 +4,7 @@ ORM classes for heat data
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
 from tortoise import fields
@@ -39,6 +40,9 @@ class Heat(PulsarityBase):
     """
     Database content for race heats
     """
+
+    lock = asyncio.Lock()
+    """Use when claiming a new `heat_num` during initial creation"""
 
     round: fields.ForeignKeyRelation[Round] = fields.ForeignKeyField(
         "event.Round", related_name="heats"
