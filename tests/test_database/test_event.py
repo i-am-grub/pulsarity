@@ -1,7 +1,20 @@
+from datetime import timedelta
+
 import pytest
 import pytest_asyncio
+from tortoise.exceptions import IntegrityError
 
-from pulsarity.database import Heat, RaceClass, RaceEvent, RaceFormat, Round
+from pulsarity.database import (
+    Heat,
+    Lap,
+    Pilot,
+    RaceClass,
+    RaceEvent,
+    RaceFormat,
+    Round,
+    Slot,
+)
+from pulsarity.interface import TimerMode
 
 
 @pytest_asyncio.fixture(name="limited_schedule")
@@ -46,6 +59,12 @@ async def _basic_heat(basic_round: Round):
     async with Heat.lock:
         value = await basic_round.get_next_heat_num()
         return await Heat.create(round=basic_round, heat_num=value)
+
+
+@pytest_asyncio.fixture(name="basic_slot")
+async def _basic_slot(basic_heat: Heat):
+    pilot = await Pilot.create(callsign="foo")
+    return await Slot.create(heat=basic_heat, index=0, pilot=pilot)
 
 
 @pytest.mark.asyncio
@@ -101,6 +120,32 @@ async def test_basic_raceclass(basic_event: RaceEvent, limited_schedule: RaceFor
 
 
 @pytest.mark.asyncio
+async def test_unique_raceclass(basic_event: RaceEvent, limited_schedule: RaceFormat):
+    """
+    Test creating a raceclass with non-unique parameters
+    """
+    value = await basic_event.max_raceclass_num
+    assert value is None
+
+    async with RaceClass.lock:
+        next_num = await basic_event.get_next_raceclass_num()
+        await RaceClass.create(
+            name="Test RaceClass",
+            event=basic_event,
+            raceclass_num=next_num,
+            raceformat=limited_schedule,
+        )
+
+    with pytest.raises(IntegrityError):
+        await RaceClass.create(
+            name="Test RaceClass",
+            event=basic_event,
+            raceclass_num=next_num,
+            raceformat=limited_schedule,
+        )
+
+
+@pytest.mark.asyncio
 async def test_basic_round(basic_raceclass: RaceClass):
     """
     Test creating and deleting rounds under a parent raceclass
@@ -127,9 +172,25 @@ async def test_basic_round(basic_raceclass: RaceClass):
 
 
 @pytest.mark.asyncio
+async def test_unique_round(basic_raceclass: RaceClass):
+    """
+    Test creating a round with non-unique parameters
+    """
+    value = await basic_raceclass.max_round_num
+    assert value is None
+
+    async with Round.lock:
+        next_num = await basic_raceclass.get_next_round_num()
+        await Round.create(raceclass=basic_raceclass, round_num=next_num)
+
+    with pytest.raises(IntegrityError):
+        await Round.create(raceclass=basic_raceclass, round_num=next_num)
+
+
+@pytest.mark.asyncio
 async def test_basic_heat(basic_round: Round):
     """
-    Test creating and deleting rounds under a parent raceclass
+    Test creating and deleting heats under a parent round
     """
     value = await basic_round.max_heat_num
     assert value is None
@@ -153,11 +214,107 @@ async def test_basic_heat(basic_round: Round):
 
 
 @pytest.mark.asyncio
-async def test_cascade_delete(basic_heat: Heat):
+async def test_unique_heat(basic_round: Round):
+    """
+    Test creating a heat with non-unique parameters
+    """
+    value = await basic_round.max_heat_num
+    assert value is None
+
+    async with Heat.lock:
+        next_num = await basic_round.get_next_heat_num()
+        await Heat.create(round=basic_round, heat_num=next_num)
+
+    with pytest.raises(IntegrityError):
+        await Heat.create(round=basic_round, heat_num=next_num)
+
+
+@pytest.mark.asyncio
+async def test_basic_slot(basic_heat: Heat):
+    """
+    Test creating and deleting slots under a parent heat
+    """
+    pilot1 = await Pilot.create(callsign="foo")
+    pilot2 = await Pilot.create(callsign="bar")
+
+    slot1 = await Slot.create(heat=basic_heat, index=0, pilot=pilot1)
+    num_slots = await basic_heat.slots.all().count()
+    assert num_slots == 1
+
+    slot2 = await Slot.create(heat=basic_heat, index=1, pilot=pilot2)
+    num_slots = await basic_heat.slots.all().count()
+    assert num_slots == 2
+
+    await slot1.delete()
+    assert await basic_heat.slots.all().count() == 1
+    await slot2.delete()
+    assert await basic_heat.slots.all().count() == 0
+
+
+@pytest.mark.asyncio
+async def test_unique_slot(basic_heat: Heat):
+    """
+    Test creating a slot with non-unique parameters
+    """
+    pilot1 = await Pilot.create(callsign="foo")
+    pilot2 = await Pilot.create(callsign="bar")
+
+    await Slot.create(heat=basic_heat, index=0, pilot=pilot1)
+
+    with pytest.raises(IntegrityError):
+        await Slot.create(heat=basic_heat, index=0, pilot=pilot2)
+
+    with pytest.raises(IntegrityError):
+        await Slot.create(heat=basic_heat, index=1, pilot=pilot1)
+
+
+@pytest.mark.asyncio
+async def test_basic_lap(basic_slot: Slot):
+    """
+    Test creating and deleting laps under a parent slot
+    """
+    delta = timedelta(seconds=1)
+
+    lap1 = await Lap.create(slot=basic_slot, time=delta, mode=TimerMode.PRIMARY)
+    num_laps = await basic_slot.laps.all().count()
+    assert num_laps == 1
+
+    lap2 = await Lap.create(slot=basic_slot, time=delta, mode=TimerMode.SPLIT)
+    num_laps = await basic_slot.laps.all().count()
+    assert num_laps == 2
+
+    await lap1.delete()
+    assert await basic_slot.laps.all().count() == 1
+    await lap2.delete()
+    assert await basic_slot.laps.all().count() == 0
+
+
+@pytest.mark.asyncio
+async def test_unique_lap(basic_slot: Slot):
+    """
+    Test creating a lap with non-unique parameters
+    """
+    delta = timedelta(seconds=1)
+
+    await Lap.create(slot=basic_slot, time=delta, mode=TimerMode.PRIMARY)
+
+    with pytest.raises(IntegrityError):
+        await Lap.create(slot=basic_slot, time=delta, mode=TimerMode.PRIMARY)
+
+
+@pytest.mark.asyncio
+async def test_cascade_delete(basic_slot: Slot):
     """
     Test raceclass deletion as a result of event deletion
     """
-    heat = await Heat.get_by_id(basic_heat.id)
+    slot = await Slot.get_by_id(basic_slot.id)
+    assert slot is not None
+
+    delta = timedelta(seconds=1)
+    lap = await Lap.create(slot=basic_slot, time=delta, mode=TimerMode.PRIMARY)
+    assert await Lap.get_by_id(lap.id) is not None
+
+    heat = await slot.heat
     assert heat is not None
 
     round_ = await heat.round
@@ -175,3 +332,5 @@ async def test_cascade_delete(basic_heat: Heat):
     assert await RaceClass.get_by_id(raceclass.id) is None
     assert await Round.get_by_id(round_.id) is None
     assert await Heat.get_by_id(heat.id) is None
+    assert await Slot.get_by_id(slot.id) is None
+    assert await Lap.get_by_id(lap.id) is None

@@ -4,28 +4,17 @@ ORM classes for event data
 
 from __future__ import annotations
 
-from enum import IntEnum, auto
 from typing import TYPE_CHECKING
 
 from tortoise import fields
 
 from pulsarity.database._base import PulsarityBase
+from pulsarity.interface.timer_manager import TimerMode
 
 if TYPE_CHECKING:
     from pulsarity.database.slot import Slot
 
 # pylint: disable=R0903,E1136
-
-
-class LapKind(IntEnum):
-    """
-    The type of saved lap
-    """
-
-    PRIMARY = auto()
-    """Lap from the primary timer"""
-    SPLIT = auto()
-    """Lap from a split timer"""
 
 
 class LapAttribute(PulsarityBase):
@@ -55,7 +44,7 @@ class Lap(PulsarityBase):
     """The slot the lap belongs to"""
     time = fields.TimeDeltaField()
     """The time delta from race start"""
-    kind = fields.IntEnumField(LapKind)
+    mode = fields.IntEnumField(TimerMode)
     """The lap kind"""
     attributes: fields.ReverseRelation[LapAttribute]
     """The attributes assigned to the event"""
@@ -65,3 +54,4 @@ class Lap(PulsarityBase):
 
         app = "event"
         table = "lap"
+        unique_together = (("slot", "time", "mode"),)

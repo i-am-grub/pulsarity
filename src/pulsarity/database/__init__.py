@@ -3,6 +3,7 @@ Database objects and access
 """
 
 from pulsarity.database.heat import Heat, HeatAttribute
+from pulsarity.database.lap import Lap
 from pulsarity.database.permission import Permission, SystemDefaultPerms
 from pulsarity.database.pilot import Pilot, PilotAttribute
 from pulsarity.database.raceclass import RaceClass, RaceClassAttribute
@@ -32,6 +33,7 @@ __all__ = [
     "Slot",
     "SlotAttribute",
     "SlotHistory",
+    "Lap",
 ]
 
 

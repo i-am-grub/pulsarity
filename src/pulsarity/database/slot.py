@@ -66,7 +66,7 @@ class Slot(PulsarityBase):
 
         app = "event"
         table = "slot"
-        unique_together = (("heat", "index"),)
+        unique_together = (("heat", "index"), ("heat", "pilot"))
 
 
 @dataclass(frozen=True)

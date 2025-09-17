@@ -36,9 +36,9 @@ class Pilot(PulsarityBase):
 
     callsign = fields.CharField(max_length=80)
     """Pilot callsign"""
-    phonetic = fields.CharField(max_length=80)
+    phonetic = fields.CharField(max_length=80, null=True)
     """Phonetically-spelled callsign, used for text-to-speech"""
-    name = fields.CharField(max_length=120)
+    name = fields.CharField(max_length=120, null=True)
     """Pilot name"""
     used_frequencies = fields.CharField(max_length=80, null=True)
     """Serialized list of frequencies this pilot has been assigned when starting a race, 
