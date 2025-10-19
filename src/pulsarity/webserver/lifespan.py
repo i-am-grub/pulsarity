@@ -18,7 +18,6 @@ from pulsarity.events import SpecialEvt, event_broker
 from pulsarity.interface.timer_manager import interface_manager
 from pulsarity.utils import background
 from pulsarity.utils.config import configs
-from pulsarity.utils.executor import executor_manager
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +69,6 @@ async def server_starup_workflow() -> None:
     loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
     interface_manager.start()
-    executor_manager.set_executor()
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(database_startup())
@@ -86,10 +84,7 @@ async def server_shutdown_workflow() -> None:
 
     await interface_manager.shutdown(5)
     await background.shutdown(5)
-
-    async with asyncio.TaskGroup() as tg:
-        tg.create_task(executor_manager.shutdown_executor())
-        tg.create_task(database_shutdown())
+    await database_shutdown()
 
 
 async def database_startup() -> None:
