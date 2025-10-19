@@ -13,8 +13,9 @@ from pulsarity.webserver import generate_webserver_coroutine
 
 # pylint: disable=E0401
 
-if sys.platform not in ("linux", "darwin"):
+if sys.platform in ("linux", "darwin"):
     from uvloop import run
+
 else:
     from asyncio import run
 
