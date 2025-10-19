@@ -175,14 +175,14 @@ class RaceStateManager:
 
         elif self.status == RaceStatus.RACING:
             data: dict = {}
-            event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
-            event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+            event_broker.trigger_background(RaceSequenceEvt.RACE_FINISH, data)
+            event_broker.trigger_background(RaceSequenceEvt.RACE_STOP, data)
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
 
         elif self.status == RaceStatus.OVERTIME:
             data = {}
-            event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+            event_broker.trigger_background(RaceSequenceEvt.RACE_STOP, data)
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
 
@@ -196,10 +196,10 @@ class RaceStateManager:
             data = {}
 
             if status == RaceStatus.RACING:
-                event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
-                event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+                event_broker.trigger_background(RaceSequenceEvt.RACE_FINISH, data)
+                event_broker.trigger_background(RaceSequenceEvt.RACE_STOP, data)
             else:
-                event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+                event_broker.trigger_background(RaceSequenceEvt.RACE_STOP, data)
 
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
@@ -210,7 +210,7 @@ class RaceStateManager:
         """
         if self.status in RaceStatus.UNDERWAY:
             data: dict = {}
-            event_broker.trigger(RaceSequenceEvt.RACE_PAUSE, data)
+            event_broker.trigger_background(RaceSequenceEvt.RACE_PAUSE, data)
             self._set_status(RaceStatus.PAUSED)
             logger.info("Race paused")
 
@@ -253,7 +253,7 @@ class RaceStateManager:
             self._set_status(RaceStatus.OVERTIME)
 
         data: dict = {}
-        event_broker.trigger(RaceSequenceEvt.RACE_RESUME, data)
+        event_broker.trigger_background(RaceSequenceEvt.RACE_RESUME, data)
         logger.info("Race resumed")
 
     def _stage(self, start_time: float) -> None:
@@ -265,7 +265,7 @@ class RaceStateManager:
         :param schedule: The format's race schedule
         """
         data: dict = {}
-        event_broker.trigger(RaceSequenceEvt.RACE_STAGE, data)
+        event_broker.trigger_background(RaceSequenceEvt.RACE_STAGE, data)
         self._set_status(RaceStatus.STAGING)
         logger.info("Race scheduled for %d", start_time)
 
@@ -281,7 +281,7 @@ class RaceStateManager:
         assert self._format is not None, "Can not start race with an unset schedule"
 
         data: dict = {}
-        event_broker.trigger(RaceSequenceEvt.RACE_START, data)
+        event_broker.trigger_background(RaceSequenceEvt.RACE_START, data)
         self._set_status(RaceStatus.RACING)
         logger.info("Race started")
 
@@ -303,7 +303,7 @@ class RaceStateManager:
         assert self._format is not None, "Can not finish race with an unset schedule"
 
         data: dict = {}
-        event_broker.trigger(RaceSequenceEvt.RACE_FINISH, data)
+        event_broker.trigger_background(RaceSequenceEvt.RACE_FINISH, data)
 
         if self._format.overtime_sec > 0:
             self._program_handle = ctx.loop_ctx.get().call_later(
@@ -324,7 +324,7 @@ class RaceStateManager:
         Put the system into race stop mode
         """
         data: dict = {}
-        event_broker.trigger(RaceSequenceEvt.RACE_STOP, data)
+        event_broker.trigger_background(RaceSequenceEvt.RACE_STOP, data)
         self._set_status(RaceStatus.STOPPED)
         self._program_handle = None
         logger.info("Race stopped")

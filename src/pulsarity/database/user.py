@@ -23,7 +23,25 @@ from pulsarity.utils.config import configs
 
 logger = logging.Logger(__name__)
 
-_ph = PasswordHasher()
+_PH = PasswordHasher()
+
+
+async def _generate_hash(password: str) -> str:
+    """
+    Generates a hash of the provided password without blocking.
+
+    :param password: The password to hash.
+    :return: The hashed password
+    """
+    loop = asyncio.get_running_loop()
+
+    try:
+        result = await loop.run_in_executor(None, _PH.hash, password)
+    except HashingError:
+        logger.exception("Failed to hash password")
+        raise
+
+    return result
 
 
 class User(PulsarityBase):
@@ -91,60 +109,6 @@ class User(PulsarityBase):
 
         return permissions
 
-    @staticmethod
-    def _generate_hash(password: str) -> str | None:
-        """
-        Generates a hash of the provided password thread safely.
-
-        :param password: The password to hash.
-        :return: The hashed password
-        """
-        try:
-            result = _ph.hash(password)
-        except HashingError:
-            logger.error("Failed to hash password")
-            result = None
-
-        return result
-
-    async def generate_hash(self, password: str) -> str:
-        """
-        Generates a hash of the provided password without blocking.
-
-        :param password: The password to hash.
-        :return: The hashed password
-        """
-        result = await asyncio.to_thread(self._generate_hash, password)
-
-        if result is None:
-            raise HashingError()
-
-        return result
-
-    @staticmethod
-    def _verify_password(password_hash: str, password: str, username: str) -> bool:
-        """
-        Checks a hash of the provided password against a provided hash thread safely.
-
-        The function is setup to be ran thread safe
-
-        :param password: The password to hash.
-        :return: Whether the comparsion of the hash was sucessful or not.
-        """
-        try:
-            result = _ph.verify(password_hash, password)
-        except VerifyMismatchError:
-            logger.warning("Failed password attempt for %s", username)
-            return False
-        except VerificationError:
-            logger.error("Failed verification error for %s", username)
-            return False
-        except InvalidHashError:
-            logger.warning("Invalid hash error for %s", username)
-            return False
-
-        return result
-
     async def verify_password(self, password: str) -> bool:
         """
         Checks a hash of the provided password against the hash in the database.
@@ -156,9 +120,23 @@ class User(PulsarityBase):
         if self._password_hash is None:
             return False
 
-        result = await asyncio.to_thread(
-            self._verify_password, self._password_hash, password, self.username
-        )
+        loop = asyncio.get_running_loop()
+
+        try:
+            result = await loop.run_in_executor(
+                None, _PH.verify, self._password_hash, password
+            )
+        except VerifyMismatchError:
+            logger.warning(
+                "Stored hash for %s does not match the provided password", self.username
+            )
+            return False
+        except VerificationError:
+            logger.exception("Verification failed for %s", self.username)
+            return False
+        except InvalidHashError:
+            logger.exception("Invalid hash error for %s", self.username)
+            return False
 
         return result
 
@@ -172,7 +150,11 @@ class User(PulsarityBase):
         if self._password_hash is None:
             return True
 
-        result = await asyncio.to_thread(_ph.check_needs_rehash, self._password_hash)
+        loop = asyncio.get_running_loop()
+
+        result = await loop.run_in_executor(
+            None, _PH.check_needs_rehash, self._password_hash
+        )
         return result
 
     async def update_user_password(self, password: str) -> None:
@@ -181,7 +163,7 @@ class User(PulsarityBase):
 
         :param password: The password to hash and store
         """
-        hashed_password = await self.generate_hash(password)
+        hashed_password = await _generate_hash(password)
         await self.filter(id=self.id).update(_password_hash=hashed_password)
 
     @classmethod

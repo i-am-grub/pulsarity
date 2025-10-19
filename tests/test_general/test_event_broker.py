@@ -51,7 +51,7 @@ async def broker_publish_test(
 
     for value in event_values:
         if use_trigger:
-            broker.trigger(*value)
+            await broker.trigger(*value)
         else:
             broker.publish(*value)
 

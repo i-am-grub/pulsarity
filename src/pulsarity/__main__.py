@@ -4,27 +4,24 @@ Pulsarity server entry point
 
 import logging
 import logging.config
-import multiprocessing
 import os
 import sys
+import warnings
 
 from pulsarity.utils.config import configs
 from pulsarity.webserver import generate_webserver_coroutine
 
 # pylint: disable=E0401
 
-if sys.platform == "linux":
-    multiprocessing.set_start_method("forkserver")
+if sys.platform not in ("linux", "darwin"):
     from uvloop import run
-elif sys.platform == "darwin":
-    multiprocessing.set_start_method("spawn")
-    from uvloop import run
-elif sys.platform == "win32":
-    multiprocessing.set_start_method("spawn")
-    from winloop import run
 else:
-    multiprocessing.set_start_method("spawn")
     from asyncio import run
+
+    warnings.warn(
+        "Attempting to run application with non-supported operating system",
+        RuntimeWarning,
+    )
 
 
 def _setup_logging():
@@ -40,8 +37,6 @@ def main() -> None:
     """
     Run the default Pulsarity server
     """
-    multiprocessing.freeze_support()
-
     os.environ["REBOOT_PULSARITY_FLAG"] = "inactive"
 
     _setup_logging()

@@ -71,7 +71,8 @@ async def server_event_ws(websocket: WebSocket):
 
     try:
         async with asyncio.TaskGroup() as tg:
-            background.add_pregenerated_task(tg.create_task(_recieve_data()))
+            task = tg.create_task(_recieve_data())
+            background.add_pregenerated_task(task)
             await _write_data()
     except* WebSocketDisconnect:
         logger.debug("%s disconnected from websocket", ctx.user_ctx.get().display_name)

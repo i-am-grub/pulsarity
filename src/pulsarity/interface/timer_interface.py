@@ -28,7 +28,7 @@ class TimerData:
 
 
 @dataclass(frozen=True)
-class Setting(Generic[T]):
+class TimerSetting(Generic[T]):
     """
     Interface settings
     """
@@ -64,7 +64,7 @@ class NodeInterface(Protocol):
 
     index: int
     """Index of the node"""
-    settings: Sequence[Setting]
+    settings: Sequence[TimerSetting]
     """Individual node settings"""
 
 
@@ -85,7 +85,7 @@ class TimerInterface(Protocol):
     """Node associated with the timer"""
     num_nodes: int
     """Number of nodes set on the interface"""
-    settings: Sequence[Setting]
+    settings: Sequence[TimerSetting]
     """Interface settings"""
     actions: Sequence[Action]
     """Interface actions"""

@@ -73,14 +73,14 @@ async def server_starup_workflow() -> None:
     async with asyncio.TaskGroup() as tg:
         tg.create_task(database_startup())
 
-    event_broker.trigger(SpecialEvt.STARTUP, {})
+    await event_broker.trigger(SpecialEvt.STARTUP, {})
 
 
 async def server_shutdown_workflow() -> None:
     """
     Shutdown workflow
     """
-    event_broker.trigger(SpecialEvt.SHUTDOWN, {})
+    await event_broker.trigger(SpecialEvt.SHUTDOWN, {})
 
     await interface_manager.shutdown(5)
     await background.shutdown(5)

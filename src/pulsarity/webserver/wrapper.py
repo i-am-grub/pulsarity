@@ -25,7 +25,7 @@ _good_response = JSONResponse(BaseResponse(status=True).model_dump_json())
 
 
 def endpoint(
-    *permission: UserPermission,
+    *permissions: UserPermission,
     request_model: type[BaseModel] | None = None,
     response_model: type[BaseModel] | None = None,
 ):
@@ -52,7 +52,7 @@ def endpoint(
                 f"{func.__name__} does not contain valid number of args"
             ) from ex
 
-        for perm in permission:
+        for perm in permissions:
             try:
                 assert isinstance(perm, UserPermission)
             except AssertionError as ex:
@@ -77,7 +77,7 @@ def endpoint(
                 ) from ex
 
         @functools.wraps(func)
-        @requires([*permission])
+        @requires(permissions)
         async def wrapper(request: Request) -> Response:
             ctx.request_ctx.set(request)
             ctx.user_ctx.set(request.user)

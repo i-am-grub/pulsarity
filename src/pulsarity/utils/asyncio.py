@@ -3,9 +3,10 @@ Asyncio helpers
 """
 
 import asyncio
+import inspect
 from collections.abc import Awaitable, Callable, Coroutine
-from typing import ParamSpec, TypeVar
 from concurrent.futures import Future
+from typing import ParamSpec, TypeVar
 
 from pulsarity import ctx
 
@@ -20,7 +21,7 @@ def ensure_async(func: Callable[P, T], *args, **kwargs) -> Awaitable[T]:
     :param func: The function to run
     :return: A generated coroutine
     """
-    if asyncio.iscoroutinefunction(func):
+    if inspect.iscoroutinefunction(func):
         return func(*args, **kwargs)
 
     return ctx.loop_ctx.get().run_in_executor(None, func, *args, **kwargs)

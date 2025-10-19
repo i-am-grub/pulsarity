@@ -36,7 +36,7 @@ class _QueuedEvtData:
 
     def __lt__(self, other: Self):
         """
-        Enables the use of builtin sorting algorithms
+        Less than comparsion. Enables the use of builtin sorting algorithms
         """
         return (self.evt.priority, self._id) < (other.evt.priority, other._id)
 
@@ -56,7 +56,7 @@ class _EvtCallbackData:
 
     def __lt__(self, other: Self):
         """
-        Enables the use of builtin sorting algorithms
+        Less than comparsion. Enables the use of builtin sorting algorithms
         """
         return (self.priority, self._id) < (other.priority, other._id)
 
@@ -96,7 +96,7 @@ class EventBroker:
         for connection in self._connections:
             connection.put_nowait(payload)
 
-    def trigger(
+    async def trigger(
         self,
         event: _ApplicationEvt,
         data: dict[str, Any],
@@ -112,7 +112,25 @@ class EventBroker:
         :param uuid: Message uuid, defaults to None
         """
         self.publish(event, data, uuid_=uuid_)
+        callbacks = copy.copy(self._callbacks[event.id])
+        await self._callback_runner(callbacks, data)
 
+    def trigger_background(
+        self,
+        event: _ApplicationEvt,
+        data: dict[str, Any],
+        *,
+        uuid_: uuid.UUID | None = None,
+    ) -> None:
+        """
+        Publishes data to all subscribed clients and triggers
+        all registered callbacks for the event in the background
+
+        :param event: Event type
+        :param data: Event data
+        :param uuid: Message uuid, defaults to None
+        """
+        self.publish(event, data, uuid_=uuid_)
         callbacks = copy.copy(self._callbacks[event.id])
         background.add_background_task(self._callback_runner, callbacks, data)
 
@@ -124,16 +142,20 @@ class EventBroker:
 
         :param callbacks: The list of callbacks to run
         :param data: The additional data to provide for each callback
-
         """
+        # pylint: disable=W0718
+
         for callback in callbacks:
             kwargs = callback.default_data | data
             try:
                 await ensure_async(callback.func, **kwargs)
             except asyncio.CancelledError:
                 raise
-            except BaseException:  # pylint: disable=W0718
-                logger.exception("Encountered error running callback")
+            except BaseException:
+                logger.exception(
+                    "Encountered error running %s as an event callback",
+                    callback.func.__name__,
+                )
                 continue
 
     def register_event_callback(
