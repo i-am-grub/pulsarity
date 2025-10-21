@@ -3,10 +3,27 @@ Race processor
 """
 
 from collections.abc import Iterable
-from typing import Protocol, runtime_checkable
+from dataclasses import dataclass
+from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import ExtendedTimerData
+
+T = TypeVar("T")
+
+
+@dataclass(frozen=True)
+class SlotResult(Generic[T]):
+    """
+    Basic class for representing race data.
+
+    Supported types for generic include dataclasses (preferred),
+    dicts, lists, and tuples
+    """
+
+    slot_num: int
+    position: int
+    data: T
 
 
 @runtime_checkable
@@ -50,14 +67,14 @@ class RaceProcessor(Protocol):
         :return: Done status
         """
 
-    def get_race_results(self) -> Iterable:
+    def get_race_results(self) -> Iterable[SlotResult]:
         """
         Get the results of the race
 
         :return: An iterable of the results for all the slots
         """
 
-    def get_slot_results(self, slot_num: int):
+    def get_slot_results(self, slot_num: int) -> SlotResult:
         """
         Get the race results for a slot
 
