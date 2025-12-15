@@ -26,7 +26,6 @@ dependencies = [
     "tomlkit (>=0.13.2,<0.14.0)",
     "tortoise-orm (>=0.25.0,<0.26.0)",
     "pydantic (>=2.12.0,<2.13.0)",
-    "orjson (>=3.11.0,<3.12.0)",
     "cffi (>=2.0.0,<2.1.0)",
 ]
 
@@ -37,7 +36,7 @@ repository = "https://github.com/i-am-grub/pulsarity"
 pgsql = [ "asyncpg>=0.31,<0.32" ]
 
 [project.scripts]
-example-pkg = "pulsarity.__main__:main"
+pulsarity = "pulsarity.__main__:main"
 
 [build-system]
 requires = ["uv_build>=0.9.17,<0.10.0"]
