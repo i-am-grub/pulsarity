@@ -4,6 +4,7 @@ ORM classes for Pilot data
 
 from __future__ import annotations
 
+from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 
 from pulsarity.database._base import PulsarityBase
@@ -43,8 +44,6 @@ class Pilot(PulsarityBase):
     used_frequencies = fields.CharField(max_length=80, null=True)
     """Serialized list of frequencies this pilot has been assigned when starting a race, 
     ordered by recency"""
-    active = fields.BooleanField(default=True)
-    """Not yet implemented"""
     attributes: fields.ReverseRelation[PilotAttribute]
     """PilotAttributes for this pilot. Access through awaitable attributes."""
 
@@ -121,3 +120,17 @@ class Pilot(PulsarityBase):
             return self.name
 
         return f"Pilot {self.id}"
+
+
+class _ExternalPilotModel(BaseModel):
+    """
+    External Pilot model for use in the REST API
+    """
+
+    id: int
+    display_callsign: str
+    display_name: str
+
+
+PilotAdapter = TypeAdapter(_ExternalPilotModel)
+PilotListAdapter = TypeAdapter(list[_ExternalPilotModel])

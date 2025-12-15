@@ -3,8 +3,10 @@ import json
 import pytest
 from httpx import AsyncClient
 
+from pulsarity.database.pilot import Pilot, PilotAdapter, PilotListAdapter
 
-async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
+
+async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str, str]):
     """
     Sends the provided credentials to the login api to check if they are
     valid
@@ -23,7 +25,7 @@ async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
 
 
 @pytest.mark.asyncio
-async def test_webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
+async def test_webserver_login_valid(client: AsyncClient, user_creds: tuple[str, str]):
     """
     Test to see if the base credentials are valid through the api
     """
@@ -31,7 +33,9 @@ async def test_webserver_login_valid(client: AsyncClient, user_creds: tuple[str]
 
 
 @pytest.mark.asyncio
-async def test_webserver_login_invalid(client: AsyncClient, user_creds: tuple[str]):
+async def test_webserver_login_invalid(
+    client: AsyncClient, user_creds: tuple[str, str]
+):
     """
     Test to see if the api detects bad credentials
     """
@@ -47,7 +51,7 @@ async def test_webserver_login_invalid(client: AsyncClient, user_creds: tuple[st
 
 
 @pytest.mark.asyncio
-async def test_password_reset_invalid(client: AsyncClient, user_creds: tuple[str]):
+async def test_password_reset_invalid(client: AsyncClient, user_creds: tuple[str, str]):
     """
     Test reseting a password while providing invalid credentials
     """
@@ -68,7 +72,7 @@ async def test_password_reset_invalid(client: AsyncClient, user_creds: tuple[str
 
 
 @pytest.mark.asyncio
-async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str]):
+async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str, str]):
     """
     Test reseting a password while providing valid credentials
     """
@@ -92,3 +96,47 @@ async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str])
 
     reset_required = await webserver_login_valid(client, new_creds)
     assert reset_required is False
+
+
+@pytest.mark.asyncio
+async def test_get_pilot(client: AsyncClient, user_creds: tuple[str, str]):
+    """
+    Test getting individual pilots through the rest api
+    """
+    await Pilot.bulk_create([Pilot(callsign="foo"), Pilot(callsign="bar")])
+
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/pilots/1")
+    assert response.status_code == 200
+
+    pilot = PilotAdapter.validate_json(response.content)
+    assert pilot.display_callsign == "foo"
+
+    response = await client.get("/api/pilots/2")
+    assert response.status_code == 200
+
+    pilot = PilotAdapter.validate_json(response.content)
+    assert pilot.display_callsign == "bar"
+
+
+@pytest.mark.asyncio
+async def test_get_pilots(client: AsyncClient, user_creds: tuple[str, str]):
+    """
+    Test getting pilots through the rest api
+    """
+    await Pilot.bulk_create([Pilot(callsign="foo"), Pilot(callsign="bar")])
+
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/pilots")
+    assert response.status_code == 200
+
+    pilots = PilotListAdapter.validate_json(response.content)
+    assert len(pilots) == 2
+    assert pilots[0].display_callsign == "foo"
+    assert pilots[1].display_callsign == "bar"

@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
+from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 
 from pulsarity.database._base import PulsarityBase
@@ -63,3 +64,15 @@ class Heat(PulsarityBase):
         app = "event"
         table = "heat"
         unique_together = (("round", "heat_num"),)
+
+
+class _HeatModel(BaseModel):
+    """
+    External heat model
+    """
+
+    id: int
+
+
+HeatAdapter = TypeAdapter(_HeatModel)
+HeatListAdapter = TypeAdapter(list[_HeatModel])

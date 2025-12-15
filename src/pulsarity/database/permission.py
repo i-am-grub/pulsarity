@@ -83,10 +83,36 @@ class SystemDefaultPerms(UserPermission):
     """
 
     AUTHENTICATED = auto()
+    """Permission to force user authentication"""
 
     EVENT_WEBSOCKET = auto()
+    """Permission to subscribe to system events"""
     SYSTEM_CONTROL = auto()
+    """Permission to configure the application server"""
+    RACE_CONTROL = auto()
+    """Permission to control the race sequence"""
 
     READ_PILOTS = auto()
+    """Permission to read pilots"""
     WRITE_PILOTS = auto()
-    RACE_EVENTS = auto()
+    """Permission to write pilots"""
+
+    READ_EVENTS = auto()
+    """Permission to read race events"""
+    WRITE_EVENTS = auto()
+    """Permission to write race events"""
+
+    READ_RACECLASS = auto()
+    """Permission to read race classes"""
+    WRITE_RACECLASS = auto()
+    """Permission to write race classes"""
+
+    READ_ROUND = auto()
+    """Permission to read race rounds"""
+    WRITE_ROUND = auto()
+    """Permission to write race rounds"""
+
+    READ_HEAT = auto()
+    """Permission to read race heats"""
+    WRITE_HEAT = auto()
+    """Permission to write race heats"""

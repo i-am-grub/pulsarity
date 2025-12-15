@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
@@ -44,7 +45,7 @@ class RaceEvent(PulsarityBase):
     """The name of the event"""
     date = fields.DatetimeField(auto_now_add=True)
     """The date of the event"""
-    raceclasses: fields.ReverseRelation[RaceClass]
+    raceclasses: fields.ReverseRelation["RaceClass"]
     """The race classes assigned to the event"""
     attributes: fields.ReverseRelation[RaceEventAttribute]
     """The attributes assigned to the event"""
@@ -98,3 +99,15 @@ class RaceEvent(PulsarityBase):
         Less than comparsion operator. Enables sorting by dates
         """
         return self.date < obj.date
+
+
+class _RaceEventModel(BaseModel):
+    """
+    External Event model
+    """
+
+    id: int
+
+
+RaceEventAdapter = TypeAdapter(_RaceEventModel)
+RaceEventListAdapter = TypeAdapter(list[_RaceEventModel])

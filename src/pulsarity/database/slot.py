@@ -124,7 +124,7 @@ class SlotHistory(PulsarityBase):
     """The slot the history belongs to"""
     history: fields.JSONField[tuple[SlotHistoryRecord, ...]] = fields.JSONField(
         history_encoder, history_decoder
-    )
+    )  # type: ignore
     """The series of history for the slot"""
 
     class Meta:

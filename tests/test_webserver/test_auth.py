@@ -12,7 +12,7 @@ async def test_webserver_unauthorized(client: AsyncClient):
     Test accessing the ability to access a privileged route without
     being logged in
     """
-    response = await client.get("/api/pilot/all")
+    response = await client.get("/api/pilots")
     assert response.status_code == 403
 
 
@@ -45,7 +45,7 @@ async def test_webserver_lack_permissions(client: AsyncClient):
     assert response.status_code == 200
     assert response.cookies
 
-    response = await client.get("/api/pilot/all")
+    response = await client.get("/api/pilots")
     assert response.status_code == 403
 
 
@@ -60,5 +60,5 @@ async def test_webserver_authorized(client: AsyncClient, user_creds: tuple[str, 
     assert response.status_code == 200
     assert response.cookies
 
-    response = await client.get("/api/pilot/all")
+    response = await client.get("/api/pilots")
     assert response.status_code == 200

@@ -4,11 +4,12 @@ Endpoint wrappers
 
 import functools
 import inspect
+import logging
 from collections.abc import Callable, Coroutine
 from json.decoder import JSONDecodeError
 from typing import TypeVar
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 from starlette.authentication import requires
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -23,10 +24,20 @@ _T = TypeVar("_T")
 _bad_response = JSONResponse(BaseResponse(status=False).model_dump_json())
 _good_response = JSONResponse(BaseResponse(status=True).model_dump_json())
 
+logger = logging.getLogger(__name__)
+
+
+class JSONBytesResponse(JSONResponse):
+    content: bytes
+
+    def render(self, content: bytes) -> bytes:
+        return content
+
 
 def endpoint(
     *permissions: UserPermission,
     request_model: type[BaseModel] | None = None,
+    response_adapter: TypeAdapter | None = None,
     response_model: type[BaseModel] | None = None,
 ):
     """
@@ -35,11 +46,12 @@ def endpoint(
 
     :param permission: The permissions required to access the route
     :param request_model: The model to use to validate the request, defaults to None
+    :param response_adapter: The adapter model to use to validate the response, defaults to None
     :param response_model: The model to use to validate teh respones, defaults to None
     """
 
     def inner(
-        func: Callable[[BaseModel], _T],
+        func: Callable[..., _T],
     ) -> Callable[[Request], Coroutine[None, None, Response]]:
         num_args = len(inspect.signature(func).parameters.keys())
         try:
@@ -68,6 +80,14 @@ def endpoint(
                     f"{func.__name__} request model is not a subclass of {BaseModel.__name__}"
                 ) from ex
 
+        if response_adapter is not None:
+            try:
+                assert isinstance(response_adapter, TypeAdapter)
+            except AssertionError as ex:
+                raise ValueError(
+                    f"{func.__name__}response adapter is not a instance of {TypeAdapter.__name__}"
+                ) from ex
+
         if response_model is not None:
             try:
                 assert issubclass(response_model, BaseModel)
@@ -75,6 +95,10 @@ def endpoint(
                 raise ValueError(
                     f"{func.__name__}response model is not a subclass of {BaseModel.__name__}"
                 ) from ex
+
+        assert response_model is None or response_adapter is None, (
+            "Response model and response adapter can not be used together"
+        )
 
         @functools.wraps(func)
         @requires(permissions)
@@ -93,10 +117,31 @@ def endpoint(
             else:
                 endpoint_result = await ensure_async(func)
 
-            if response_model is not None:
+            if response_adapter is not None:
                 try:
-                    model = response_model.model_validate(endpoint_result)
+                    model = response_adapter.validate_python(
+                        endpoint_result, from_attributes=True
+                    )
                 except ValidationError:
+                    logger.exception(
+                        "Returned object from {%s} does not match response adapter {%s}",
+                        func.__name__,
+                        response_adapter,
+                    )
+                    return _bad_response
+                return JSONBytesResponse(response_adapter.dump_json(model))
+
+            elif response_model is not None:
+                try:
+                    model = response_model.model_validate(
+                        endpoint_result, from_attributes=True
+                    )
+                except ValidationError:
+                    logger.exception(
+                        "Returned object from %s does not match response model %s",
+                        func.__name__,
+                        response_model.__name__,
+                    )
                     return _bad_response
                 return JSONResponse(model.model_dump_json())
 

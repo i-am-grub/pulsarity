@@ -1,5 +1,5 @@
 """
-Validation Models for API 
+Validation Models for API
 """
 
 from pydantic import BaseModel
