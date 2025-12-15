@@ -9,16 +9,20 @@ from starlette.routing import Mount, Route
 from starsessions.session import regenerate_session_id
 
 from pulsarity import ctx
-from pulsarity.database.heat import Heat, HeatAdapter, HeatListAdapter
+from pulsarity.database.heat import HEAT_ADAPTER, HEAT_LIST_ADAPTER, Heat
 from pulsarity.database.permission import SystemDefaultPerms
-from pulsarity.database.pilot import Pilot, PilotAdapter, PilotListAdapter
+from pulsarity.database.pilot import PILOT_ADAPTER, PILOT_LIST_ADAPTER, Pilot
 from pulsarity.database.raceclass import (
+    RACECLASS_ADAPTER,
+    RACECLASS_LIST_ADAPTER,
     RaceClass,
-    RaceClassAdapter,
-    RaceClassListAdapter,
 )
-from pulsarity.database.raceevent import RaceEvent, RaceEventAdapter
-from pulsarity.database.round import Round, RoundAdapter, RoundListAdapter
+from pulsarity.database.raceevent import (
+    RACE_EVENT_ADAPTER,
+    RACE_EVENT_LIST_ADAPTER,
+    RaceEvent,
+)
+from pulsarity.database.round import ROUND_ADAPTER, ROUND_LIST_ADAPTER, Round
 from pulsarity.database.user import User
 from pulsarity.utils import background
 from pulsarity.webserver.validation import (
@@ -108,7 +112,7 @@ async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
     return BaseResponse(status=False)
 
 
-@endpoint(SystemDefaultPerms.READ_PILOTS, response_adapter=PilotAdapter)
+@endpoint(SystemDefaultPerms.READ_PILOTS, response_adapter=PILOT_ADAPTER)
 async def get_pilot() -> Pilot | None:
     """
     Get the pilot by id
@@ -119,7 +123,7 @@ async def get_pilot() -> Pilot | None:
     return await Pilot.get_by_id(pilot_id)
 
 
-@endpoint(SystemDefaultPerms.READ_PILOTS, response_adapter=PilotListAdapter)
+@endpoint(SystemDefaultPerms.READ_PILOTS, response_adapter=PILOT_LIST_ADAPTER)
 async def get_pilots() -> list[Pilot]:
     """
     A route for getting all pilots currently stored in the
@@ -130,7 +134,7 @@ async def get_pilots() -> list[Pilot]:
     return await Pilot.all()
 
 
-@endpoint(SystemDefaultPerms.READ_EVENTS, response_adapter=RaceEventAdapter)
+@endpoint(SystemDefaultPerms.READ_EVENTS, response_adapter=RACE_EVENT_ADAPTER)
 async def get_event() -> RaceEvent | None:
     """
     Get the event by id
@@ -141,7 +145,7 @@ async def get_event() -> RaceEvent | None:
     return await RaceEvent.get_by_id(event_id)
 
 
-@endpoint(SystemDefaultPerms.READ_EVENTS, response_adapter=RaceEventAdapter)
+@endpoint(SystemDefaultPerms.READ_EVENTS, response_adapter=RACE_EVENT_LIST_ADAPTER)
 async def get_events() -> list[RaceEvent]:
     """
     A route for getting all events currently stored in the
@@ -152,7 +156,7 @@ async def get_events() -> list[RaceEvent]:
     return await RaceEvent.all()
 
 
-@endpoint(SystemDefaultPerms.READ_RACECLASS, response_adapter=RaceClassAdapter)
+@endpoint(SystemDefaultPerms.READ_RACECLASS, response_adapter=RACECLASS_ADAPTER)
 async def get_racelass() -> RaceClass | None:
     """
     Get the raceclass by id
@@ -163,7 +167,7 @@ async def get_racelass() -> RaceClass | None:
     return await RaceClass.get_by_id(raceclass_id)
 
 
-@endpoint(SystemDefaultPerms.READ_RACECLASS, response_adapter=RaceClassListAdapter)
+@endpoint(SystemDefaultPerms.READ_RACECLASS, response_adapter=RACECLASS_LIST_ADAPTER)
 async def get_raceclasses_for_event() -> list[RaceClass]:
     """
     A route for getting all raceclasses currently stored in the
@@ -175,7 +179,7 @@ async def get_raceclasses_for_event() -> list[RaceClass]:
     return await RaceClass.filter(event_id=event_id)
 
 
-@endpoint(SystemDefaultPerms.READ_ROUND, response_adapter=RoundAdapter)
+@endpoint(SystemDefaultPerms.READ_ROUND, response_adapter=ROUND_ADAPTER)
 async def get_round() -> Round | None:
     """
     Get the round by id
@@ -184,7 +188,7 @@ async def get_round() -> Round | None:
     return await Round.get_by_id(round_id)
 
 
-@endpoint(SystemDefaultPerms.READ_ROUND, response_adapter=RoundListAdapter)
+@endpoint(SystemDefaultPerms.READ_ROUND, response_adapter=ROUND_LIST_ADAPTER)
 async def get_rounds_for_raceclass() -> list[Round]:
     """
     Gets all rounds for a specific racelass
@@ -193,7 +197,7 @@ async def get_rounds_for_raceclass() -> list[Round]:
     return await Round.filter(raceclass_id=raceclass_id)
 
 
-@endpoint(SystemDefaultPerms.READ_HEAT, response_adapter=HeatAdapter)
+@endpoint(SystemDefaultPerms.READ_HEAT, response_adapter=HEAT_ADAPTER)
 async def get_heat() -> Heat | None:
     """
     Get the heat by id
@@ -202,7 +206,7 @@ async def get_heat() -> Heat | None:
     return await Heat.get_by_id(heat_id)
 
 
-@endpoint(SystemDefaultPerms.READ_HEAT, response_adapter=HeatListAdapter)
+@endpoint(SystemDefaultPerms.READ_HEAT, response_adapter=HEAT_LIST_ADAPTER)
 async def get_heats_for_round() -> list[Heat]:
     """
     Gets all heats for a specific round

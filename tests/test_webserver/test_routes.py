@@ -3,7 +3,7 @@ import json
 import pytest
 from httpx import AsyncClient
 
-from pulsarity.database.pilot import Pilot, PilotAdapter, PilotListAdapter
+from pulsarity.database.pilot import PILOT_ADAPTER, PILOT_LIST_ADAPTER, Pilot
 
 
 async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str, str]):
@@ -112,13 +112,13 @@ async def test_get_pilot(client: AsyncClient, user_creds: tuple[str, str]):
     response = await client.get("/api/pilots/1")
     assert response.status_code == 200
 
-    pilot = PilotAdapter.validate_json(response.content)
+    pilot = PILOT_ADAPTER.validate_json(response.content)
     assert pilot.display_callsign == "foo"
 
     response = await client.get("/api/pilots/2")
     assert response.status_code == 200
 
-    pilot = PilotAdapter.validate_json(response.content)
+    pilot = PILOT_ADAPTER.validate_json(response.content)
     assert pilot.display_callsign == "bar"
 
 
@@ -136,7 +136,7 @@ async def test_get_pilots(client: AsyncClient, user_creds: tuple[str, str]):
     response = await client.get("/api/pilots")
     assert response.status_code == 200
 
-    pilots = PilotListAdapter.validate_json(response.content)
+    pilots = PILOT_LIST_ADAPTER.validate_json(response.content)
     assert len(pilots) == 2
     assert pilots[0].display_callsign == "foo"
     assert pilots[1].display_callsign == "bar"

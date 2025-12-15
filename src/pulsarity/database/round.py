@@ -99,5 +99,5 @@ class _RoundModel(BaseModel):
     id: int
 
 
-RoundAdapter = TypeAdapter(_RoundModel)
-RoundListAdapter = TypeAdapter(list[_RoundModel])
+ROUND_ADAPTER = TypeAdapter(_RoundModel)
+ROUND_LIST_ADAPTER = TypeAdapter(list[_RoundModel])

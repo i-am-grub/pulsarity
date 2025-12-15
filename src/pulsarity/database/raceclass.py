@@ -117,5 +117,5 @@ class _RaceClassModel(BaseModel):
     id: int
 
 
-RaceClassAdapter = TypeAdapter(_RaceClassModel)
-RaceClassListAdapter = TypeAdapter(list[_RaceClassModel])
+RACECLASS_ADAPTER = TypeAdapter(_RaceClassModel)
+RACECLASS_LIST_ADAPTER = TypeAdapter(list[_RaceClassModel])

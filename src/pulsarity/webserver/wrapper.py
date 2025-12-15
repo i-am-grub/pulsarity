@@ -28,6 +28,10 @@ logger = logging.getLogger(__name__)
 
 
 class JSONBytesResponse(JSONResponse):
+    """
+    Class used for setting JSON Response data as bytes
+    """
+
     content: bytes
 
     def render(self, content: bytes) -> bytes:
@@ -131,7 +135,7 @@ def endpoint(
                     return _bad_response
                 return JSONBytesResponse(response_adapter.dump_json(model))
 
-            elif response_model is not None:
+            if response_model is not None:
                 try:
                     model = response_model.model_validate(
                         endpoint_result, from_attributes=True

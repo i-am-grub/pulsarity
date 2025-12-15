@@ -109,5 +109,5 @@ class _RaceEventModel(BaseModel):
     id: int
 
 
-RaceEventAdapter = TypeAdapter(_RaceEventModel)
-RaceEventListAdapter = TypeAdapter(list[_RaceEventModel])
+RACE_EVENT_ADAPTER = TypeAdapter(_RaceEventModel)
+RACE_EVENT_LIST_ADAPTER = TypeAdapter(list[_RaceEventModel])

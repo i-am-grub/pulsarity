@@ -132,5 +132,5 @@ class _ExternalPilotModel(BaseModel):
     display_name: str
 
 
-PilotAdapter = TypeAdapter(_ExternalPilotModel)
-PilotListAdapter = TypeAdapter(list[_ExternalPilotModel])
+PILOT_ADAPTER = TypeAdapter(_ExternalPilotModel)
+PILOT_LIST_ADAPTER = TypeAdapter(list[_ExternalPilotModel])

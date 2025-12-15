@@ -74,5 +74,5 @@ class _HeatModel(BaseModel):
     id: int
 
 
-HeatAdapter = TypeAdapter(_HeatModel)
-HeatListAdapter = TypeAdapter(list[_HeatModel])
+HEAT_ADAPTER = TypeAdapter(_HeatModel)
+HEAT_LIST_ADAPTER = TypeAdapter(list[_HeatModel])
