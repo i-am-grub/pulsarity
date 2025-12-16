@@ -223,10 +223,10 @@ routes = [
     Mount(
         "/api",
         routes=[
-            Route("/pilots", endpoint=get_pilots),
             Route("/pilots/{id:int}", endpoint=get_pilot),
-            Route("/events/", endpoint=get_event),
+            Route("/pilots", endpoint=get_pilots),
             Route("/events/{id:int}", endpoint=get_event),
+            Route("/events", endpoint=get_events),
             Route("/events/{id:int}/raceclasses", endpoint=get_raceclasses_for_event),
             Route("/raceclasses/{id:int}", endpoint=get_racelass),
             Route("/raceclasses/{id:int}/rounds", endpoint=get_rounds_for_raceclass),

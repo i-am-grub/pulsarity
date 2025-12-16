@@ -97,6 +97,7 @@ class _RoundModel(BaseModel):
     """
 
     id: int
+    round_num: int
 
 
 ROUND_ADAPTER = TypeAdapter(_RoundModel)

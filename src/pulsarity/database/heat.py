@@ -72,6 +72,7 @@ class _HeatModel(BaseModel):
     """
 
     id: int
+    heat_num: int
 
 
 HEAT_ADAPTER = TypeAdapter(_HeatModel)

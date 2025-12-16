@@ -12,45 +12,6 @@ from pulsarity.utils import background
 # pylint: disable=W0212
 
 
-@pytest.fixture(name="limited_schedule")
-def _limited_schedule():
-    return RaceFormat(
-        name="limited_schedule",
-        stage_time_sec=3,
-        random_stage_delay=0,
-        unlimited_time=False,
-        race_time_sec=5,
-        overtime_sec=2,
-        processor_id="foo-bar",
-    )
-
-
-@pytest.fixture(name="limited_no_ot_schedule")
-def _limited_no_ot_schedule():
-    return RaceFormat(
-        name="limited_no_ot_schedule",
-        stage_time_sec=3,
-        random_stage_delay=0,
-        unlimited_time=False,
-        race_time_sec=5,
-        overtime_sec=0,
-        processor_id="foo-bar",
-    )
-
-
-@pytest.fixture(name="unlimited_schedule")
-def _unlimited_schedule():
-    return RaceFormat(
-        name="unlimited_schedule",
-        stage_time_sec=5,
-        random_stage_delay=1,
-        unlimited_time=True,
-        race_time_sec=10,
-        overtime_sec=5,
-        processor_id="foo-bar",
-    )
-
-
 @pytest_asyncio.fixture(name="race_manager", loop_scope="function")
 async def _race_manager():
     """

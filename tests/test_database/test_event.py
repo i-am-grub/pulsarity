@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 import pytest
-import pytest_asyncio
 from tortoise.exceptions import IntegrityError
 
 from pulsarity.database import (
@@ -15,56 +14,6 @@ from pulsarity.database import (
     Slot,
 )
 from pulsarity.interface import TimerMode
-
-
-@pytest_asyncio.fixture(name="limited_schedule")
-async def _limited_schedule():
-    return await RaceFormat.create(
-        name="limited_schedule",
-        stage_time_sec=3,
-        random_stage_delay=0,
-        unlimited_time=False,
-        race_time_sec=5,
-        overtime_sec=2,
-        processor_id="foo-bar",
-    )
-
-
-@pytest_asyncio.fixture(name="basic_event")
-async def _basic_event():
-    return await RaceEvent.create(name="Test Event")
-
-
-@pytest_asyncio.fixture(name="basic_raceclass")
-async def _basic_raceclass(basic_event: RaceEvent, limited_schedule: RaceFormat):
-    async with RaceClass.lock:
-        value = await basic_event.get_next_raceclass_num()
-        return await RaceClass.create(
-            name="Test RaceClass",
-            event=basic_event,
-            raceclass_num=value,
-            raceformat=limited_schedule,
-        )
-
-
-@pytest_asyncio.fixture(name="basic_round")
-async def _basic_round(basic_raceclass: RaceClass):
-    async with Round.lock:
-        value = await basic_raceclass.get_next_round_num()
-        return await Round.create(raceclass=basic_raceclass, round_num=value)
-
-
-@pytest_asyncio.fixture(name="basic_heat")
-async def _basic_heat(basic_round: Round):
-    async with Heat.lock:
-        value = await basic_round.get_next_heat_num()
-        return await Heat.create(round=basic_round, heat_num=value)
-
-
-@pytest_asyncio.fixture(name="basic_slot")
-async def _basic_slot(basic_heat: Heat):
-    pilot = await Pilot.create(callsign="foo")
-    return await Slot.create(heat=basic_heat, index=0, pilot=pilot)
 
 
 @pytest.mark.asyncio
@@ -94,7 +43,7 @@ async def test_basic_raceclass(basic_event: RaceEvent, limited_schedule: RaceFor
     async with RaceClass.lock:
         next_num = await basic_event.get_next_raceclass_num()
         raceclass1 = await RaceClass.create(
-            name="Test RaceClass",
+            name_="Test RaceClass",
             event=basic_event,
             raceclass_num=next_num,
             raceformat=limited_schedule,
@@ -106,7 +55,7 @@ async def test_basic_raceclass(basic_event: RaceEvent, limited_schedule: RaceFor
     async with RaceClass.lock:
         next_num = await basic_event.get_next_raceclass_num()
         raceclass2 = await RaceClass.create(
-            name="Test RaceClass",
+            name_="Test RaceClass",
             event=basic_event,
             raceclass_num=next_num,
             raceformat=limited_schedule,
@@ -130,7 +79,7 @@ async def test_unique_raceclass(basic_event: RaceEvent, limited_schedule: RaceFo
     async with RaceClass.lock:
         next_num = await basic_event.get_next_raceclass_num()
         await RaceClass.create(
-            name="Test RaceClass",
+            name_="Test RaceClass",
             event=basic_event,
             raceclass_num=next_num,
             raceformat=limited_schedule,
@@ -138,7 +87,7 @@ async def test_unique_raceclass(basic_event: RaceEvent, limited_schedule: RaceFo
 
     with pytest.raises(IntegrityError):
         await RaceClass.create(
-            name="Test RaceClass",
+            name_="Test RaceClass",
             event=basic_event,
             raceclass_num=next_num,
             raceformat=limited_schedule,
