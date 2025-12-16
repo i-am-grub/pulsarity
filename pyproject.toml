@@ -16,24 +16,25 @@ classifiers = [
 ]
 
 dependencies = [
-    "starlette (>=0.50.0,<0.51.0)",
-    "starsessions (>=2.2.1,<3.0.0)",
-    "aiosqlite (>=0.20.0,<0.21.0)",
-    "hypercorn (>=0.18.0,<0.19.0)",
-    "uvloop (>=0.22.0,<0.23.0)",
-    "cryptography (>=46.0.0,<47.0.0)",
-    "argon2-cffi (>=25.1.0.0,<25.2.0)",
-    "tomlkit (>=0.13.2,<0.14.0)",
-    "tortoise-orm (>=0.25.0,<0.26.0)",
-    "pydantic (>=2.12.0,<2.13.0)",
-    "cffi (>=2.0.0,<2.1.0)",
+    "starlette==0.50.0",
+    "starsessions==2.2.1",
+    "aiosqlite==0.21.0",
+    "hypercorn==0.18.0",
+    "uvloop==0.22.1",
+    "cryptography==46.0.3",
+    "argon2-cffi==25.1.0",
+    "tomlkit==0.13.3",
+    "tortoise-orm==0.25.1",
+    "pydantic==2.12.5",
+    "cffi==2.0.0",
+    "anyio==4.12.0",
 ]
 
 [project.urls]
 repository = "https://github.com/i-am-grub/pulsarity"
 
 [project.optional-dependencies]
-pgsql = [ "asyncpg>=0.31,<0.32" ]
+pgsql = [ "asyncpg==0.31" ]
 
 [project.scripts]
 pulsarity = "pulsarity.__main__:main"
@@ -47,22 +48,22 @@ source-include = ["**/py.typed"]
 
 [dependency-groups]
 dev = [
-    "httpx>=0.28.1",
-    "httpx-ws>=0.7.2",
-    "mypy>=1.16.1",
-    "pylint>=3.3.7",
-    "pytest>=8.3.5",
-    "pytest-asyncio>=0.26.0",
-    "pytest-cov>=6.1.1",
-    "pytest-randomly>=3.16.0",
-    "tox>=4.26.0",
+    "httpx==0.28.1",
+    "httpx-ws==0.8.2",
+    "mypy==1.19.1",
+    "pylint==4.0.4",
+    "pytest==9.0.2",
+    "pytest-asyncio==1.3.0",
+    "pytest-cov==7.0.0",
+    "pytest-randomly==4.0.1",
+    "tox==4.32.0",
 ]
 docs = [
-    "myst-parser>=4.0.1",
-    "sphinx>=8.2.3",
-    "sphinx-book-theme>=1.1.4",
-    "sphinx-copybutton>=0.5.2",
-    "sphinx-substitution-extensions>=2025.6.6",
+    "myst-parser==4.0.1",
+    "sphinx==8.2.3",
+    "sphinx-book-theme==1.1.4",
+    "sphinx-copybutton==0.5.2",
+    "sphinx-substitution-extensions==2025.12.15",
 ]
 
 [tool.mypy]
