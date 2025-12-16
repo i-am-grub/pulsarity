@@ -8,6 +8,7 @@ import os
 import sys
 import warnings
 
+import pulsarity
 from pulsarity.utils.config import configs
 from pulsarity.webserver import generate_webserver_coroutine
 
@@ -42,6 +43,7 @@ def main() -> None:
 
     _setup_logging()
     logger = logging.getLogger(__name__)
+    logger.info("Server version: %s", pulsarity.__version__)
 
     coro = generate_webserver_coroutine()
     run(coro)

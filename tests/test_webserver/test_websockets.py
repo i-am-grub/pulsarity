@@ -11,7 +11,7 @@ from pulsarity.webserver import generate_application
 
 
 @pytest_asyncio.fixture(name="websocket_client")
-async def authenticated_websocket_client(user_creds: tuple[str]):
+async def authenticated_websocket_client(user_creds: tuple[str, str]):
     """
     Generates a client capable of using websockets
     """

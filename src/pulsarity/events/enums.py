@@ -47,7 +47,7 @@ class _ApplicationEvt(_EvtData, Enum):
     """
 
     @staticmethod
-    def _generate_next_value_(name: str, *_):
+    def _generate_next_value_(name: str, *_) -> str:
         """
         Return the lower-cased version of the member name. Follows
         the method defined for StrEnum in the standard library
@@ -82,10 +82,10 @@ class RaceSequenceEvt(_ApplicationEvt):
     Events associated with live race sequence
     """
 
-    RACE_SCHEDULE = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
-    RACE_STAGE = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
-    RACE_START = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
-    RACE_FINISH = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
-    RACE_STOP = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
-    RACE_PAUSE = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
-    RACE_RESUME = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_EVENTS, auto()
+    RACE_SCHEDULE = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_CONTROL, auto()
+    RACE_STAGE = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_CONTROL, auto()
+    RACE_START = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_CONTROL, auto()
+    RACE_FINISH = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_CONTROL, auto()
+    RACE_STOP = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_CONTROL, auto()
+    RACE_PAUSE = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_CONTROL, auto()
+    RACE_RESUME = EvtPriority.HIGHEST, SystemDefaultPerms.RACE_CONTROL, auto()

@@ -11,4 +11,4 @@ async def lifespan():
     loop = asyncio.get_running_loop()
     ctx.loop_ctx.set(loop)
     yield
-    background.shutdown(5)
+    await background.shutdown(5)

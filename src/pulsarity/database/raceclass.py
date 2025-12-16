@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
+from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
@@ -46,7 +47,7 @@ class RaceClass(PulsarityBase):
     lock = asyncio.Lock()
     """Use when claiming a new `raceclass_num` during initial creation"""
 
-    name = fields.CharField(max_length=120)
+    name_ = fields.CharField(max_length=120)
     """The name of the raceclass"""
     event: fields.ForeignKeyRelation[RaceEvent] = fields.ForeignKeyField(
         "event.RaceEvent", related_name="raceclasses"
@@ -70,14 +71,14 @@ class RaceClass(PulsarityBase):
         unique_together = (("event", "raceclass_num"),)
 
     @property
-    def display_name(self) -> str:
+    def name(self) -> str:
         """
         Generates the displayed name for the user
 
         :return: The user's display name
         """
-        if self.name:
-            return self.name
+        if self.name_:
+            return self.name_
 
         return f"Race Class {self.id}"
 
@@ -106,3 +107,16 @@ class RaceClass(PulsarityBase):
             return 1
 
         return value + 1
+
+
+class _RaceClassModel(BaseModel):
+    """
+    External class model
+    """
+
+    id: int
+    name: str
+
+
+RACECLASS_ADAPTER = TypeAdapter(_RaceClassModel)
+RACECLASS_LIST_ADAPTER = TypeAdapter(list[_RaceClassModel])

@@ -4,8 +4,10 @@ ORM classes for event data
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Self
 
+from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
@@ -40,11 +42,11 @@ class RaceEvent(PulsarityBase):
     Database content for race events
     """
 
-    name = fields.CharField(max_length=120)
+    name_ = fields.CharField(max_length=120)
     """The name of the event"""
     date = fields.DatetimeField(auto_now_add=True)
     """The date of the event"""
-    raceclasses: fields.ReverseRelation[RaceClass]
+    raceclasses: fields.ReverseRelation["RaceClass"]
     """The race classes assigned to the event"""
     attributes: fields.ReverseRelation[RaceEventAttribute]
     """The attributes assigned to the event"""
@@ -56,14 +58,14 @@ class RaceEvent(PulsarityBase):
         table = "raceevent"
 
     @property
-    def display_name(self) -> str:
+    def name(self) -> str:
         """
         Generates the displayed name for the user
 
         :return: The user's display name
         """
-        if self.name is not None:
-            return self.name
+        if self.name_ is not None:
+            return self.name_
 
         return f"RaceEvent {self.id}"
 
@@ -98,3 +100,17 @@ class RaceEvent(PulsarityBase):
         Less than comparsion operator. Enables sorting by dates
         """
         return self.date < obj.date
+
+
+class _RaceEventModel(BaseModel):
+    """
+    External Event model
+    """
+
+    id: int
+    name: str
+    date: datetime
+
+
+RACE_EVENT_ADAPTER = TypeAdapter(_RaceEventModel)
+RACE_EVENT_LIST_ADAPTER = TypeAdapter(list[_RaceEventModel])

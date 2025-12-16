@@ -3,8 +3,22 @@ import json
 import pytest
 from httpx import AsyncClient
 
+from pulsarity.database.heat import HEAT_ADAPTER, HEAT_LIST_ADAPTER, Heat
+from pulsarity.database.pilot import PILOT_ADAPTER, PILOT_LIST_ADAPTER, Pilot
+from pulsarity.database.raceclass import (
+    RACECLASS_ADAPTER,
+    RACECLASS_LIST_ADAPTER,
+    RaceClass,
+)
+from pulsarity.database.raceevent import (
+    RACE_EVENT_ADAPTER,
+    RACE_EVENT_LIST_ADAPTER,
+    RaceEvent,
+)
+from pulsarity.database.round import ROUND_ADAPTER, ROUND_LIST_ADAPTER, Round
 
-async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
+
+async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str, str]):
     """
     Sends the provided credentials to the login api to check if they are
     valid
@@ -23,7 +37,7 @@ async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
 
 
 @pytest.mark.asyncio
-async def test_webserver_login_valid(client: AsyncClient, user_creds: tuple[str]):
+async def test_webserver_login_valid(client: AsyncClient, user_creds: tuple[str, str]):
     """
     Test to see if the base credentials are valid through the api
     """
@@ -31,7 +45,9 @@ async def test_webserver_login_valid(client: AsyncClient, user_creds: tuple[str]
 
 
 @pytest.mark.asyncio
-async def test_webserver_login_invalid(client: AsyncClient, user_creds: tuple[str]):
+async def test_webserver_login_invalid(
+    client: AsyncClient, user_creds: tuple[str, str]
+):
     """
     Test to see if the api detects bad credentials
     """
@@ -47,7 +63,7 @@ async def test_webserver_login_invalid(client: AsyncClient, user_creds: tuple[st
 
 
 @pytest.mark.asyncio
-async def test_password_reset_invalid(client: AsyncClient, user_creds: tuple[str]):
+async def test_password_reset_invalid(client: AsyncClient, user_creds: tuple[str, str]):
     """
     Test reseting a password while providing invalid credentials
     """
@@ -68,7 +84,7 @@ async def test_password_reset_invalid(client: AsyncClient, user_creds: tuple[str
 
 
 @pytest.mark.asyncio
-async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str]):
+async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str, str]):
     """
     Test reseting a password while providing valid credentials
     """
@@ -92,3 +108,205 @@ async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str])
 
     reset_required = await webserver_login_valid(client, new_creds)
     assert reset_required is False
+
+
+@pytest.mark.asyncio
+async def test_get_pilot(client: AsyncClient, user_creds: tuple[str, str]):
+    """
+    Test getting individual pilots through the rest api
+    """
+    await Pilot.bulk_create([Pilot(callsign="foo"), Pilot(callsign="bar")])
+
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/pilots/1")
+    assert response.status_code == 200
+
+    pilot = PILOT_ADAPTER.validate_json(response.content)
+    assert pilot.id == 1
+    assert pilot.display_callsign == "foo"
+
+    response = await client.get("/api/pilots/2")
+    assert response.status_code == 200
+
+    pilot = PILOT_ADAPTER.validate_json(response.content)
+    assert pilot.id == 2
+    assert pilot.display_callsign == "bar"
+
+
+@pytest.mark.asyncio
+async def test_get_pilots(client: AsyncClient, user_creds: tuple[str, str]):
+    """
+    Test getting pilots through the rest api
+    """
+    await Pilot.bulk_create([Pilot(callsign="foo"), Pilot(callsign="bar")])
+
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/pilots")
+    assert response.status_code == 200
+
+    pilots = PILOT_LIST_ADAPTER.validate_json(response.content)
+    assert len(pilots) == 2
+    assert pilots[0].display_callsign == "foo"
+    assert pilots[1].display_callsign == "bar"
+
+
+@pytest.mark.asyncio
+async def test_get_event(
+    client: AsyncClient, user_creds: tuple[str, str], basic_event: RaceEvent
+):
+    """
+    Test getting individual events through the api
+    """
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/events/1")
+    assert response.status_code == 200
+
+    event = RACE_EVENT_ADAPTER.validate_json(response.content)
+    assert event.id == basic_event.id
+    assert event.name == basic_event.name
+    assert event.date == basic_event.date
+
+
+@pytest.mark.asyncio
+async def test_get_events(
+    client: AsyncClient, user_creds: tuple[str, str], basic_event: RaceEvent
+):
+    """
+    Test getting events through the rest api
+    """
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/events")
+    assert response.status_code == 200
+
+    events = RACE_EVENT_LIST_ADAPTER.validate_json(response.content)
+    assert len(events) == 1
+    assert events[0].id == basic_event.id
+    assert events[0].name == basic_event.name
+    assert events[0].date == basic_event.date
+
+
+@pytest.mark.asyncio
+async def test_get_raceclass(
+    client: AsyncClient, user_creds: tuple[str, str], basic_raceclass: RaceClass
+):
+    """
+    Test getting individual raceclasses through the api
+    """
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/raceclasses/1")
+    assert response.status_code == 200
+
+    raceclass = RACECLASS_ADAPTER.validate_json(response.content)
+    assert raceclass.id == basic_raceclass.id
+    assert raceclass.name == basic_raceclass.name
+
+
+@pytest.mark.asyncio
+async def test_get_event_raceclasses(
+    client: AsyncClient, user_creds: tuple[str, str], basic_raceclass: RaceClass
+):
+    """
+    Test getting raceclasses for an event through the api
+    """
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/events/1/raceclasses")
+    assert response.status_code == 200
+
+    raceclasses = RACECLASS_LIST_ADAPTER.validate_json(response.content)
+    assert len(raceclasses) == 1
+    assert raceclasses[0].id == basic_raceclass.id
+    assert raceclasses[0].name == basic_raceclass.name
+
+
+@pytest.mark.asyncio
+async def test_get_round(
+    client: AsyncClient, user_creds: tuple[str, str], basic_round: Round
+):
+    """
+    Test getting individual raceclasses through the api
+    """
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/rounds/1")
+    assert response.status_code == 200
+
+    round_ = ROUND_ADAPTER.validate_json(response.content)
+    assert round_.id == basic_round.id
+    assert round_.round_num == basic_round.round_num
+
+
+@pytest.mark.asyncio
+async def test_get_raceclass_rounds(
+    client: AsyncClient, user_creds: tuple[str, str], basic_round: Round
+):
+    """
+    Test getting individual raceclasses through the api
+    """
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/raceclasses/1/rounds")
+    assert response.status_code == 200
+
+    rounds = ROUND_LIST_ADAPTER.validate_json(response.content)
+    assert rounds[0].id == basic_round.id
+    assert rounds[0].round_num == basic_round.round_num
+
+
+@pytest.mark.asyncio
+async def test_get_heat(
+    client: AsyncClient, user_creds: tuple[str, str], basic_heat: Heat
+):
+    """
+    Test getting individual raceclasses through the api
+    """
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/heats/1")
+    assert response.status_code == 200
+
+    heat = HEAT_ADAPTER.validate_json(response.content)
+    assert heat.id == basic_heat.id
+    assert heat.heat_num == basic_heat.heat_num
+
+
+@pytest.mark.asyncio
+async def test_get_round_heats(
+    client: AsyncClient, user_creds: tuple[str, str], basic_heat: Heat
+):
+    """
+    Test getting individual raceclasses through the api
+    """
+    payload = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=payload)
+    assert response.status_code == 200
+
+    response = await client.get("/api/rounds/1/heats")
+    assert response.status_code == 200
+
+    heats = HEAT_LIST_ADAPTER.validate_json(response.content)
+    assert heats[0].id == basic_heat.id
+    assert heats[0].heat_num == basic_heat.heat_num
