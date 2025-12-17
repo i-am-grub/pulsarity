@@ -24,7 +24,7 @@ dependencies = [
     "cryptography==46.0.3",
     "argon2-cffi==25.1.0",
     "tomlkit==0.13.3",
-    "tortoise-orm==0.25.1",
+    "tortoise-orm==0.25.2",
     "pydantic==2.12.5",
     "cffi==2.0.0",
     "anyio==4.12.0",
