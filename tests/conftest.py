@@ -16,6 +16,10 @@ from pulsarity.database import (
     Slot,
     setup_default_objects,
 )
+from pulsarity.events.broker import EventBroker
+from pulsarity.interface.timer_manager import TimerInterfaceManager
+from pulsarity.race.processor import RaceProcessorManager
+from pulsarity.race.state import RaceStateManager
 from pulsarity.utils import background
 from pulsarity.utils.config import get_configs_defaults
 from pulsarity.webserver import generate_application
@@ -23,8 +27,11 @@ from pulsarity.webserver import generate_application
 
 @pytest_asyncio.fixture(autouse=True)
 async def context_and_cleanup():
-    loop = asyncio.get_running_loop()
-    ctx.loop_ctx.set(loop)
+    ctx.loop_ctx.set(asyncio.get_running_loop())
+    ctx.event_broker_ctx.set(EventBroker())
+    ctx.race_state_ctx.set(RaceStateManager())
+    ctx.race_processor_ctx.set(RaceProcessorManager())
+    ctx.interface_manager_ctx.set(TimerInterfaceManager())
 
     yield
 

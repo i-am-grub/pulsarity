@@ -14,6 +14,7 @@ from collections.abc import AsyncGenerator, Callable
 from dataclasses import dataclass, field
 from typing import Any, Self
 
+from pulsarity import ctx
 from pulsarity.events.enums import EvtPriority, _ApplicationEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
@@ -219,12 +220,6 @@ class EventBroker:
             self._connections.remove(connection)
 
 
-event_broker = EventBroker()
-"""
-A module singleton instance of `EventBroker`
-"""
-
-
 def register_as_callback(
     event: _ApplicationEvt,
     *,
@@ -242,7 +237,7 @@ def register_as_callback(
 
     @functools.wraps
     def inner(func):
-        event_broker.register_event_callback(
+        ctx.event_broker_ctx.get().register_event_callback(
             func, event, priority=priority, default_kwargs=default_kwargs
         )
 

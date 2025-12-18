@@ -9,6 +9,7 @@ from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 
+from pulsarity import ctx
 from pulsarity.interface.timer_interface import TimerData, TimerInterface
 from pulsarity.utils import background
 
@@ -69,7 +70,7 @@ class _DataManager:
     connections: set[asyncio.Queue[ExtendedTimerData]] = field(default_factory=set)
 
 
-class _TimerInterfaceManager:
+class TimerInterfaceManager:
     """
     Manages the abstract and active timer interfaces
     """
@@ -259,9 +260,6 @@ class _TimerInterfaceManager:
             self._tasks = None
 
 
-interface_manager = _TimerInterfaceManager()
-
-
 def register_interface(interface_class: type[TimerInterface]) -> type[TimerInterface]:
     """
     Decorator used for registering TimerInterface classes
@@ -269,5 +267,5 @@ def register_interface(interface_class: type[TimerInterface]) -> type[TimerInter
     :param interface_class: The timer interface class to register
     :return: The registered timer interface
     """
-    interface_manager.register(interface_class)
+    ctx.interface_manager_ctx.get().register(interface_class)
     return interface_class
