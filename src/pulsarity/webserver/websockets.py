@@ -18,8 +18,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 from pulsarity import ctx
 from pulsarity.database import RaceFormat
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
-from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt, event_broker
-from pulsarity.race import race_state_manager
+from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
 
@@ -100,6 +99,7 @@ async def _write_data() -> None:
     """
     Handles writing event data over the websocket
     """
+    event_broker = ctx.event_broker_ctx.get()
     websocket = ctx.websocket_ctx.get()
     user = ctx.user_ctx.get()
     permissions = ctx.user_permsissions_ctx.get()
@@ -151,6 +151,7 @@ async def heatbeat_echo(ws_data: WSEventData):
 
     :param ws_data: Recieved websocket event data
     """
+    event_broker = ctx.event_broker_ctx.get()
     event_broker.publish(SpecialEvt.HEARTBEAT, ws_data.data, uuid_=ws_data.id)
 
 
@@ -179,7 +180,7 @@ async def schedule_race(ws_data: WSEventData):
     :param ws_data: Recieved websocket event data
     """
     format_ = RaceFormat()
-    race_state_manager.schedule_race(format_, **ws_data.data)
+    ctx.race_state_ctx.get().schedule_race(format_, **ws_data.data)
 
 
 @ws_event(RaceSequenceEvt.RACE_STOP)
@@ -189,7 +190,7 @@ async def race_stop():
 
     :param _ws_data: Recieved websocket event data
     """
-    race_state_manager.stop_race()
+    ctx.race_state_ctx.get().stop_race()
 
 
 routes = [

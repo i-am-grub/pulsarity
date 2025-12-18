@@ -14,8 +14,10 @@ from tortoise import Tortoise, connections
 
 from pulsarity import ctx
 from pulsarity.database import setup_default_objects
-from pulsarity.events import SpecialEvt, event_broker
-from pulsarity.interface.timer_manager import interface_manager
+from pulsarity.events import EventBroker, SpecialEvt
+from pulsarity.interface.timer_manager import TimerInterfaceManager
+from pulsarity.race.processor import RaceProcessorManager
+from pulsarity.race.state import RaceStateManager
 from pulsarity.utils import background
 from pulsarity.utils.config import configs
 
@@ -40,6 +42,19 @@ async def shutdown_signaled() -> None:
     await _shutdown_event.wait()
 
 
+def set_context_vars() -> None:
+    """
+    Setup the default context variables for the
+    application
+    """
+
+    ctx.loop_ctx.set(asyncio.get_running_loop())
+    ctx.event_broker_ctx.set(EventBroker())
+    ctx.race_state_ctx.set(RaceStateManager())
+    ctx.race_processor_ctx.set(RaceProcessorManager())
+    ctx.interface_manager_ctx.set(TimerInterfaceManager())
+
+
 @contextlib.asynccontextmanager
 async def lifespan(_app: Starlette):
     """
@@ -49,6 +64,7 @@ async def lifespan(_app: Starlette):
     """
 
     logger.info("Starting Pulsarity...")
+    set_context_vars()
     await server_starup_workflow()
     logger.info("Pulsarity startup completed...")
 
@@ -63,26 +79,25 @@ async def server_starup_workflow() -> None:
     """
     Startup workflow
     """
-    loop = asyncio.get_running_loop()
-    ctx.loop_ctx.set(loop)
+    loop = ctx.loop_ctx.get()
     loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
     loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
-    interface_manager.start()
+    ctx.interface_manager_ctx.get().start()
 
-    async with asyncio.TaskGroup() as tg:
-        tg.create_task(database_startup())
+    await database_startup()
 
-    await event_broker.trigger(SpecialEvt.STARTUP, {})
+    await ctx.event_broker_ctx.get().trigger(SpecialEvt.STARTUP, {})
 
 
 async def server_shutdown_workflow() -> None:
     """
     Shutdown workflow
     """
+    event_broker = ctx.event_broker_ctx.get()
     await event_broker.trigger(SpecialEvt.SHUTDOWN, {})
 
-    await interface_manager.shutdown(5)
+    await ctx.interface_manager_ctx.get().shutdown(5)
     await background.shutdown(5)
     await database_shutdown()
 

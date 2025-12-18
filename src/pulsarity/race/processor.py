@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
+from pulsarity import ctx
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import ExtendedTimerData
 
@@ -83,36 +84,51 @@ class RaceProcessor(Protocol):
         """
 
 
-_registered_processors: dict[str, type[RaceProcessor]] = {}
-
-
-def register_processor(processor_class: type[RaceProcessor]) -> type[RaceProcessor]:
+class RaceProcessorManager:
     """
-    Registers a rulesets type to be used by the system.
-    Can be used as a decorator
-
-    :param processor_class: The class to register
-    :raises RuntimeError: Class already registered
+    Manages the race processors
     """
 
-    if isinstance(processor_class, RaceProcessor):
-        if processor_class.uid in _registered_processors:
-            raise RuntimeError(
-                "Interface type with matching identifier already registered"
-            )
+    def __init__(self) -> None:
+        self._registered_processors: dict[str, type[RaceProcessor]] = {}
 
-        _registered_processors[processor_class.uid] = processor_class
+    def register(self, processor_class: type[RaceProcessor]) -> type[RaceProcessor]:
+        """
+        Registers a rulesets type to be used by the system.
+        Can be used as a decorator
 
-        return processor_class
+        :param processor_class: The class to register
+        :raises RuntimeError: Class already registered
+        """
 
-    raise RuntimeError("Attempted to register an invalid race processor class")
+        if isinstance(processor_class, RaceProcessor):
+            if processor_class.uid in self._registered_processors:
+                raise RuntimeError(
+                    "Interface type with matching identifier already registered"
+                )
+
+            self._registered_processors[processor_class.uid] = processor_class
+
+            return processor_class
+
+        raise RuntimeError("Attempted to register an invalid race processor class")
+
+    def get_processor(self, ruleset_uid: str) -> type[RaceProcessor] | None:
+        """
+        Gets the processor for the provided uid
+
+        :param ruleset_uid: The uid of the processor
+        :return:
+        """
+        return self._registered_processors.get(ruleset_uid)
 
 
-def get_processor(ruleset_uid: str) -> type[RaceProcessor] | None:
+def register_interface(interface_class: type[RaceProcessor]) -> type[RaceProcessor]:
     """
-    Gets the processor for the provided uid
+    Decorator used for registering RaceProcessor classes
 
-    :param ruleset_uid: The uid of the processor
-    :return:
+    :param interface_class: The race processor class to register
+    :return: The registered race processor
     """
-    return _registered_processors.get(ruleset_uid)
+    ctx.race_processor_ctx.get().register(interface_class)
+    return interface_class

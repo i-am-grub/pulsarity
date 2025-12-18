@@ -8,7 +8,7 @@ from random import random
 
 from pulsarity import ctx
 from pulsarity.database.raceformat import RaceFormat
-from pulsarity.events import RaceSequenceEvt, event_broker
+from pulsarity.events import RaceSequenceEvt
 from pulsarity.race.enums import RaceStatus
 
 logger = logging.getLogger(__name__)
@@ -163,6 +163,7 @@ class RaceStateManager:
         """
         Stop the race
         """
+        event_broker = ctx.event_broker_ctx.get()
 
         if self._program_handle is not None:
             self._program_handle.cancel()
@@ -208,6 +209,8 @@ class RaceStateManager:
         """
         Pause the race
         """
+        event_broker = ctx.event_broker_ctx.get()
+
         if self.status in RaceStatus.UNDERWAY:
             data: dict = {}
             event_broker.trigger_background(RaceSequenceEvt.RACE_PAUSE, data)
@@ -222,6 +225,8 @@ class RaceStateManager:
         """
         Resme the race
         """
+        event_broker = ctx.event_broker_ctx.get()
+
         if self.status != RaceStatus.PAUSED:
             return
 
@@ -264,6 +269,8 @@ class RaceStateManager:
         :param start_time: The time to start to schedule race start
         :param schedule: The format's race schedule
         """
+        event_broker = ctx.event_broker_ctx.get()
+
         data: dict = {}
         event_broker.trigger_background(RaceSequenceEvt.RACE_STAGE, data)
         self._set_status(RaceStatus.STAGING)
@@ -278,6 +285,8 @@ class RaceStateManager:
 
         :param schedule: The format's race schedule
         """
+        event_broker = ctx.event_broker_ctx.get()
+
         assert self._format is not None, "Can not start race with an unset schedule"
 
         data: dict = {}
@@ -300,6 +309,7 @@ class RaceStateManager:
 
         :param schedule: The format's race schedule
         """
+        event_broker = ctx.event_broker_ctx.get()
         assert self._format is not None, "Can not finish race with an unset schedule"
 
         data: dict = {}
@@ -323,6 +333,8 @@ class RaceStateManager:
         """
         Put the system into race stop mode
         """
+        event_broker = ctx.event_broker_ctx.get()
+
         data: dict = {}
         event_broker.trigger_background(RaceSequenceEvt.RACE_STOP, data)
         self._set_status(RaceStatus.STOPPED)
@@ -339,6 +351,3 @@ class RaceStateManager:
             self._race_record.clear()
             self._status = RaceStatus.READY
             logger.info("Race manager reset")
-
-
-race_state_manager = RaceStateManager()
