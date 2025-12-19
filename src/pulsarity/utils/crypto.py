@@ -3,21 +3,23 @@ Cryptography for the application
 """
 
 import datetime
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.x509.oid import NameOID
+from pathlib import Path
+
 from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.x509.oid import NameOID
 
 
-def generate_self_signed_cert(key_filename: str, cert_filename: str) -> None:
+def generate_self_signed_cert(key_file: Path, cert_file: Path) -> None:
     """
     Generates a simple self signed cert to enable HTTPS on the webserver.
 
     ***NOTE***: It is the responsibility of the user to replace any generated certs
     with ones signed by a reputable certificate authority.
 
-    :param key_filename: Filename to use for the `key_file`
-    :param cert_filename: Filename to user for the `cert_file`
+    :param key_file: Filepath to save the key as.
+    :param cert_file: Filepath to save the cert as.
     """
 
     key = ec.generate_private_key(ec.SECP256R1())
@@ -64,8 +66,8 @@ def generate_self_signed_cert(key_filename: str, cert_filename: str) -> None:
         .sign(key, hashes.SHA256())
     )
 
-    with open(key_filename, "wb") as key_file:
-        key_file.write(
+    with key_file.open("wb") as key_file_:
+        key_file_.write(
             key.private_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.PKCS8,
@@ -73,5 +75,5 @@ def generate_self_signed_cert(key_filename: str, cert_filename: str) -> None:
             )
         )
 
-    with open(cert_filename, "wb") as cert_file:
-        cert_file.write(cert.public_bytes(encoding=serialization.Encoding.PEM))
+    with cert_file.open("wb") as cert_file_:
+        cert_file_.write(cert.public_bytes(encoding=serialization.Encoding.PEM))

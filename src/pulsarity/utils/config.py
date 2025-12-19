@@ -2,224 +2,121 @@
 Global configurations
 """
 
-import asyncio
-import copy
-import datetime
 import logging
+from datetime import datetime
+from functools import partial
+from pathlib import Path
 from secrets import token_urlsafe
-from typing import Any, Literal
+from typing import Self
 
 import anyio
-import tomlkit
+from pydantic import BaseModel, Field, ValidationError
 
 from pulsarity.utils.logging import generate_default_config
 
-DEFAULT_CONFIG_FILE_NAME = "config.toml"
+DEFAULT_CONFIG_FILE = Path("config.json")
 
-ConfigSections = Literal["SECRETS", "WEBSERVER", "GENERAL", "LOGGING", "DATABASE"]
 
 _logger = logging.getLogger(__name__)
 
 
-def get_configs_defaults() -> dict[ConfigSections, dict]:
+class _SecretsConfig(BaseModel):
+    default_username: str = "admin"
+    default_password: str = "pulsarity"
+    secret_key: str = Field(default_factory=partial(token_urlsafe, 32))
+
+
+class _WebserverConfig(BaseModel):
+    host: str = "localhost"
+    http_port: int = 5000
+    https_port: int = 5443
+    force_redirects: bool = True
+    key_file: Path = Field(default_factory=partial(Path, "key.pem"))
+    key_password: str | None = None
+    cert_file: Path = Field(default_factory=partial(Path, "cert.pem"))
+    ca_cert_file: Path | None = None
+
+
+class _GeneralConfig(BaseModel):
+    last_modified_time: datetime = Field(default_factory=datetime.now)
+
+
+class _SystemDatabaseConfig(BaseModel):
+    engine: str = "tortoise.backends.sqlite"
+    credentials: dict = Field(
+        default_factory=partial(dict, (("file_path", "system.db"),))
+    )
+
+
+class _EventDatabaseConfig(BaseModel):
+    engine: str = "tortoise.backends.sqlite"
+    credentials: dict = Field(
+        default_factory=partial(dict, (("file_path", "event.db"),))
+    )
+
+
+class _DatabaseConfig(BaseModel):
+    system_db: _SystemDatabaseConfig = Field(default_factory=_SystemDatabaseConfig)
+    event_db: _EventDatabaseConfig = Field(default_factory=_EventDatabaseConfig)
+
+
+class PulsarityConfig(BaseModel):
     """
-    Provides the server default configurations
-
-    :return: The server defaults
-    """
-
-    # pylint: disable=R0915
-
-    # secret configuration:
-    secrets = {
-        "DEFAULT_USERNAME": "admin",
-        "DEFAULT_PASSWORD": "pulsarity",
-        "SECRET_KEY": token_urlsafe(32),
-    }
-
-    # webserver settings
-    webserver = {
-        "HOST": "localhost",
-        "HTTP_PORT": 5000,
-        "HTTPS_PORT": 5443,
-        "FORCE_REDIRECTS": True,
-        "KEY_FILE": "key.pem",
-        "KEY_PASSWORD": "",
-        "CERT_FILE": "cert.pem",
-        "CA_CERT_FILE": "",
-        "API_DOCS": False,
-    }
-
-    # other default configurations
-    general = {"LAST_MODIFIED_TIME": datetime.datetime.now()}
-
-    # logging settings
-    logging_ = generate_default_config()
-
-    database = {
-        "system_db": {
-            "engine": "tortoise.backends.sqlite",
-            "credentials": {"file_path": "system.db"},
-        },
-        "event_db": {
-            "engine": "tortoise.backends.sqlite",
-            "credentials": {"file_path": "event.db"},
-        },
-    }
-
-    config: dict[ConfigSections, dict[str, Any]] = {
-        "SECRETS": secrets,
-        "WEBSERVER": webserver,
-        "GENERAL": general,
-        "LOGGING": logging_,
-        "DATABASE": database,
-    }
-
-    return config
-
-
-class ConfigManager:
-    """
-    Manager for dealing with the application config file
+    The server configs
     """
 
-    _configs: dict[ConfigSections, dict] | None = None
+    secrets: _SecretsConfig | None = Field(default_factory=_SecretsConfig)
+    webserver: _WebserverConfig = Field(default_factory=_WebserverConfig)
+    general: _GeneralConfig = Field(default_factory=_GeneralConfig)
+    database: _DatabaseConfig = Field(default_factory=_DatabaseConfig)
+    logging: dict = Field(default_factory=generate_default_config)
 
-    def __init__(self, filename: str) -> None:
-        self._config_filename = filename
-
-    def _write_file_config(self, configs_: dict[ConfigSections, dict]):
+    @classmethod
+    def from_file(cls, filepath: Path) -> Self:
         """
-        Writes configs to a file synchronously. This should only be used before the
-        webserver has been started.
+        Loads a config from a filepath
 
-        :param configs: Config dictionary to write
-        :param filename: The file to save config to, defaults to _DEFAULT_CONFIG_FILE_NAME
-        """
-        configs_["GENERAL"]["LAST_MODIFIED_TIME"] = datetime.datetime.now()
-
-        with open(self._config_filename, "w", encoding="utf-8") as file:
-            file.write(tomlkit.dumps(configs_))
-
-    async def _write_file_config_async(self, configs_: dict[ConfigSections, dict]):
-        """
-        Writes configs to a file asynchronously. This should only be used after
-        the webserver has started.
-
-        :param configs: Config dictionary to write
-        :param filename: The file to save config to, defaults to _DEFAULT_CONFIG_FILE_NAME
-        """
-        configs_["GENERAL"]["LAST_MODIFIED_TIME"] = datetime.datetime.now()
-
-        async with await anyio.open_file(
-            self._config_filename, "w", encoding="utf-8"
-        ) as file:
-            await file.write(tomlkit.dumps(configs_))
-
-    def _load_config_from_file(self) -> dict[ConfigSections, dict]:
-        """
-        Loads configs to a file synchronously. This should only be used before the
-        webserver has been started.
-
-        :param filename: The file to load the config from, defaults to _DEFAULT_CONFIG_FILE_NAME
-        :return: The configuration settings
+        :param filepath: The filepath to load the config from
         """
         try:
-            with open(self._config_filename, "r", encoding="utf-8") as file:
-                external_config = tomlkit.load(file)
+            with filepath.open("rb") as file:
+                return cls.model_validate_json(file.read())
 
-        except IOError:
-            _logger.info("No configuration file found, using defaults")
-            configs_ = get_configs_defaults()
-            self._write_file_config(configs_)
-            return configs_
+        except ValidationError:
+            _logger.error("Invalid server config file. Using defaults.")
+            return cls()
 
-        except ValueError as ex:
-            _logger.error(
-                "Configuration file invalid, using defaults; error is: %s", ex
-            )
-            configs_ = get_configs_defaults()
-            self._write_file_config(configs_)
-            return configs_
+        except FileNotFoundError:
+            _logger.info("Config file not found. Loading defaults")
+            return cls()
 
-        return external_config.unwrap()  # type: ignore
-
-    def get_config(
-        self,
-        section: ConfigSections,
-        key: str,
-    ) -> str | bool | int | float | None:
+    def write_config_to_file(self, filepath: Path) -> None:
         """
-        Gets a setting from the config file.
+        Writes the current config to a file
 
-        :param section: The section in the config file for the setting
-        :param key: The setting name
-        :return: The setting value
+        :param filepath: The filepath to save the config to
         """
-        if self._configs is None:
-            self._configs = self._load_config_from_file()
+        self.general.last_modified_time = datetime.now()
 
-        try:
-            item = self._configs[section][key]
-        except KeyError:
-            return None
+        with filepath.open("w", encoding="utf-8") as file:
+            file.write(self.model_dump_json(indent=4))
 
-        return item
-
-    def get_section(
-        self,
-        section: ConfigSections,
-    ) -> dict[str, Any] | None:
+    async def write_config_to_file_async(self, filepath: Path) -> None:
         """
-        Gets a section from the config file.
+        Writes the current config to a file
 
-        :param section: The section in the config file for the setting
-        :return: The setting value
+        :param filepath: The filepath to save the config to
         """
-        if self._configs is None:
-            self._configs = self._load_config_from_file()
+        self.general.last_modified_time = datetime.now()
 
-        try:
-            section_ = self._configs[section]
-        except KeyError:
-            return None
+        async with await anyio.open_file(filepath, "w", encoding="utf-8") as file:
+            await file.write(self.model_dump_json(indent=4))
 
-        return section_
-
-    def set_config(self, section: ConfigSections, key: str, value) -> None:
+    def get_sharable_config(self) -> Self:
         """
-        Sets a setting from the config file asynchronously.
-
-        :param section: The section in the config file for the setting
-        :param key: The setting name
-        :param value: The value to change the setting to
+        Gets a shareable version of the config data
         """
-        if self._configs is None:
-            self._configs = self._load_config_from_file()
-
-        self._configs[section][key] = value
-
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            self._write_file_config(self._configs)
-        else:
-            loop.create_task(self._write_file_config_async(self._configs))
-
-    def get_sharable_config(self) -> dict[ConfigSections, dict]:
-        """
-        Generates a copy of the config file with the `SECRETS`
-        section cleared
-
-        :return: An object storing the object configs
-        """
-        if self._configs is None:
-            self._configs = self._load_config_from_file()
-
-        configs_ = copy.copy(self._configs)
-
-        del configs_["SECRETS"]
-        return configs_
-
-
-configs = ConfigManager(DEFAULT_CONFIG_FILE_NAME)
+        copy_ = self.model_copy()
+        copy_.secrets = None
+        copy_.webserver.key_password = ""
+        return copy_

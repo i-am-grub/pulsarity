@@ -21,7 +21,7 @@ from pulsarity.interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.processor import RaceProcessorManager
 from pulsarity.race.state import RaceStateManager
 from pulsarity.utils import background
-from pulsarity.utils.config import get_configs_defaults
+from pulsarity.utils.config import PulsarityConfig
 from pulsarity.webserver import generate_application
 
 
@@ -84,10 +84,10 @@ async def unauthenticated_client():
 
 @pytest.fixture(name="user_creds")
 def default_user_creds():
-    configs = get_configs_defaults()
+    configs = PulsarityConfig()
 
-    username = str(configs["SECRETS"]["DEFAULT_USERNAME"])
-    password = str(configs["SECRETS"]["DEFAULT_PASSWORD"])
+    username = configs.secrets.default_username
+    password = configs.secrets.default_password
 
     yield username, password
 
