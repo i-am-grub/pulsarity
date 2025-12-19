@@ -2,6 +2,7 @@
 Global configurations
 """
 
+import asyncio
 import logging
 from datetime import datetime
 from functools import partial
@@ -10,7 +11,7 @@ from secrets import token_urlsafe
 from typing import Self
 
 import anyio
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, PrivateAttr, ValidationError
 
 from pulsarity.utils.logging import generate_default_config
 
@@ -70,6 +71,7 @@ class PulsarityConfig(BaseModel):
     general: _GeneralConfig = Field(default_factory=_GeneralConfig)
     database: _DatabaseConfig = Field(default_factory=_DatabaseConfig)
     logging: dict = Field(default_factory=generate_default_config)
+    _lock: asyncio.locks.Lock = PrivateAttr(default_factory=asyncio.locks.Lock)
 
     @classmethod
     def from_file(cls, filepath: Path) -> Self:
@@ -107,10 +109,11 @@ class PulsarityConfig(BaseModel):
 
         :param filepath: The filepath to save the config to
         """
-        self.general.last_modified_time = datetime.now()
+        async with self._lock:
+            self.general.last_modified_time = datetime.now()
 
-        async with await anyio.open_file(filepath, "w", encoding="utf-8") as file:
-            await file.write(self.model_dump_json(indent=4))
+            async with await anyio.open_file(filepath, "w", encoding="utf-8") as file:
+                await file.write(self.model_dump_json(indent=4))
 
     def get_sharable_config(self) -> Self:
         """
