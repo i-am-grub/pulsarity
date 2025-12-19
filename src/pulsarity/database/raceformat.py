@@ -4,10 +4,10 @@ ORM classes for Format data
 
 from tortoise import fields
 
-from pulsarity.database._base import PulsarityBase
+from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 
-class RaceFormat(PulsarityBase):
+class RaceFormat(_PulsarityBase):
     """
     The properties that govern how a race is conducted
     """

@@ -11,7 +11,8 @@ from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
-from pulsarity.database._base import PulsarityBase
+from pulsarity.database._base import AttributeModel as _AttributeModel
+from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
     from pulsarity.database.heat import Heat
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
 # pylint: disable=R0903,E1136
 
 
-class RoundAttribute(PulsarityBase):
+class RoundAttribute(_PulsarityBase):
     """
     Unique and stored individually stored values for each round.
     """
@@ -38,7 +39,7 @@ class RoundAttribute(PulsarityBase):
         unique_together = (("id", "name"),)
 
 
-class Round(PulsarityBase):
+class Round(_PulsarityBase):
     """
     Database content for rounds within a raceclass
     """
@@ -98,6 +99,7 @@ class _RoundModel(BaseModel):
 
     id: int
     round_num: int
+    attributes: list[_AttributeModel]
 
 
 ROUND_ADAPTER = TypeAdapter(_RoundModel)

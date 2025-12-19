@@ -18,7 +18,7 @@ from argon2.exceptions import (
 from tortoise import fields
 
 from pulsarity import ctx
-from pulsarity.database._base import PulsarityBase
+from pulsarity.database._base import PulsarityBase as _PulsarityBase
 from pulsarity.database.role import Role
 
 logger = logging.Logger(__name__)
@@ -44,7 +44,7 @@ async def _generate_hash(password: str) -> str:
     return result
 
 
-class User(PulsarityBase):
+class User(_PulsarityBase):
     """
     User for the application
     """
@@ -61,8 +61,8 @@ class User(PulsarityBase):
     """Last name of user"""
     _password_hash = fields.TextField(null=True)
     """Hash of the user's password"""
-    _roles: fields.ManyToManyRelation[Role] = fields.ManyToManyField(
-        "system.Role", related_name="_users", through="user_role"
+    roles: fields.ManyToManyRelation[Role] = fields.ManyToManyField(
+        "system.Role", related_name="users", through="user_role"
     )
     """The role of the user"""
     last_login = fields.DatetimeField(null=True)
@@ -94,7 +94,7 @@ class User(PulsarityBase):
         return self.username
 
     @property
-    async def permissions(self) -> set[str]:
+    def permissions(self) -> set[str]:
         """
         Gets the permissions for the user. Can only be used when a
         session to the database has not been closed
@@ -103,8 +103,8 @@ class User(PulsarityBase):
         """
         permissions: set[str] = set()
 
-        async for role in self._roles:
-            permissions_: set[str] = await role.get_permissions()
+        for role in self.roles:
+            permissions_: set[str] = set(perm.value for perm in role.permissions)
             permissions.update(permissions_)
 
         return permissions
@@ -169,11 +169,14 @@ class User(PulsarityBase):
     @classmethod
     async def get_by_uuid(cls, uuid: UUID) -> Self | None:
         """
-        Attempt to retrieve a user by uuid
+        Attempt to retrieve a user by uuid. A successful retrieval will
+        prefetch data down to the permissions level for the user.
 
         :param uuid: The uuid to search for
         """
-        return await cls.get_or_none(auth_id=uuid)
+        return await cls.get_or_none(auth_id=uuid).prefetch_related(
+            "roles__permissions"
+        )
 
     @classmethod
     async def get_by_username(cls, username: str) -> Self | None:
@@ -200,7 +203,7 @@ class User(PulsarityBase):
 
         role = await Role.get_or_none(name="SYSTEM_ADMIN")
         if role is not None:
-            await user._roles.add(role)
+            await user.roles.add(role)
         else:
             raise RuntimeError("Role for system admin does not exist")
 

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Self
 
 from tortoise import fields
 
-from pulsarity.database._base import PulsarityBase
+from pulsarity.database._base import PulsarityBase as _PulsarityBase
 from pulsarity.database.pilot import Pilot
 
 if TYPE_CHECKING:
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 # pylint: disable=R0903,E1136, E1101
 
 
-class SlotAttribute(PulsarityBase):
+class SlotAttribute(_PulsarityBase):
     """
     Unique and stored individually stored values for each round.
     """
@@ -41,7 +41,7 @@ class SlotAttribute(PulsarityBase):
         unique_together = (("id", "name"),)
 
 
-class Slot(PulsarityBase):
+class Slot(_PulsarityBase):
     """
     Database content for slots
     """
@@ -115,7 +115,7 @@ def history_decoder(encoded_data: str | bytes) -> tuple[SlotHistoryRecord, ...]:
     return tuple(SlotHistoryRecord.from_sequence(x) for x in data)
 
 
-class SlotHistory(PulsarityBase):
+class SlotHistory(_PulsarityBase):
     """
     Time series context for slot
     """

@@ -48,12 +48,12 @@ class PulsarityUser(BaseUser):
             return set()
 
         uuid = UUID(hex=self._auth_id)
-        user = await User.get_or_none(auth_id=uuid)
+        user = await User.get_by_uuid(uuid)
 
         if user is None:
             return set()
 
-        return await user.permissions
+        return user.permissions
 
     async def has_permission(self, permission: UserPermission) -> bool:
         """
@@ -84,7 +84,6 @@ class PulsarityAuthBackend(AuthenticationBackend):
             user = await User.get_by_uuid(user_uuid)
 
             if user is not None:
-                permissions = await user.permissions
-                return AuthCredentials(permissions), PulsarityUser(user)
+                return AuthCredentials(user.permissions), PulsarityUser(user)
 
         return AuthCredentials(), UnauthenticatedUser()
