@@ -11,7 +11,8 @@ from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
-from pulsarity.database._base import PulsarityBase
+from pulsarity.database._base import AttributeModel as _AttributeModel
+from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
     from pulsarity.database.raceclass import RaceClass
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 # pylint: disable=R0903,E1136
 
 
-class RaceEventAttribute(PulsarityBase):
+class RaceEventAttribute(_PulsarityBase):
     """
     Unique and stored individually stored values for each event.
     """
@@ -37,7 +38,7 @@ class RaceEventAttribute(PulsarityBase):
         unique_together = (("id", "name"),)
 
 
-class RaceEvent(PulsarityBase):
+class RaceEvent(_PulsarityBase):
     """
     Database content for race events
     """
@@ -110,6 +111,7 @@ class _RaceEventModel(BaseModel):
     id: int
     name: str
     date: datetime
+    attributes: list[_AttributeModel]
 
 
 RACE_EVENT_ADAPTER = TypeAdapter(_RaceEventModel)

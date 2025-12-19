@@ -36,7 +36,7 @@ async def test_webserver_lack_permissions(client: AsyncClient):
     roles.add(role)
 
     user = await User.create(username="foo")
-    await user._roles.add(*roles)
+    await user.roles.add(*roles)
     await user.update_user_password("bar")
 
     payload = {"username": "foo", "password": "bar"}

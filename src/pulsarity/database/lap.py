@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from tortoise import fields
 
-from pulsarity.database._base import PulsarityBase
+from pulsarity.database._base import PulsarityBase as _PulsarityBase
 from pulsarity.interface.timer_manager import TimerMode
 
 if TYPE_CHECKING:
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 # pylint: disable=R0903,E1136
 
 
-class LapAttribute(PulsarityBase):
+class LapAttribute(_PulsarityBase):
     """
     Unique and stored individually stored values for each event.
     """
@@ -35,7 +35,7 @@ class LapAttribute(PulsarityBase):
         unique_together = (("id", "name"),)
 
 
-class Lap(PulsarityBase):
+class Lap(_PulsarityBase):
     """
     Database content for race laps
     """

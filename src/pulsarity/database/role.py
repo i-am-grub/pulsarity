@@ -8,14 +8,14 @@ from typing import TYPE_CHECKING
 
 from tortoise import fields
 
-from pulsarity.database._base import PulsarityBase
+from pulsarity.database._base import PulsarityBase as _PulsarityBase
 from pulsarity.database.permission import Permission
 
 if TYPE_CHECKING:
     from pulsarity.database.user import User
 
 
-class Role(PulsarityBase):
+class Role(_PulsarityBase):
     """
     Role for the application
     """
@@ -24,10 +24,10 @@ class Role(PulsarityBase):
 
     name = fields.CharField(max_length=64, unique=True)
     """Name of role"""
-    _users: fields.ManyToManyRelation[User]
+    users: fields.ManyToManyRelation[User]
     """Users role is assigned to"""
-    _permissions: fields.ManyToManyRelation[Permission] = fields.ManyToManyField(
-        "system.Permission", related_name="_roles", through="role_permission"
+    permissions: fields.ManyToManyRelation[Permission] = fields.ManyToManyField(
+        "system.Permission", related_name="roles", through="role_permission"
     )
     """Permissions granted to a role"""
     persistent = fields.BooleanField(default=False)
@@ -46,7 +46,7 @@ class Role(PulsarityBase):
 
         :return: The set of permissions
         """
-        values = set(await self._permissions.all().values_list("value", flat=True))
+        values = set(await self.permissions.all().values_list("value", flat=True))
         return values  # type: ignore
 
     async def add_permissions(self, *permissions: Permission) -> None:
@@ -55,8 +55,8 @@ class Role(PulsarityBase):
 
         :param value: The permissions to set
         """
-        await self._permissions.clear()
-        await self._permissions.add(*permissions)
+        await self.permissions.clear()
+        await self.permissions.add(*permissions)
 
     @classmethod
     async def verify_persistant(cls) -> None:
@@ -67,4 +67,4 @@ class Role(PulsarityBase):
 
         permissions = await Permission.all()
 
-        await admin_role._permissions.add(*permissions)
+        await admin_role.permissions.add(*permissions)

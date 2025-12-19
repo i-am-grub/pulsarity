@@ -120,7 +120,7 @@ async def get_pilot() -> Pilot | None:
     :return: Pilot data.
     """
     pilot_id: int = ctx.request_ctx.get().path_params["id"]
-    return await Pilot.get_by_id(pilot_id)
+    return await Pilot.get_by_id_with_attributes(pilot_id)
 
 
 @endpoint(SystemDefaultPerms.READ_PILOTS, response_adapter=PILOT_LIST_ADAPTER)
@@ -131,7 +131,7 @@ async def get_pilots() -> list[Pilot]:
 
     :return: A JSON model of all pilots
     """
-    return await Pilot.all()
+    return await Pilot.all().prefetch_related("attributes")
 
 
 @endpoint(SystemDefaultPerms.READ_EVENTS, response_adapter=RACE_EVENT_ADAPTER)
@@ -142,7 +142,7 @@ async def get_event() -> RaceEvent | None:
     :return: Event data.
     """
     event_id: int = ctx.request_ctx.get().path_params["id"]
-    return await RaceEvent.get_by_id(event_id)
+    return await RaceEvent.get_by_id_with_attributes(event_id)
 
 
 @endpoint(SystemDefaultPerms.READ_EVENTS, response_adapter=RACE_EVENT_LIST_ADAPTER)
@@ -153,7 +153,7 @@ async def get_events() -> list[RaceEvent]:
 
     :return: A JSON model of all events
     """
-    return await RaceEvent.all()
+    return await RaceEvent.all().prefetch_related("attributes")
 
 
 @endpoint(SystemDefaultPerms.READ_RACECLASS, response_adapter=RACECLASS_ADAPTER)
@@ -164,7 +164,7 @@ async def get_racelass() -> RaceClass | None:
     :return: Race Class data.
     """
     raceclass_id: int = ctx.request_ctx.get().path_params["id"]
-    return await RaceClass.get_by_id(raceclass_id)
+    return await RaceClass.get_by_id_with_attributes(raceclass_id)
 
 
 @endpoint(SystemDefaultPerms.READ_RACECLASS, response_adapter=RACECLASS_LIST_ADAPTER)
@@ -176,7 +176,7 @@ async def get_raceclasses_for_event() -> list[RaceClass]:
     :return: A JSON model of all raceclasses
     """
     event_id: int = ctx.request_ctx.get().path_params["id"]
-    return await RaceClass.filter(event_id=event_id)
+    return await RaceClass.filter(event_id=event_id).prefetch_related("attributes")
 
 
 @endpoint(SystemDefaultPerms.READ_ROUND, response_adapter=ROUND_ADAPTER)
@@ -185,7 +185,7 @@ async def get_round() -> Round | None:
     Get the round by id
     """
     round_id: int = ctx.request_ctx.get().path_params["id"]
-    return await Round.get_by_id(round_id)
+    return await Round.get_by_id_with_attributes(round_id)
 
 
 @endpoint(SystemDefaultPerms.READ_ROUND, response_adapter=ROUND_LIST_ADAPTER)
@@ -194,7 +194,7 @@ async def get_rounds_for_raceclass() -> list[Round]:
     Gets all rounds for a specific racelass
     """
     raceclass_id: int = ctx.request_ctx.get().path_params["id"]
-    return await Round.filter(raceclass_id=raceclass_id)
+    return await Round.filter(raceclass_id=raceclass_id).prefetch_related("attributes")
 
 
 @endpoint(SystemDefaultPerms.READ_HEAT, response_adapter=HEAT_ADAPTER)
@@ -203,7 +203,7 @@ async def get_heat() -> Heat | None:
     Get the heat by id
     """
     heat_id: int = ctx.request_ctx.get().path_params["id"]
-    return await Heat.get_by_id(heat_id)
+    return await Heat.get_by_id_with_attributes(heat_id)
 
 
 @endpoint(SystemDefaultPerms.READ_HEAT, response_adapter=HEAT_LIST_ADAPTER)
@@ -212,7 +212,7 @@ async def get_heats_for_round() -> list[Heat]:
     Gets all heats for a specific round
     """
     round_id: int = ctx.request_ctx.get().path_params["id"]
-    return await Heat.filter(round_id=round_id)
+    return await Heat.filter(round_id=round_id).prefetch_related("attributes")
 
 
 routes = [

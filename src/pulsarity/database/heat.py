@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 
-from pulsarity.database._base import PulsarityBase
+from pulsarity.database._base import AttributeModel as _AttributeModel
+from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
     from pulsarity.database.round import Round
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 # pylint: disable=R0903,E1136
 
 
-class HeatAttribute(PulsarityBase):
+class HeatAttribute(_PulsarityBase):
     """
     Unique and stored individually stored values for each heat.
     """
@@ -37,7 +38,7 @@ class HeatAttribute(PulsarityBase):
         unique_together = (("id", "name"),)
 
 
-class Heat(PulsarityBase):
+class Heat(_PulsarityBase):
     """
     Database content for race heats
     """
@@ -73,6 +74,7 @@ class _HeatModel(BaseModel):
 
     id: int
     heat_num: int
+    attributes: list[_AttributeModel]
 
 
 HEAT_ADAPTER = TypeAdapter(_HeatModel)

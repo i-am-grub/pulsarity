@@ -7,12 +7,13 @@ from __future__ import annotations
 from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 
-from pulsarity.database._base import PulsarityBase
+from pulsarity.database._base import AttributeModel as _AttributeModel
+from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 # pylint: disable=R0903,E1136
 
 
-class PilotAttribute(PulsarityBase):
+class PilotAttribute(_PulsarityBase):
     """
     Unique and stored individually stored values for each pilot.
     """
@@ -30,7 +31,7 @@ class PilotAttribute(PulsarityBase):
         unique_together = (("id", "name"),)
 
 
-class Pilot(PulsarityBase):
+class Pilot(_PulsarityBase):
     """
     Database content for event participants
     """
@@ -130,6 +131,7 @@ class _ExternalPilotModel(BaseModel):
     id: int
     display_callsign: str
     display_name: str
+    attributes: list[_AttributeModel]
 
 
 PILOT_ADAPTER = TypeAdapter(_ExternalPilotModel)

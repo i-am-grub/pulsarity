@@ -9,13 +9,13 @@ from typing import TYPE_CHECKING
 
 from tortoise import fields
 
-from pulsarity.database._base import PulsarityBase
+from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
     from pulsarity.database.role import Role
 
 
-class Permission(PulsarityBase):
+class Permission(_PulsarityBase):
     """
     Role for the application
     """
@@ -26,7 +26,7 @@ class Permission(PulsarityBase):
     """Name of role"""
     persistent = fields.BooleanField(default=False)
     """Entry is persistent in database"""
-    _roles: fields.ManyToManyRelation[Role]
+    roles: fields.ManyToManyRelation[Role]
     """Roles permission is assigned to"""
 
     class Meta:
