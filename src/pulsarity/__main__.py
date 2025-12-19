@@ -9,7 +9,7 @@ import sys
 import warnings
 
 import pulsarity
-from pulsarity.utils.config import configs
+from pulsarity import ctx
 from pulsarity.webserver import generate_webserver_coroutine
 
 # pylint: disable=E0401
@@ -30,7 +30,7 @@ def _setup_logging():
     if not os.path.exists("logs"):
         os.mkdir("logs")
 
-    logging_conf = configs.get_section("LOGGING")
+    logging_conf = ctx.config_ctx.get().logging
     if logging_conf is not None:
         logging.config.dictConfig(logging_conf)
 

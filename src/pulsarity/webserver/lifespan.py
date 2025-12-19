@@ -19,7 +19,7 @@ from pulsarity.interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.processor import RaceProcessorManager
 from pulsarity.race.state import RaceStateManager
 from pulsarity.utils import background
-from pulsarity.utils.config import configs
+from pulsarity.utils.config import DEFAULT_CONFIG_FILE
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +79,8 @@ async def server_starup_workflow() -> None:
     """
     Startup workflow
     """
+    await ctx.config_ctx.get().write_config_to_file_async(DEFAULT_CONFIG_FILE)
+
     loop = ctx.loop_ctx.get()
     loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
     loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
@@ -108,7 +110,7 @@ async def database_startup() -> None:
     """
     await Tortoise.init(
         {
-            "connections": configs.get_section("DATABASE"),
+            "connections": ctx.config_ctx.get().database.model_dump(),
             "apps": {
                 "system": {
                     "models": ["pulsarity.database"],

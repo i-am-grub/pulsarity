@@ -17,9 +17,9 @@ from argon2.exceptions import (
 )
 from tortoise import fields
 
+from pulsarity import ctx
 from pulsarity.database._base import PulsarityBase
 from pulsarity.database.role import Role
-from pulsarity.utils.config import configs
 
 logger = logging.Logger(__name__)
 
@@ -189,8 +189,10 @@ class User(PulsarityBase):
         """
         Verify all system roles are in the user database.
         """
-        default_username = str(configs.get_config("SECRETS", "DEFAULT_USERNAME"))
-        default_password = str(configs.get_config("SECRETS", "DEFAULT_PASSWORD"))
+        configs = ctx.config_ctx.get()
+        assert configs.secrets is not None
+        default_username = configs.secrets.default_username
+        default_password = configs.secrets.default_password
 
         user, created = await User.get_or_create(
             username=default_username, persistent=True
