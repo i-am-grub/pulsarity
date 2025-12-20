@@ -17,12 +17,8 @@ from starlette.responses import JSONResponse, Response
 from pulsarity import ctx
 from pulsarity.database.permission import UserPermission
 from pulsarity.utils.asyncio import ensure_async
-from pulsarity.webserver.validation import BaseResponse
 
 _T = TypeVar("_T")
-
-_bad_response = JSONResponse(BaseResponse(status=False).model_dump_json())
-_good_response = JSONResponse(BaseResponse(status=True).model_dump_json())
 
 logger = logging.getLogger(__name__)
 
@@ -115,42 +111,66 @@ def endpoint(
                     data = await request.json()
                     parsed_model = request_model.model_validate(data)
                 except (JSONDecodeError, ValidationError):
-                    return _bad_response
+                    return Response(status_code=400)
 
                 endpoint_result = await ensure_async(func, parsed_model)
             else:
                 endpoint_result = await ensure_async(func)
 
             if response_adapter is not None:
-                try:
-                    model = response_adapter.validate_python(
-                        endpoint_result, from_attributes=True
-                    )
-                except ValidationError:
-                    logger.exception(
-                        "Returned object from {%s} does not match response adapter {%s}",
-                        func.__name__,
-                        response_adapter,
-                    )
-                    return _bad_response
-                return JSONBytesResponse(response_adapter.dump_json(model))
+                return _process_response_adapter(
+                    func, response_adapter, endpoint_result
+                )
 
             if response_model is not None:
-                try:
-                    model = response_model.model_validate(
-                        endpoint_result, from_attributes=True
-                    )
-                except ValidationError:
-                    logger.exception(
-                        "Returned object from %s does not match response model %s",
-                        func.__name__,
-                        response_model.__name__,
-                    )
-                    return _bad_response
-                return JSONResponse(model.model_dump_json())
+                return _process_response_model(func, response_model, endpoint_result)
 
-            return _good_response
+            return Response()
 
         return wrapper
 
     return inner
+
+
+def _process_response_adapter(
+    func: Callable, response_adapter: TypeAdapter, endpoint_result: _T
+) -> Response:
+    """
+    Serialize the endpoint result to a response
+    """
+    if endpoint_result is None:
+        return Response(status_code=204)
+
+    try:
+        model = response_adapter.validate_python(endpoint_result, from_attributes=True)
+    except ValidationError:
+        logger.exception(
+            "Returned object from {%s} does not match response adapter {%s}",
+            func.__name__,
+            response_adapter,
+        )
+        return Response(status_code=500)
+
+    return JSONBytesResponse(response_adapter.dump_json(model))
+
+
+def _process_response_model(
+    func: Callable, response_model: type[BaseModel], endpoint_result: _T
+) -> Response:
+    """
+    Serialize the endpoint result to a response
+    """
+    if endpoint_result is None:
+        return Response(status_code=204)
+
+    try:
+        model = response_model.model_validate(endpoint_result, from_attributes=True)
+    except ValidationError:
+        logger.exception(
+            "Returned object from %s does not match response model %s",
+            func.__name__,
+            response_model.__name__,
+        )
+        return Response(status_code=500)
+
+    return JSONResponse(model.model_dump_json())

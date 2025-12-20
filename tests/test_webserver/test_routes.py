@@ -1,6 +1,7 @@
 import json
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 
 from pulsarity.database.heat import HEAT_ADAPTER, HEAT_LIST_ADAPTER, Heat
@@ -16,6 +17,15 @@ from pulsarity.database.raceevent import (
     RaceEvent,
 )
 from pulsarity.database.round import ROUND_ADAPTER, ROUND_LIST_ADAPTER, Round
+
+
+@pytest_asyncio.fixture(name="authed_client")
+async def _authenticated_client(client: AsyncClient, user_creds: tuple[str, str]):
+    login_data = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=login_data)
+    assert response.status_code == 200
+
+    yield client
 
 
 async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str, str]):
@@ -54,12 +64,7 @@ async def test_webserver_login_invalid(
     fake_password = "fake_password"
     login_data = {"username": user_creds[0], "password": fake_password}
     response = await client.post("/login", json=login_data)
-    assert response.status_code == 200
-
-    data = json.loads(response.json())
-
-    assert data["status"] is False
-    assert "password_reset_required" not in data
+    assert response.status_code == 204
 
 
 @pytest.mark.asyncio
@@ -111,24 +116,20 @@ async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str, 
 
 
 @pytest.mark.asyncio
-async def test_get_pilot(client: AsyncClient, user_creds: tuple[str, str]):
+async def test_get_pilot(authed_client: AsyncClient):
     """
     Test getting individual pilots through the rest api
     """
     await Pilot.bulk_create([Pilot(callsign="foo"), Pilot(callsign="bar")])
 
-    payload = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=payload)
-    assert response.status_code == 200
-
-    response = await client.get("/api/pilots/1")
+    response = await authed_client.get("/api/pilots/1")
     assert response.status_code == 200
 
     pilot = PILOT_ADAPTER.validate_json(response.content)
     assert pilot.id == 1
     assert pilot.display_callsign == "foo"
 
-    response = await client.get("/api/pilots/2")
+    response = await authed_client.get("/api/pilots/2")
     assert response.status_code == 200
 
     pilot = PILOT_ADAPTER.validate_json(response.content)
@@ -137,17 +138,23 @@ async def test_get_pilot(client: AsyncClient, user_creds: tuple[str, str]):
 
 
 @pytest.mark.asyncio
-async def test_get_pilots(client: AsyncClient, user_creds: tuple[str, str]):
+async def test_get_pilot_does_not_exist(authed_client: AsyncClient):
+    """
+    Test getting a pilot that doesn't exist
+    """
+
+    response = await authed_client.get("/api/pilots/1")
+    assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_get_pilots(authed_client: AsyncClient):
     """
     Test getting pilots through the rest api
     """
     await Pilot.bulk_create([Pilot(callsign="foo"), Pilot(callsign="bar")])
 
-    payload = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=payload)
-    assert response.status_code == 200
-
-    response = await client.get("/api/pilots")
+    response = await authed_client.get("/api/pilots")
     assert response.status_code == 200
 
     pilots = PILOT_LIST_ADAPTER.validate_json(response.content)
@@ -157,17 +164,11 @@ async def test_get_pilots(client: AsyncClient, user_creds: tuple[str, str]):
 
 
 @pytest.mark.asyncio
-async def test_get_event(
-    client: AsyncClient, user_creds: tuple[str, str], basic_event: RaceEvent
-):
+async def test_get_event(authed_client: AsyncClient, basic_event: RaceEvent):
     """
     Test getting individual events through the api
     """
-    payload = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=payload)
-    assert response.status_code == 200
-
-    response = await client.get("/api/events/1")
+    response = await authed_client.get("/api/events/1")
     assert response.status_code == 200
 
     event = RACE_EVENT_ADAPTER.validate_json(response.content)
@@ -177,17 +178,21 @@ async def test_get_event(
 
 
 @pytest.mark.asyncio
-async def test_get_events(
-    client: AsyncClient, user_creds: tuple[str, str], basic_event: RaceEvent
-):
+async def test_get_event_does_not_exist(authed_client: AsyncClient):
+    """
+    Test getting a pilot that doesn't exist
+    """
+
+    response = await authed_client.get("/api/events/1")
+    assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_get_events(authed_client: AsyncClient, basic_event: RaceEvent):
     """
     Test getting events through the rest api
     """
-    payload = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=payload)
-    assert response.status_code == 200
-
-    response = await client.get("/api/events")
+    response = await authed_client.get("/api/events")
     assert response.status_code == 200
 
     events = RACE_EVENT_LIST_ADAPTER.validate_json(response.content)
@@ -198,17 +203,11 @@ async def test_get_events(
 
 
 @pytest.mark.asyncio
-async def test_get_raceclass(
-    client: AsyncClient, user_creds: tuple[str, str], basic_raceclass: RaceClass
-):
+async def test_get_raceclass(authed_client: AsyncClient, basic_raceclass: RaceClass):
     """
     Test getting individual raceclasses through the api
     """
-    payload = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=payload)
-    assert response.status_code == 200
-
-    response = await client.get("/api/raceclasses/1")
+    response = await authed_client.get("/api/raceclasses/1")
     assert response.status_code == 200
 
     raceclass = RACECLASS_ADAPTER.validate_json(response.content)
@@ -217,17 +216,22 @@ async def test_get_raceclass(
 
 
 @pytest.mark.asyncio
+async def test_get_raceclasses_does_not_exist(authed_client: AsyncClient):
+    """
+    Test getting a pilot that doesn't exist
+    """
+    response = await authed_client.get("/api/raceclasses/1")
+    assert response.status_code == 204
+
+
+@pytest.mark.asyncio
 async def test_get_event_raceclasses(
-    client: AsyncClient, user_creds: tuple[str, str], basic_raceclass: RaceClass
+    authed_client: AsyncClient, basic_raceclass: RaceClass
 ):
     """
     Test getting raceclasses for an event through the api
     """
-    payload = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=payload)
-    assert response.status_code == 200
-
-    response = await client.get("/api/events/1/raceclasses")
+    response = await authed_client.get("/api/events/1/raceclasses")
     assert response.status_code == 200
 
     raceclasses = RACECLASS_LIST_ADAPTER.validate_json(response.content)
@@ -237,17 +241,11 @@ async def test_get_event_raceclasses(
 
 
 @pytest.mark.asyncio
-async def test_get_round(
-    client: AsyncClient, user_creds: tuple[str, str], basic_round: Round
-):
+async def test_get_round(authed_client: AsyncClient, basic_round: Round):
     """
     Test getting individual raceclasses through the api
     """
-    payload = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=payload)
-    assert response.status_code == 200
-
-    response = await client.get("/api/rounds/1")
+    response = await authed_client.get("/api/rounds/1")
     assert response.status_code == 200
 
     round_ = ROUND_ADAPTER.validate_json(response.content)
@@ -256,17 +254,20 @@ async def test_get_round(
 
 
 @pytest.mark.asyncio
-async def test_get_raceclass_rounds(
-    client: AsyncClient, user_creds: tuple[str, str], basic_round: Round
-):
+async def test_get_round_does_not_exist(authed_client: AsyncClient):
+    """
+    Test getting a pilot that doesn't exist
+    """
+    response = await authed_client.get("/api/rounds/1")
+    assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_get_raceclass_rounds(authed_client: AsyncClient, basic_round: Round):
     """
     Test getting individual raceclasses through the api
     """
-    payload = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=payload)
-    assert response.status_code == 200
-
-    response = await client.get("/api/raceclasses/1/rounds")
+    response = await authed_client.get("/api/raceclasses/1/rounds")
     assert response.status_code == 200
 
     rounds = ROUND_LIST_ADAPTER.validate_json(response.content)
@@ -275,17 +276,11 @@ async def test_get_raceclass_rounds(
 
 
 @pytest.mark.asyncio
-async def test_get_heat(
-    client: AsyncClient, user_creds: tuple[str, str], basic_heat: Heat
-):
+async def test_get_heat(authed_client: AsyncClient, basic_heat: Heat):
     """
     Test getting individual raceclasses through the api
     """
-    payload = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=payload)
-    assert response.status_code == 200
-
-    response = await client.get("/api/heats/1")
+    response = await authed_client.get("/api/heats/1")
     assert response.status_code == 200
 
     heat = HEAT_ADAPTER.validate_json(response.content)
@@ -294,17 +289,20 @@ async def test_get_heat(
 
 
 @pytest.mark.asyncio
-async def test_get_round_heats(
-    client: AsyncClient, user_creds: tuple[str, str], basic_heat: Heat
-):
+async def test_get_heat_does_not_exist(authed_client: AsyncClient):
+    """
+    Test getting a pilot that doesn't exist
+    """
+    response = await authed_client.get("/api/heats/1")
+    assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_get_round_heats(authed_client: AsyncClient, basic_heat: Heat):
     """
     Test getting individual raceclasses through the api
     """
-    payload = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=payload)
-    assert response.status_code == 200
-
-    response = await client.get("/api/rounds/1/heats")
+    response = await authed_client.get("/api/rounds/1/heats")
     assert response.status_code == 200
 
     heats = HEAT_LIST_ADAPTER.validate_json(response.content)
