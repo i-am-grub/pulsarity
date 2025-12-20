@@ -5,6 +5,7 @@ HTTP Rest API Routes
 import logging
 from uuid import UUID
 
+from starlette.responses import Response
 from starlette.routing import Mount, Route
 from starsessions.session import regenerate_session_id
 
@@ -48,7 +49,7 @@ async def check_auth() -> BaseResponse:
 
 
 @endpoint(request_model=LoginRequest, response_model=LoginResponse)
-async def login(data: LoginRequest) -> LoginResponse | None:
+async def login(data: LoginRequest) -> LoginResponse | Response:
     """
     Pass the user credentials to log the user into the server
 
@@ -68,11 +69,11 @@ async def login(data: LoginRequest) -> LoginResponse | None:
 
         return LoginResponse(status=True, password_reset_required=user.reset_required)
 
-    return None
+    return Response(status_code=400)
 
 
-@endpoint(SystemDefaultPerms.AUTHENTICATED, response_model=BaseResponse)
-async def logout() -> BaseResponse:
+@endpoint(SystemDefaultPerms.AUTHENTICATED)
+async def logout() -> Response:
     """
     Logout the currently connected client
 
@@ -80,17 +81,15 @@ async def logout() -> BaseResponse:
     """
     auth_user = ctx.user_ctx.get()
     logger.info("Logging out user %s", auth_user.identity)
-
     ctx.request_ctx.get().session.clear()
-    return BaseResponse(status=True)
+    return Response(status_code=200)
 
 
 @endpoint(
     SystemDefaultPerms.AUTHENTICATED,
     request_model=ResetPasswordRequest,
-    response_model=BaseResponse,
 )
-async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
+async def reset_password(data: ResetPasswordRequest) -> Response:
     """
     Resets the password for the client user
 
@@ -107,9 +106,9 @@ async def reset_password(data: ResetPasswordRequest) -> BaseResponse:
 
         background.add_background_task(user.update_password_required, False)
 
-        return BaseResponse(status=True)
+        return Response(status_code=200)
 
-    return BaseResponse(status=False)
+    return Response(status_code=400)
 
 
 @endpoint(SystemDefaultPerms.READ_PILOTS, response_adapter=PILOT_ADAPTER)

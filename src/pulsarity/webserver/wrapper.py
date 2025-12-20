@@ -122,6 +122,9 @@ def endpoint(
                     func, response_adapter, endpoint_result
                 )
 
+            if isinstance(endpoint_result, Response):
+                return endpoint_result
+
             if response_model is not None:
                 return _process_response_model(func, response_model, endpoint_result)
 

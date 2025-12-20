@@ -52,15 +52,9 @@ async def test_webserver_lack_permissions(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_webserver_authorized(client: AsyncClient, user_creds: tuple[str, ...]):
+async def test_webserver_authorized(authed_client: AsyncClient):
     """
     Test accessing a route while being logged in with proper permissions
     """
-    payload = {"username": user_creds[0], "password": user_creds[1]}
-
-    response = await client.post("/login", json=payload)
-    assert response.status_code == 200
-    assert response.cookies
-
-    response = await client.get("/api/pilots")
+    response = await authed_client.get("/api/pilots")
     assert response.status_code == 200

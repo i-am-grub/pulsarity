@@ -2,8 +2,6 @@
 HTTP route tests
 """
 
-import json
-
 import pytest
 from httpx import AsyncClient
 
@@ -20,6 +18,7 @@ from pulsarity.database.raceevent import (
     RaceEvent,
 )
 from pulsarity.database.round import ROUND_ADAPTER, ROUND_LIST_ADAPTER, Round
+from pulsarity.webserver.validation import LoginResponse
 
 
 async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str, str]):
@@ -32,10 +31,10 @@ async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str, str]
     response = await client.post("/login", json=login_data)
     assert response.status_code == 200
 
-    data = json.loads(response.json())
+    data = LoginResponse.model_validate_json(response.json())
 
-    assert data["status"] is True
-    reset_required = data["password_reset_required"]
+    assert data.status is True
+    reset_required = data.password_reset_required
     assert reset_required is not None
     return reset_required
 
@@ -58,7 +57,7 @@ async def test_webserver_login_invalid(
     fake_password = "fake_password"
     login_data = {"username": user_creds[0], "password": fake_password}
     response = await client.post("/login", json=login_data)
-    assert response.status_code == 204
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio
@@ -76,10 +75,7 @@ async def test_password_reset_invalid(client: AsyncClient, user_creds: tuple[str
     data = {"old_password": password, "new_password": "new_password"}
 
     response = await client.post("/reset-password", json=data)
-    assert response.status_code == 200
-
-    data = json.loads(response.json())
-    assert data["status"] is False
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio
@@ -99,9 +95,6 @@ async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str, 
 
     response = await client.post("/reset-password", json=reset_data)
     assert response.status_code == 200
-
-    data = json.loads(response.json())
-    assert data["status"] is True
 
     new_creds = (user_creds[0], new_password)
 
