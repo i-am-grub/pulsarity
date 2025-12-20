@@ -1,3 +1,7 @@
+"""
+Pytest default fixtures
+"""
+
 import asyncio
 
 import pytest
@@ -27,6 +31,10 @@ from pulsarity.webserver import generate_application
 
 @pytest_asyncio.fixture(autouse=True)
 async def context_and_cleanup():
+    """
+    Setup and tear down the application context
+    """
+
     ctx.loop_ctx.set(asyncio.get_running_loop())
     ctx.event_broker_ctx.set(EventBroker())
     ctx.race_state_ctx.set(RaceStateManager())
@@ -40,6 +48,10 @@ async def context_and_cleanup():
 
 @pytest_asyncio.fixture(autouse=True)
 async def database_init():
+    """
+    Establish the test database connection
+    """
+
     await Tortoise.init(
         {
             "connections": {
@@ -75,6 +87,10 @@ async def database_init():
 
 @pytest_asyncio.fixture(name="client")
 async def unauthenticated_client():
+    """
+    Generate an unauthenticated client
+    """
+
     transport = ASGITransport(app=generate_application(test_mode=True))
     async with AsyncClient(
         transport=transport, base_url="https://localhost"
@@ -84,12 +100,27 @@ async def unauthenticated_client():
 
 @pytest.fixture(name="user_creds")
 def default_user_creds():
+    """
+    Generates default authentication creds
+    """
     configs = PulsarityConfig()
 
     username = configs.secrets.default_username
     password = configs.secrets.default_password
 
     yield username, password
+
+
+@pytest_asyncio.fixture(name="authed_client")
+async def _authenticated_client(client: AsyncClient, user_creds: tuple[str, str]):
+    """
+    Generates an authenticated client
+    """
+    login_data = {"username": user_creds[0], "password": user_creds[1]}
+    response = await client.post("/login", json=login_data)
+    assert response.status_code == 200
+
+    yield client
 
 
 @pytest_asyncio.fixture(name="limited_schedule")

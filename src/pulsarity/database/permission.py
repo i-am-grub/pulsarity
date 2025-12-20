@@ -35,19 +35,6 @@ class Permission(_PulsarityBase):
         app = "system"
         table = "permission"
 
-    def __init__(self, value: UserPermission, *, persistent=False):
-        """
-        Class initialization
-
-        :param value: The string to map the value to
-        :param persistent: When set to `True` prevents the object
-        from being deleted from the database, defaults to False
-        """
-        super().__init__()
-
-        self.value = value
-        self.persistent = persistent
-
     @classmethod
     async def verify_persistant(cls) -> None:
         """
@@ -63,7 +50,9 @@ class Permission(_PulsarityBase):
 
             for enum in permission_class:
                 if enum not in permissions:
-                    permissions_add.append(Permission(enum, persistent=persistent))
+                    permissions_add.append(
+                        Permission(value=enum, persistent=persistent)
+                    )
 
         await cls.bulk_create(permissions_add)
 

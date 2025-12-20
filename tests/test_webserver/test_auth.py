@@ -1,9 +1,11 @@
+"""
+Test authenticating to the server
+"""
+
 import pytest
 from httpx import AsyncClient
 
 from pulsarity.database import Permission, Role, SystemDefaultPerms, User
-
-# pylint: disable=W0212
 
 
 @pytest.mark.asyncio

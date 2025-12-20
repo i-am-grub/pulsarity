@@ -96,16 +96,15 @@ class User(_PulsarityBase):
     @property
     def permissions(self) -> set[str]:
         """
-        Gets the permissions for the user. Can only be used when a
-        session to the database has not been closed
+        Gets the permissions for the user. Can only be used when roles
+        and permissions are prefetched for the user
 
         :return: The set of permissions
         """
         permissions: set[str] = set()
 
         for role in self.roles:
-            permissions_: set[str] = set(perm.value for perm in role.permissions)
-            permissions.update(permissions_)
+            permissions.update(set(perm.value for perm in role.permissions))
 
         return permissions
 
@@ -168,6 +167,15 @@ class User(_PulsarityBase):
 
     @classmethod
     async def get_by_uuid(cls, uuid: UUID) -> Self | None:
+        """
+        Attempt to retrieve a user by uuid.
+
+        :param uuid: The uuid to search for
+        """
+        return await cls.get_or_none(auth_id=uuid)
+
+    @classmethod
+    async def get_by_uuid_prefetch(cls, uuid: UUID) -> Self | None:
         """
         Attempt to retrieve a user by uuid. A successful retrieval will
         prefetch data down to the permissions level for the user.

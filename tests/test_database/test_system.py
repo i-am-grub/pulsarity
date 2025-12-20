@@ -1,3 +1,7 @@
+"""
+Test the system database
+"""
+
 import pytest
 
 from pulsarity.database.user import User

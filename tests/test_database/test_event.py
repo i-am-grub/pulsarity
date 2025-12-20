@@ -1,3 +1,7 @@
+"""
+Test the event database
+"""
+
 from datetime import timedelta
 
 import pytest

@@ -127,7 +127,7 @@ class RaceStateManager:
         Set the current status of the race and create a record of
         status change
 
-        :param status: _description_
+        :param status: The status to set the the manager to
         """
         self._status = status
         self._race_record.append((status, ctx.loop_ctx.get().time()))

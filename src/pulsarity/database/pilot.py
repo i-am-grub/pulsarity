@@ -54,22 +54,6 @@ class Pilot(_PulsarityBase):
         app = "event"
         table = "pilot"
 
-    def __init__(
-        self, *, name: str = "", callsign: str = "", phonetic: str = ""
-    ) -> None:
-        """
-        Class initalizer
-
-        :param name: _description_, defaults to ""
-        :param callsign: _description_, defaults to ""
-        :param phonetic: _description_, defaults to ""
-        """
-        super().__init__()
-
-        self.name = name
-        self.callsign = callsign
-        self.phonetic = phonetic
-
     def __repr__(self):
         return f"<Pilot {self.id}>"
 

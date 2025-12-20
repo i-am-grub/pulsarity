@@ -48,7 +48,7 @@ class PulsarityUser(BaseUser):
             return set()
 
         uuid = UUID(hex=self._auth_id)
-        user = await User.get_by_uuid(uuid)
+        user = await User.get_by_uuid_prefetch(uuid)
 
         if user is None:
             return set()
@@ -81,7 +81,7 @@ class PulsarityAuthBackend(AuthenticationBackend):
         """
         if (uuid_hex := conn.session.get("auth_id")) is not None:
             user_uuid = UUID(hex=uuid_hex)
-            user = await User.get_by_uuid(user_uuid)
+            user = await User.get_by_uuid_prefetch(user_uuid)
 
             if user is not None:
                 return AuthCredentials(user.permissions), PulsarityUser(user)

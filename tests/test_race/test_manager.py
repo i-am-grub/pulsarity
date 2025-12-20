@@ -1,3 +1,7 @@
+"""
+Test the race manager
+"""
+
 import asyncio
 import time
 

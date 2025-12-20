@@ -1,3 +1,7 @@
+"""
+Test websocket access
+"""
+
 import asyncio
 import uuid
 

@@ -1,7 +1,10 @@
+"""
+HTTP route tests
+"""
+
 import json
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from pulsarity.database.heat import HEAT_ADAPTER, HEAT_LIST_ADAPTER, Heat
@@ -17,15 +20,6 @@ from pulsarity.database.raceevent import (
     RaceEvent,
 )
 from pulsarity.database.round import ROUND_ADAPTER, ROUND_LIST_ADAPTER, Round
-
-
-@pytest_asyncio.fixture(name="authed_client")
-async def _authenticated_client(client: AsyncClient, user_creds: tuple[str, str]):
-    login_data = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=login_data)
-    assert response.status_code == 200
-
-    yield client
 
 
 async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str, str]):

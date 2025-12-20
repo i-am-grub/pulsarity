@@ -22,9 +22,8 @@ class PulsarityBase(Model):
         """
         Attempt to retrieve an object by its id
 
-        :param session: _description_
-        :param uuid: _description_
-        :return: _description_
+        :param id_: The id of the object to search for
+        :return: The object from the database
         """
         return await cls.get_or_none(id=id_)
 
@@ -33,9 +32,8 @@ class PulsarityBase(Model):
         """
         Attempt to retrieve an object by its id
 
-        :param session: _description_
-        :param uuid: _description_
-        :return: _description_
+        :param id_: The id of the object to search for
+        :return: The object from the database
         """
         return await cls.get_or_none(id=id_).prefetch_related("attributes")
 
