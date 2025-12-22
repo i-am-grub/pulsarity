@@ -26,6 +26,7 @@ from pulsarity.database.raceevent import (
 from pulsarity.database.round import ROUND_ADAPTER, ROUND_LIST_ADAPTER, Round
 from pulsarity.database.user import User
 from pulsarity.utils import background
+from pulsarity.webserver._wrapper import endpoint
 from pulsarity.webserver.validation import (
     BaseResponse,
     LoginRequest,
@@ -33,7 +34,6 @@ from pulsarity.webserver.validation import (
     PaginationParams,
     ResetPasswordRequest,
 )
-from pulsarity.webserver.wrapper import endpoint
 
 logger = logging.getLogger(__name__)
 
