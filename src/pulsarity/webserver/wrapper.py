@@ -38,6 +38,7 @@ def endpoint(
     *permissions: UserPermission,
     requires_auth: bool = True,
     request_model: type[BaseModel] | None = None,
+    query_model: type[BaseModel] | None = None,
     response_adapter: TypeAdapter | None = None,
     response_model: type[BaseModel] | None = None,
 ):
@@ -57,7 +58,7 @@ def endpoint(
     ) -> Callable[[Request], Coroutine[None, None, Response]]:
         num_args = len(inspect.signature(func).parameters.keys())
         try:
-            if request_model is not None:
+            if request_model is not None or query_model is not None:
                 assert num_args == 1
             else:
                 assert num_args == 0
@@ -81,6 +82,18 @@ def endpoint(
                 raise ValueError(
                     f"{func.__name__} request model is not a subclass of {BaseModel.__name__}"
                 ) from ex
+
+        if query_model is not None:
+            try:
+                assert issubclass(query_model, BaseModel)
+            except AssertionError as ex:
+                raise ValueError(
+                    f"{func.__name__} query model is not a subclass of {BaseModel.__name__}"
+                ) from ex
+
+        assert request_model is None or query_model is None, (
+            "Request model and query model can not be used together"
+        )
 
         if response_adapter is not None:
             try:
@@ -109,7 +122,12 @@ def endpoint(
             @requires(permissions, status_code=403)
             async def wrapper(request: Request) -> Response:
                 return await _process_request(
-                    func, request, request_model, response_adapter, response_model
+                    func,
+                    request,
+                    request_model,
+                    query_model,
+                    response_adapter,
+                    response_model,
                 )
 
         else:
@@ -117,7 +135,12 @@ def endpoint(
             @functools.wraps(func)
             async def wrapper(request: Request) -> Response:
                 return await _process_request(
-                    func, request, request_model, response_adapter, response_model
+                    func,
+                    request,
+                    request_model,
+                    query_model,
+                    response_adapter,
+                    response_model,
                 )
 
         return wrapper
@@ -129,23 +152,35 @@ async def _process_request(
     func: Callable,
     request: Request,
     request_model: type[BaseModel] | None,
+    query_model: type[BaseModel] | None,
     response_adapter: TypeAdapter | None,
     response_model: type[BaseModel] | None,
 ) -> Response:
     """
     Processes the incoming request
     """
+    # pylint: disable=R0913,R0917
+
     ctx.request_ctx.set(request)
     ctx.user_ctx.set(request.user)
 
     if request_model is not None:
         try:
-            data = await request.json()
-            parsed_model = request_model.model_validate(data)
+            data = await request.body()
+            parsed_model = request_model.model_validate_json(data)
         except (JSONDecodeError, ValidationError):
             return Response(status_code=400)
 
         endpoint_result = await ensure_async(func, parsed_model)
+
+    elif query_model is not None:
+        try:
+            parsed_model = query_model.model_validate(request.query_params)
+        except (JSONDecodeError, ValidationError):
+            return Response(status_code=400)
+
+        endpoint_result = await ensure_async(func, parsed_model)
+
     else:
         endpoint_result = await ensure_async(func)
 

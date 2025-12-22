@@ -85,10 +85,10 @@ async def _recieve_data() -> None:
     """
     websocket = ctx.websocket_ctx.get()
     while True:
-        data = await websocket.receive_json()
+        data = await websocket.receive_text()
 
         try:
-            model = WSEventData.model_validate(data)
+            model = WSEventData.model_validate_json(data)
         except ValidationError:
             logger.debug("Error validating websocket data: %s", data)
         else:
