@@ -16,7 +16,7 @@ from starlette.responses import JSONResponse, Response
 from pulsarity import ctx
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.utils.asyncio import ensure_async
-from pulsarity.webserver.auth import requires
+from pulsarity.webserver._auth import requires
 
 _T = TypeVar("_T")
 

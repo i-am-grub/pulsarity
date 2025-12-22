@@ -16,7 +16,7 @@ from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddlewa
 
 from pulsarity import ctx
 from pulsarity.utils.crypto import generate_self_signed_cert
-from pulsarity.webserver.auth import PulsarityAuthBackend
+from pulsarity.webserver._auth import PulsarityAuthBackend
 from pulsarity.webserver.lifespan import ContextState, shutdown_signaled
 from pulsarity.webserver.lifespan import lifespan as _lifespan
 from pulsarity.webserver.routes import routes as http_routes
