@@ -37,7 +37,7 @@ from pulsarity.webserver.wrapper import endpoint
 logger = logging.getLogger(__name__)
 
 
-@endpoint(response_model=BaseResponse)
+@endpoint(requires_auth=False, response_model=BaseResponse)
 async def check_auth() -> BaseResponse:
     """
     Check if a user is authenticated
@@ -48,7 +48,7 @@ async def check_auth() -> BaseResponse:
     return BaseResponse(status=auth_user.is_authenticated)
 
 
-@endpoint(request_model=LoginRequest, response_model=LoginResponse)
+@endpoint(requires_auth=False, request_model=LoginRequest, response_model=LoginResponse)
 async def login(data: LoginRequest) -> LoginResponse | Response:
     """
     Pass the user credentials to log the user into the server
@@ -72,7 +72,7 @@ async def login(data: LoginRequest) -> LoginResponse | Response:
     return Response(status_code=400)
 
 
-@endpoint(SystemDefaultPerms.AUTHENTICATED)
+@endpoint()
 async def logout() -> Response:
     """
     Logout the currently connected client
@@ -85,10 +85,7 @@ async def logout() -> Response:
     return Response(status_code=200)
 
 
-@endpoint(
-    SystemDefaultPerms.AUTHENTICATED,
-    request_model=ResetPasswordRequest,
-)
+@endpoint(request_model=ResetPasswordRequest)
 async def reset_password(data: ResetPasswordRequest) -> Response:
     """
     Resets the password for the client user

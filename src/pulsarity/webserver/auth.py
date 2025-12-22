@@ -2,17 +2,121 @@
 Authorization and permission enforcement
 """
 
+import functools
+import inspect
+from collections.abc import Callable, Iterable, Sequence
+from typing import Any, ParamSpec
+from urllib.parse import urlencode
 from uuid import UUID
 
+from starlette._utils import is_async_callable
 from starlette.authentication import (
-    AuthCredentials,
     AuthenticationBackend,
     BaseUser,
     UnauthenticatedUser,
 )
+from starlette.exceptions import HTTPException
+from starlette.requests import HTTPConnection, Request
+from starlette.responses import RedirectResponse
+from starlette.websockets import WebSocket
 
 from pulsarity.database.permission import UserPermission
 from pulsarity.database.user import User
+
+_P = ParamSpec("_P")
+
+
+class PulsarityCredentials:
+    """
+    Reimplementation of starlette's `AuthCredentials`
+    """
+
+    # pylint: disable=R0903
+
+    def __init__(self, scopes: Sequence[str] | None = None):
+        self.scopes = set() if scopes is None else set(scopes)
+
+
+def has_required_scope(conn: HTTPConnection, scopes: Iterable[str]) -> bool:
+    """
+    Reimplementation of starlette's `has_required_scope`
+    """
+    return set(scopes).issubset(conn.auth.scopes)
+
+
+def requires(
+    scopes: str | Sequence[str],
+    status_code: int = 403,
+    redirect: str | None = None,
+) -> Callable[[Callable[_P, Any]], Callable[_P, Any]]:
+    """
+    Reimplementation of starlette's `requires` decorator
+    """
+    # pylint: disable=W0719
+    scopes_set = {scopes} if isinstance(scopes, str) else set(scopes)
+
+    def decorator(
+        func: Callable[_P, Any],
+    ) -> Callable[_P, Any]:
+        sig = inspect.signature(func)
+        for idx, parameter in enumerate(sig.parameters.values()):
+            if parameter.name in ("request", "websocket"):
+                type_ = parameter.name
+                break
+        else:
+            raise Exception(
+                f'No "request" or "websocket" argument on function "{func}"'
+            )
+
+        if type_ == "websocket":
+
+            @functools.wraps(func)
+            async def websocket_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> None:
+                websocket = kwargs.get(
+                    "websocket", args[idx] if idx < len(args) else None
+                )
+                assert isinstance(websocket, WebSocket)
+
+                if not has_required_scope(websocket, scopes_set):
+                    await websocket.close()
+                else:
+                    await func(*args, **kwargs)
+
+            return websocket_wrapper
+
+        if is_async_callable(func):
+
+            @functools.wraps(func)
+            async def async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
+                request = kwargs.get("request", args[idx] if idx < len(args) else None)
+                assert isinstance(request, Request)
+
+                if not has_required_scope(request, scopes_set):
+                    if redirect is not None:
+                        orig_request_qparam = urlencode({"next": str(request.url)})
+                        next_url = f"{request.url_for(redirect)}?{orig_request_qparam}"
+                        return RedirectResponse(url=next_url, status_code=303)
+                    raise HTTPException(status_code=status_code)
+                return await func(*args, **kwargs)
+
+            return async_wrapper
+
+        @functools.wraps(func)
+        def sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
+            request = kwargs.get("request", args[idx] if idx < len(args) else None)
+            assert isinstance(request, Request)
+
+            if not has_required_scope(request, scopes_set):
+                if redirect is not None:
+                    orig_request_qparam = urlencode({"next": str(request.url)})
+                    next_url = f"{request.url_for(redirect)}?{orig_request_qparam}"
+                    return RedirectResponse(url=next_url, status_code=303)
+                raise HTTPException(status_code=status_code)
+            return func(*args, **kwargs)
+
+        return sync_wrapper
+
+    return decorator
 
 
 class PulsarityUser(BaseUser):
@@ -84,6 +188,6 @@ class PulsarityAuthBackend(AuthenticationBackend):
             user = await User.get_by_uuid_prefetch(user_uuid)
 
             if user is not None:
-                return AuthCredentials(user.permissions), PulsarityUser(user)
+                return PulsarityCredentials(user.permissions), PulsarityUser(user)
 
-        return AuthCredentials(), UnauthenticatedUser()
+        return PulsarityCredentials(), UnauthenticatedUser()

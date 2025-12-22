@@ -103,6 +103,21 @@ async def test_password_reset_valid(client: AsyncClient, user_creds: tuple[str, 
 
 
 @pytest.mark.asyncio
+async def test_password_reset_blocked(client: AsyncClient, user_creds: tuple[str, str]):
+    """
+    Test reseting a password while note being authenticated
+    """
+
+    reset_data = {
+        "old_password": user_creds[1],
+        "new_password": "new_password",
+    }
+
+    response = await client.post("/reset-password", json=reset_data)
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
 async def test_get_pilot(authed_client: AsyncClient):
     """
     Test getting individual pilots through the rest api

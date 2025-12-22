@@ -15,7 +15,7 @@ async def test_webserver_unauthorized(client: AsyncClient):
     being logged in
     """
     response = await client.get("/api/pilots")
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio
