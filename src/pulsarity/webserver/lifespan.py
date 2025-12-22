@@ -7,7 +7,7 @@ import contextlib
 import json
 import logging
 import signal
-from typing import Any
+from typing import Any, TypedDict
 
 from starlette.applications import Starlette
 from tortoise import Tortoise, connections
@@ -42,17 +42,16 @@ async def shutdown_signaled() -> None:
     await _shutdown_event.wait()
 
 
-def set_context_vars() -> None:
+class ContextState(TypedDict):
     """
-    Setup the default context variables for the
-    application
+    Context payload
     """
 
-    ctx.loop_ctx.set(asyncio.get_running_loop())
-    ctx.event_broker_ctx.set(EventBroker())
-    ctx.race_state_ctx.set(RaceStateManager())
-    ctx.race_processor_ctx.set(RaceProcessorManager())
-    ctx.interface_manager_ctx.set(TimerInterfaceManager())
+    loop: asyncio.AbstractEventLoop
+    event: EventBroker
+    race_state: RaceStateManager
+    race_processor: RaceProcessorManager
+    timer_inferface_manager: TimerInterfaceManager
 
 
 @contextlib.asynccontextmanager
@@ -64,42 +63,51 @@ async def lifespan(_app: Starlette):
     """
 
     logger.info("Starting Pulsarity...")
-    set_context_vars()
-    await server_starup_workflow()
+
+    state = ContextState(
+        loop=asyncio.get_running_loop(),
+        event=EventBroker(),
+        race_state=RaceStateManager(),
+        race_processor=RaceProcessorManager(),
+        timer_inferface_manager=TimerInterfaceManager(),
+    )
+
+    await server_starup_workflow(state)
     logger.info("Pulsarity startup completed...")
 
-    yield
+    yield state
 
     logger.info("Stopping Pulsarity...")
-    await server_shutdown_workflow()
+    await server_shutdown_workflow(state)
     logger.info("Pulsarity shutdown completed...")
 
 
-async def server_starup_workflow() -> None:
+async def server_starup_workflow(state: ContextState) -> None:
     """
     Startup workflow
     """
     await ctx.config_ctx.get().write_config_to_file_async(DEFAULT_CONFIG_FILE)
 
-    loop = ctx.loop_ctx.get()
+    loop = state["loop"]
     loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
     loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
-    ctx.interface_manager_ctx.get().start()
+    token = ctx.loop_ctx.set(loop)
+    state["timer_inferface_manager"].start()
+    ctx.loop_ctx.reset(token)
 
     await database_startup()
 
-    await ctx.event_broker_ctx.get().trigger(SpecialEvt.STARTUP, {})
+    await state["event"].trigger(SpecialEvt.STARTUP, {})
 
 
-async def server_shutdown_workflow() -> None:
+async def server_shutdown_workflow(state: ContextState) -> None:
     """
     Shutdown workflow
     """
-    event_broker = ctx.event_broker_ctx.get()
-    await event_broker.trigger(SpecialEvt.SHUTDOWN, {})
+    await state["event"].trigger(SpecialEvt.SHUTDOWN, {})
 
-    await ctx.interface_manager_ctx.get().shutdown(5)
+    await state["timer_inferface_manager"].shutdown(5)
     await background.shutdown(5)
     await database_shutdown()
 

@@ -11,17 +11,52 @@ from hypercorn.middleware import HTTPToHTTPSRedirectMiddleware
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
+from starlette.middleware.cors import CORSMiddleware
 from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddleware
 
 from pulsarity import ctx
 from pulsarity.utils.crypto import generate_self_signed_cert
 from pulsarity.webserver.auth import PulsarityAuthBackend
+from pulsarity.webserver.lifespan import ContextState, shutdown_signaled
 from pulsarity.webserver.lifespan import lifespan as _lifespan
-from pulsarity.webserver.lifespan import shutdown_signaled
 from pulsarity.webserver.routes import routes as http_routes
 from pulsarity.webserver.websockets import routes as ws_routes
 
 logger = logging.getLogger(__name__)
+
+
+class ContextMiddleware:
+    """
+    Middleware for propagating context into the application
+    """
+
+    # pylint: disable=R0903
+
+    def __init__(self, app) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] not in ("http", "websocket"):
+            return await self.app(scope, receive, send)
+
+        state: ContextState = scope["state"]
+        loop_token = ctx.loop_ctx.set(state["loop"])
+        event_token = ctx.event_broker_ctx.set(state["event"])
+        race_state_token = ctx.race_state_ctx.set(state["race_state"])
+        race_processor_token = ctx.race_processor_ctx.set(state["race_processor"])
+        timer_interface_token = ctx.interface_manager_ctx.set(
+            state["timer_inferface_manager"]
+        )
+
+        try:
+            await self.app(scope, receive, send)
+
+        finally:
+            ctx.loop_ctx.reset(loop_token)
+            ctx.event_broker_ctx.reset(event_token)
+            ctx.race_state_ctx.reset(race_state_token)
+            ctx.race_processor_ctx.reset(race_processor_token)
+            ctx.interface_manager_ctx.reset(timer_interface_token)
 
 
 def generate_application(*, test_mode: bool = False) -> Starlette:
@@ -35,6 +70,11 @@ def generate_application(*, test_mode: bool = False) -> Starlette:
 
     middleware = [
         Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["GET", "POST"],
+        ),
+        Middleware(
             SessionMiddleware,
             store=CookieStore(secret_key=configs.secrets.secret_key),
             cookie_https_only=configs.webserver.force_redirects,
@@ -43,6 +83,7 @@ def generate_application(*, test_mode: bool = False) -> Starlette:
         ),
         Middleware(SessionAutoloadMiddleware),
         Middleware(AuthenticationMiddleware, backend=PulsarityAuthBackend()),
+        Middleware(ContextMiddleware),
     ]
 
     all_routes = http_routes + ws_routes
