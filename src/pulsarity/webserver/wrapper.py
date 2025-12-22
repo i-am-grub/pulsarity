@@ -50,6 +50,7 @@ def endpoint(
     :param response_adapter: The adapter model to use to validate the response, defaults to None
     :param response_model: The model to use to validate teh respones, defaults to None
     """
+    # pylint: disable=R0912
 
     def inner(
         func: Callable[..., _T],

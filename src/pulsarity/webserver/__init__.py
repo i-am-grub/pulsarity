@@ -83,8 +83,10 @@ def generate_application(*, test_mode: bool = False) -> Starlette:
         ),
         Middleware(SessionAutoloadMiddleware),
         Middleware(AuthenticationMiddleware, backend=PulsarityAuthBackend()),
-        Middleware(ContextMiddleware),
     ]
+
+    if not test_mode:
+        middleware.append(Middleware(ContextMiddleware))
 
     all_routes = http_routes + ws_routes
 
