@@ -134,7 +134,7 @@ async def get_pilots(params: PaginationParams) -> list[Pilot]:
     """
     return (
         await Pilot.all()
-        .offset(params.offset)
+        .filter(id__gt=params.cursor)
         .limit(params.limit)
         .prefetch_related("attributes")
     )
@@ -165,7 +165,7 @@ async def get_events(params: PaginationParams) -> list[RaceEvent]:
     """
     return (
         await RaceEvent.all()
-        .offset(params.offset)
+        .filter(id__gt=params.cursor)
         .limit(params.limit)
         .prefetch_related("attributes")
     )
@@ -197,7 +197,7 @@ async def get_raceclasses_for_event(params: PaginationParams) -> list[RaceClass]
     event_id: int = ctx.request_ctx.get().path_params["id"]
     return (
         await RaceClass.filter(event_id=event_id)
-        .offset(params.offset)
+        .filter(id__gt=params.cursor)
         .limit(params.limit)
         .prefetch_related("attributes")
     )
@@ -224,7 +224,7 @@ async def get_rounds_for_raceclass(params: PaginationParams) -> list[Round]:
     raceclass_id: int = ctx.request_ctx.get().path_params["id"]
     return (
         await Round.filter(raceclass_id=raceclass_id)
-        .offset(params.offset)
+        .filter(id__gt=params.cursor)
         .limit(params.limit)
         .prefetch_related("attributes")
     )
@@ -251,7 +251,7 @@ async def get_heats_for_round(params: PaginationParams) -> list[Heat]:
     round_id: int = ctx.request_ctx.get().path_params["id"]
     return (
         await Heat.filter(round_id=round_id)
-        .offset(params.offset)
+        .filter(id__gt=params.cursor)
         .limit(params.limit)
         .prefetch_related("attributes")
     )

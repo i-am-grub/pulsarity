@@ -10,7 +10,7 @@ class PaginationParams(BaseModel):
     Model for parsing pagination parameters
     """
 
-    offset: int = Field(default=0, ge=0)
+    cursor: int = Field(default=0, ge=0)
     limit: int = Field(default=10, gt=0, le=100)
 
 
