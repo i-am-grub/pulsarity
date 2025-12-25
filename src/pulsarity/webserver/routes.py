@@ -26,13 +26,14 @@ from pulsarity.database.raceevent import (
 from pulsarity.database.round import ROUND_ADAPTER, ROUND_LIST_ADAPTER, Round
 from pulsarity.database.user import User
 from pulsarity.utils import background
+from pulsarity.webserver._wrapper import endpoint
 from pulsarity.webserver.validation import (
     BaseResponse,
     LoginRequest,
     LoginResponse,
+    PaginationParams,
     ResetPasswordRequest,
 )
-from pulsarity.webserver.wrapper import endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -119,15 +120,24 @@ async def get_pilot() -> Pilot | None:
     return await Pilot.get_by_id_with_attributes(pilot_id)
 
 
-@endpoint(SystemDefaultPerms.READ_PILOTS, response_adapter=PILOT_LIST_ADAPTER)
-async def get_pilots() -> list[Pilot]:
+@endpoint(
+    SystemDefaultPerms.READ_PILOTS,
+    query_model=PaginationParams,
+    response_adapter=PILOT_LIST_ADAPTER,
+)
+async def get_pilots(params: PaginationParams) -> list[Pilot]:
     """
     A route for getting all pilots currently stored in the
     database.
 
     :return: A JSON model of all pilots
     """
-    return await Pilot.all().prefetch_related("attributes")
+    return (
+        await Pilot.all()
+        .filter(id__gt=params.cursor)
+        .limit(params.limit)
+        .prefetch_related("attributes")
+    )
 
 
 @endpoint(SystemDefaultPerms.READ_EVENTS, response_adapter=RACE_EVENT_ADAPTER)
@@ -141,15 +151,24 @@ async def get_event() -> RaceEvent | None:
     return await RaceEvent.get_by_id_with_attributes(event_id)
 
 
-@endpoint(SystemDefaultPerms.READ_EVENTS, response_adapter=RACE_EVENT_LIST_ADAPTER)
-async def get_events() -> list[RaceEvent]:
+@endpoint(
+    SystemDefaultPerms.READ_EVENTS,
+    query_model=PaginationParams,
+    response_adapter=RACE_EVENT_LIST_ADAPTER,
+)
+async def get_events(params: PaginationParams) -> list[RaceEvent]:
     """
     A route for getting all events currently stored in the
     database.
 
     :return: A JSON model of all events
     """
-    return await RaceEvent.all().prefetch_related("attributes")
+    return (
+        await RaceEvent.all()
+        .filter(id__gt=params.cursor)
+        .limit(params.limit)
+        .prefetch_related("attributes")
+    )
 
 
 @endpoint(SystemDefaultPerms.READ_RACECLASS, response_adapter=RACECLASS_ADAPTER)
@@ -163,8 +182,12 @@ async def get_racelass() -> RaceClass | None:
     return await RaceClass.get_by_id_with_attributes(raceclass_id)
 
 
-@endpoint(SystemDefaultPerms.READ_RACECLASS, response_adapter=RACECLASS_LIST_ADAPTER)
-async def get_raceclasses_for_event() -> list[RaceClass]:
+@endpoint(
+    SystemDefaultPerms.READ_RACECLASS,
+    query_model=PaginationParams,
+    response_adapter=RACECLASS_LIST_ADAPTER,
+)
+async def get_raceclasses_for_event(params: PaginationParams) -> list[RaceClass]:
     """
     A route for getting all raceclasses currently stored in the
     database.
@@ -172,7 +195,12 @@ async def get_raceclasses_for_event() -> list[RaceClass]:
     :return: A JSON model of all raceclasses
     """
     event_id: int = ctx.request_ctx.get().path_params["id"]
-    return await RaceClass.filter(event_id=event_id).prefetch_related("attributes")
+    return (
+        await RaceClass.filter(event_id=event_id)
+        .filter(id__gt=params.cursor)
+        .limit(params.limit)
+        .prefetch_related("attributes")
+    )
 
 
 @endpoint(SystemDefaultPerms.READ_ROUND, response_adapter=ROUND_ADAPTER)
@@ -184,13 +212,22 @@ async def get_round() -> Round | None:
     return await Round.get_by_id_with_attributes(round_id)
 
 
-@endpoint(SystemDefaultPerms.READ_ROUND, response_adapter=ROUND_LIST_ADAPTER)
-async def get_rounds_for_raceclass() -> list[Round]:
+@endpoint(
+    SystemDefaultPerms.READ_ROUND,
+    query_model=PaginationParams,
+    response_adapter=ROUND_LIST_ADAPTER,
+)
+async def get_rounds_for_raceclass(params: PaginationParams) -> list[Round]:
     """
     Gets all rounds for a specific racelass
     """
     raceclass_id: int = ctx.request_ctx.get().path_params["id"]
-    return await Round.filter(raceclass_id=raceclass_id).prefetch_related("attributes")
+    return (
+        await Round.filter(raceclass_id=raceclass_id)
+        .filter(id__gt=params.cursor)
+        .limit(params.limit)
+        .prefetch_related("attributes")
+    )
 
 
 @endpoint(SystemDefaultPerms.READ_HEAT, response_adapter=HEAT_ADAPTER)
@@ -202,13 +239,22 @@ async def get_heat() -> Heat | None:
     return await Heat.get_by_id_with_attributes(heat_id)
 
 
-@endpoint(SystemDefaultPerms.READ_HEAT, response_adapter=HEAT_LIST_ADAPTER)
-async def get_heats_for_round() -> list[Heat]:
+@endpoint(
+    SystemDefaultPerms.READ_HEAT,
+    query_model=PaginationParams,
+    response_adapter=HEAT_LIST_ADAPTER,
+)
+async def get_heats_for_round(params: PaginationParams) -> list[Heat]:
     """
     Gets all heats for a specific round
     """
     round_id: int = ctx.request_ctx.get().path_params["id"]
-    return await Heat.filter(round_id=round_id).prefetch_related("attributes")
+    return (
+        await Heat.filter(round_id=round_id)
+        .filter(id__gt=params.cursor)
+        .limit(params.limit)
+        .prefetch_related("attributes")
+    )
 
 
 routes = [

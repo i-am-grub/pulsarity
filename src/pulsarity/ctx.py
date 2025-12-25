@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from pulsarity.interface.timer_manager import TimerInterfaceManager
     from pulsarity.race.processor import RaceProcessorManager
     from pulsarity.race.state import RaceStateManager
-    from pulsarity.webserver.auth import PulsarityUser
+    from pulsarity.webserver._auth import PulsarityUser
 
 
 loop_ctx: ContextVar[AbstractEventLoop] = ContextVar("loop_ctx")
