@@ -133,8 +133,7 @@ async def get_pilots(params: PaginationParams) -> list[Pilot]:
     :return: A JSON model of all pilots
     """
     return (
-        await Pilot.all()
-        .filter(id__gt=params.cursor)
+        await Pilot.filter(id__gt=params.cursor)
         .limit(params.limit)
         .prefetch_related("attributes")
     )
@@ -164,8 +163,7 @@ async def get_events(params: PaginationParams) -> list[RaceEvent]:
     :return: A JSON model of all events
     """
     return (
-        await RaceEvent.all()
-        .filter(id__gt=params.cursor)
+        await RaceEvent.filter(id__gt=params.cursor)
         .limit(params.limit)
         .prefetch_related("attributes")
     )

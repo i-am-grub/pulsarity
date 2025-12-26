@@ -16,6 +16,8 @@ from pulsarity.database import (
     RaceFormat,
     Round,
     Slot,
+    SlotHistory,
+    SlotHistoryRecord,
 )
 from pulsarity.interface import TimerMode
 
@@ -287,3 +289,18 @@ async def test_cascade_delete(basic_slot: Slot):
     assert await Heat.get_by_id(heat.id) is None
     assert await Slot.get_by_id(slot.id) is None
     assert await Lap.get_by_id(lap.id) is None
+
+
+@pytest.mark.asyncio
+async def test_slot_history(basic_slot: Slot):
+    """
+    Test raceclass deletion as a result of event deletion
+    """
+    num = 5
+    records = [
+        SlotHistoryRecord(time=timedelta(0.1 * i), value=i * 0.1) for i in range(num)
+    ]
+    history = await SlotHistory.create(slot=basic_slot, history=records)
+
+    assert history.id
+    assert len(history.history) == num

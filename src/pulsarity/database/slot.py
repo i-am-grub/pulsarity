@@ -4,12 +4,11 @@ ORM classes for round data
 
 from __future__ import annotations
 
-import json
 from collections.abc import Sequence
-from dataclasses import dataclass
 from datetime import timedelta
 from typing import TYPE_CHECKING, Self
 
+from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
@@ -69,8 +68,7 @@ class Slot(_PulsarityBase):
         unique_together = (("heat", "index"), ("heat", "pilot"))
 
 
-@dataclass(frozen=True)
-class SlotHistoryRecord:
+class SlotHistoryRecord(BaseModel):
     """
     Slot history entry
     """
@@ -78,19 +76,14 @@ class SlotHistoryRecord:
     time: timedelta
     value: float
 
-    @classmethod
-    def from_sequence(cls, data: Sequence[float]) -> Self:
-        """
-        Parses a record from a sequence
-        """
-        delta = timedelta(seconds=data[0])
-        return cls(time=delta, value=data[1])
-
     def __lt__(self, obj: Self) -> bool:
         """
         Less than operation definition. Allows for sorting instances by time.
         """
         return self.time < obj.time
+
+
+_SLOT_HISTORY_ADAPTER = TypeAdapter(tuple[SlotHistoryRecord, ...])
 
 
 def history_encoder(history_series: Sequence[SlotHistoryRecord]) -> str:
@@ -100,19 +93,8 @@ def history_encoder(history_series: Sequence[SlotHistoryRecord]) -> str:
     :param history_series: The history series sequence
     :return: The formated time series
     """
-    data = [(x.time.total_seconds(), x.value) for x in history_series]
-    return json.dumps(data)
-
-
-def history_decoder(encoded_data: str | bytes) -> tuple[SlotHistoryRecord, ...]:
-    """
-    Decodes a time series sequence from a storable value
-
-    :param history_series: The encoded data
-    :return: The sequence of records
-    """
-    data: list[list[float]] = json.loads(encoded_data)
-    return tuple(SlotHistoryRecord.from_sequence(x) for x in data)
+    data = _SLOT_HISTORY_ADAPTER.validate_python(history_series)
+    return _SLOT_HISTORY_ADAPTER.dump_json(data).decode("utf-8")
 
 
 class SlotHistory(_PulsarityBase):
@@ -122,8 +104,9 @@ class SlotHistory(_PulsarityBase):
 
     slot: fields.OneToOneRelation[Slot] = fields.OneToOneField("event.Slot", "history")
     """The slot the history belongs to"""
-    history: fields.JSONField[tuple[SlotHistoryRecord, ...]] = fields.JSONField(
-        history_encoder, history_decoder
+    history: fields.JSONField[Sequence[SlotHistoryRecord]] = fields.JSONField(
+        history_encoder,
+        _SLOT_HISTORY_ADAPTER.validate_python,
     )  # type: ignore
     """The series of history for the slot"""
 
