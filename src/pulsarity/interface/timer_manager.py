@@ -81,7 +81,7 @@ class TimerInterfaceManager:
         self._shutdown_evt = asyncio.Event()
 
         self._lap_manager = _DataManager()
-        self._rssi_manager = _DataManager()
+        self._signal_manager = _DataManager()
 
         self._tasks: tuple[asyncio.Task, asyncio.Task] | None = None
 
@@ -98,15 +98,15 @@ class TimerInterfaceManager:
             self._process_queue_data, self._lap_manager
         )
 
-        rssi_task = background.add_background_task(
-            self._process_queue_data, self._rssi_manager
+        signal_task = background.add_background_task(
+            self._process_queue_data, self._signal_manager
         )
 
-        self._tasks = (lap_task, rssi_task)
+        self._tasks = (lap_task, signal_task)
 
         for interface in self._active_interfaces.values():
             interface.interface.subscribe(
-                self._lap_manager.queue, self._rssi_manager.queue
+                self._lap_manager.queue, self._signal_manager.queue
             )
 
     async def subscribe_laps(self) -> AsyncGenerator[ExtendedTimerData, None]:
@@ -121,17 +121,17 @@ class TimerInterfaceManager:
         finally:
             self._lap_manager.connections.remove(connection)
 
-    async def subscribe_rssi(self) -> AsyncGenerator[ExtendedTimerData, None]:
+    async def subscribe_signal(self) -> AsyncGenerator[ExtendedTimerData, None]:
         """
-        Subscribe to the incoming rssi data
+        Subscribe to the incoming signal data
         """
         connection: asyncio.Queue[ExtendedTimerData] = asyncio.Queue()
-        self._rssi_manager.connections.add(connection)
+        self._signal_manager.connections.add(connection)
         try:
             while not self._shutdown_evt.is_set():
                 yield await connection.get()
         finally:
-            self._rssi_manager.connections.remove(connection)
+            self._signal_manager.connections.remove(connection)
 
     async def _process_queue_data(self, manager: _DataManager):
         """
@@ -214,7 +214,7 @@ class TimerInterfaceManager:
             instance = interface()
 
             if self._tasks is not None:
-                instance.subscribe(self._lap_manager.queue, self._rssi_manager.queue)
+                instance.subscribe(self._lap_manager.queue, self._signal_manager.queue)
 
             self._active_interfaces[uuid_.hex] = _ActiveTimer(
                 interface=instance, mode=mode, index=index

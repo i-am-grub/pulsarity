@@ -93,17 +93,19 @@ class TimerInterface(Protocol):
     """Connection status"""
 
     def subscribe(
-        self, lap_queue: asyncio.Queue[TimerData], rssi_queue: asyncio.Queue[TimerData]
+        self,
+        lap_queue: asyncio.Queue[TimerData],
+        signal_queue: asyncio.Queue[TimerData],
     ) -> None:
         """
-        Subscribe to recieve lap and rssi data from the interface
+        Subscribe to recieve lap and signal data from the interface
 
         :param lap_queue: The queue to provide for recieving lap data
-        :param rssi_queue: The queue to provide for recieving rssi data
+        :param signal_queue: The queue to provide for recieving signal data
         """
 
     def shutdown(self):
         """
         Shutdown the interface connection. When called, prevent adding more data to
-        the lap and rssi queues.
+        the lap and signal queues.
         """

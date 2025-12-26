@@ -24,21 +24,23 @@ class TestTimerInterface:
     actions = []
     connected = True
     lap_queue: asyncio.Queue[TimerData] | None = None
-    rssi_queue: asyncio.Queue[TimerData] | None = None
+    signal_queue: asyncio.Queue[TimerData] | None = None
 
     @property
     def num_nodes(self):
         return len(self.nodes)
 
     def subscribe(
-        self, lap_queue: asyncio.Queue[TimerData], rssi_queue: asyncio.Queue[TimerData]
+        self,
+        lap_queue: asyncio.Queue[TimerData],
+        signal_queue: asyncio.Queue[TimerData],
     ) -> None:
         self.lap_queue = lap_queue
-        self.rssi_queue = rssi_queue
+        self.signal_queue = signal_queue
 
     def shutdown(self):
         self.lap_queue = None
-        self.rssi_queue = None
+        self.signal_queue = None
 
     def add_lap(self, value: float):
         if self.lap_queue is not None:
@@ -51,8 +53,8 @@ class TestTimerInterface:
 
             self.lap_queue.put_nowait(data)
 
-    def add_rssi(self, value: float):
-        if self.rssi_queue is not None:
+    def add_signal(self, value: float):
+        if self.signal_queue is not None:
             data = TimerData(
                 timestamp=time.monotonic(),
                 timer_identifier=self.identifier,
@@ -60,7 +62,7 @@ class TestTimerInterface:
                 value=value,
             )
 
-            self.rssi_queue.put_nowait(data)
+            self.signal_queue.put_nowait(data)
 
 
 def test_register_interface_error(interface_manager: TimerInterfaceManager):
