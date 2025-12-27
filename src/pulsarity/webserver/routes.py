@@ -6,7 +6,7 @@ import logging
 from uuid import UUID
 
 from starlette.responses import Response
-from starlette.routing import Mount, Route
+from starlette.routing import Route
 from starsessions.session import regenerate_session_id
 
 from pulsarity import ctx
@@ -109,21 +109,26 @@ async def reset_password(data: ResetPasswordRequest) -> Response:
     return Response(status_code=400)
 
 
-@endpoint(SystemDefaultPerms.READ_PILOTS, response_adapter=PILOT_ADAPTER)
-async def get_pilot() -> Pilot | None:
+@endpoint(SystemDefaultPerms.READ_PILOTS, response_model=PILOT_ADAPTER)
+async def get_pilot() -> Pilot | Response:
     """
     Get the pilot by id
 
     :return: Pilot data.
     """
     pilot_id: int = ctx.request_ctx.get().path_params["id"]
-    return await Pilot.get_by_id_with_attributes(pilot_id)
+    pilot = await Pilot.get_by_id_with_attributes(pilot_id)
+
+    if pilot is None:
+        return Response(status_code=204)
+
+    return pilot
 
 
 @endpoint(
     SystemDefaultPerms.READ_PILOTS,
     query_model=PaginationParams,
-    response_adapter=PILOT_LIST_ADAPTER,
+    response_model=PILOT_LIST_ADAPTER,
 )
 async def get_pilots(params: PaginationParams) -> list[Pilot]:
     """
@@ -139,21 +144,26 @@ async def get_pilots(params: PaginationParams) -> list[Pilot]:
     )
 
 
-@endpoint(SystemDefaultPerms.READ_EVENTS, response_adapter=RACE_EVENT_ADAPTER)
-async def get_event() -> RaceEvent | None:
+@endpoint(SystemDefaultPerms.READ_EVENTS, response_model=RACE_EVENT_ADAPTER)
+async def get_event() -> RaceEvent | Response:
     """
     Get the event by id
 
     :return: Event data.
     """
     event_id: int = ctx.request_ctx.get().path_params["id"]
-    return await RaceEvent.get_by_id_with_attributes(event_id)
+    event = await RaceEvent.get_by_id_with_attributes(event_id)
+
+    if event is None:
+        return Response(status_code=204)
+
+    return event
 
 
 @endpoint(
     SystemDefaultPerms.READ_EVENTS,
     query_model=PaginationParams,
-    response_adapter=RACE_EVENT_LIST_ADAPTER,
+    response_model=RACE_EVENT_LIST_ADAPTER,
 )
 async def get_events(params: PaginationParams) -> list[RaceEvent]:
     """
@@ -169,21 +179,26 @@ async def get_events(params: PaginationParams) -> list[RaceEvent]:
     )
 
 
-@endpoint(SystemDefaultPerms.READ_RACECLASS, response_adapter=RACECLASS_ADAPTER)
-async def get_racelass() -> RaceClass | None:
+@endpoint(SystemDefaultPerms.READ_RACECLASS, response_model=RACECLASS_ADAPTER)
+async def get_racelass() -> RaceClass | Response:
     """
     Get the raceclass by id
 
     :return: Race Class data.
     """
     raceclass_id: int = ctx.request_ctx.get().path_params["id"]
-    return await RaceClass.get_by_id_with_attributes(raceclass_id)
+    raceclass = await RaceClass.get_by_id_with_attributes(raceclass_id)
+
+    if raceclass is None:
+        return Response(status_code=204)
+
+    return raceclass
 
 
 @endpoint(
     SystemDefaultPerms.READ_RACECLASS,
     query_model=PaginationParams,
-    response_adapter=RACECLASS_LIST_ADAPTER,
+    response_model=RACECLASS_LIST_ADAPTER,
 )
 async def get_raceclasses_for_event(params: PaginationParams) -> list[RaceClass]:
     """
@@ -201,19 +216,24 @@ async def get_raceclasses_for_event(params: PaginationParams) -> list[RaceClass]
     )
 
 
-@endpoint(SystemDefaultPerms.READ_ROUND, response_adapter=ROUND_ADAPTER)
-async def get_round() -> Round | None:
+@endpoint(SystemDefaultPerms.READ_ROUND, response_model=ROUND_ADAPTER)
+async def get_round() -> Round | Response:
     """
     Get the round by id
     """
     round_id: int = ctx.request_ctx.get().path_params["id"]
-    return await Round.get_by_id_with_attributes(round_id)
+    round_ = await Round.get_by_id_with_attributes(round_id)
+
+    if round_ is None:
+        return Response(status_code=204)
+
+    return round_
 
 
 @endpoint(
     SystemDefaultPerms.READ_ROUND,
     query_model=PaginationParams,
-    response_adapter=ROUND_LIST_ADAPTER,
+    response_model=ROUND_LIST_ADAPTER,
 )
 async def get_rounds_for_raceclass(params: PaginationParams) -> list[Round]:
     """
@@ -228,19 +248,24 @@ async def get_rounds_for_raceclass(params: PaginationParams) -> list[Round]:
     )
 
 
-@endpoint(SystemDefaultPerms.READ_HEAT, response_adapter=HEAT_ADAPTER)
-async def get_heat() -> Heat | None:
+@endpoint(SystemDefaultPerms.READ_HEAT, response_model=HEAT_ADAPTER)
+async def get_heat() -> Heat | Response:
     """
     Get the heat by id
     """
     heat_id: int = ctx.request_ctx.get().path_params["id"]
-    return await Heat.get_by_id_with_attributes(heat_id)
+    heat = await Heat.get_by_id_with_attributes(heat_id)
+
+    if heat is None:
+        return Response(status_code=204)
+
+    return heat
 
 
 @endpoint(
     SystemDefaultPerms.READ_HEAT,
     query_model=PaginationParams,
-    response_adapter=HEAT_LIST_ADAPTER,
+    response_model=HEAT_LIST_ADAPTER,
 )
 async def get_heats_for_round(params: PaginationParams) -> list[Heat]:
     """
@@ -255,25 +280,19 @@ async def get_heats_for_round(params: PaginationParams) -> list[Heat]:
     )
 
 
-routes = [
+ROUTES = [
     Route("/login", endpoint=login, methods=["POST"]),
     Route("/logout", endpoint=logout),
     Route("/auth-check", endpoint=check_auth),
     Route("/reset-password", endpoint=reset_password, methods=["POST"]),
-    Mount(
-        "/api",
-        routes=[
-            Route("/pilots/{id:int}", endpoint=get_pilot),
-            Route("/pilots", endpoint=get_pilots),
-            Route("/events/{id:int}", endpoint=get_event),
-            Route("/events", endpoint=get_events),
-            Route("/events/{id:int}/raceclasses", endpoint=get_raceclasses_for_event),
-            Route("/raceclasses/{id:int}", endpoint=get_racelass),
-            Route("/raceclasses/{id:int}/rounds", endpoint=get_rounds_for_raceclass),
-            Route("/rounds/{id:int}", endpoint=get_round),
-            Route("/rounds/{id:int}/heats", endpoint=get_heats_for_round),
-            Route("/heats/{id:int}", endpoint=get_heat),
-        ],
-        name="api",
-    ),
+    Route("/pilots/{id:int}", endpoint=get_pilot),
+    Route("/pilots", endpoint=get_pilots),
+    Route("/events/{id:int}", endpoint=get_event),
+    Route("/events", endpoint=get_events),
+    Route("/events/{id:int}/raceclasses", endpoint=get_raceclasses_for_event),
+    Route("/raceclasses/{id:int}", endpoint=get_racelass),
+    Route("/raceclasses/{id:int}/rounds", endpoint=get_rounds_for_raceclass),
+    Route("/rounds/{id:int}", endpoint=get_round),
+    Route("/rounds/{id:int}/heats", endpoint=get_heats_for_round),
+    Route("/heats/{id:int}", endpoint=get_heat),
 ]

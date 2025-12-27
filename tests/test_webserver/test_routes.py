@@ -31,7 +31,11 @@ async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str, str]
     response = await client.post("/login", json=login_data)
     assert response.status_code == 200
 
-    data = LoginResponse.model_validate_json(response.json())
+    # Simulate reading JSON as the client
+    data_ = response.json()
+    assert isinstance(data_, dict)
+
+    data = LoginResponse.model_validate(data_)
 
     assert data.status is True
     reset_required = data.password_reset_required
@@ -124,14 +128,14 @@ async def test_get_pilot(authed_client: AsyncClient):
     """
     await Pilot.bulk_create([Pilot(callsign="foo"), Pilot(callsign="bar")])
 
-    response = await authed_client.get("/api/pilots/1")
+    response = await authed_client.get("/pilots/1")
     assert response.status_code == 200
 
     pilot = PILOT_ADAPTER.validate_json(response.content)
     assert pilot.id == 1
     assert pilot.display_callsign == "foo"
 
-    response = await authed_client.get("/api/pilots/2")
+    response = await authed_client.get("/pilots/2")
     assert response.status_code == 200
 
     pilot = PILOT_ADAPTER.validate_json(response.content)
@@ -145,7 +149,7 @@ async def test_get_pilot_does_not_exist(authed_client: AsyncClient):
     Test getting a pilot that doesn't exist
     """
 
-    response = await authed_client.get("/api/pilots/1")
+    response = await authed_client.get("/pilots/1")
     assert response.status_code == 204
 
 
@@ -156,7 +160,7 @@ async def test_get_pilots(authed_client: AsyncClient):
     """
     await Pilot.bulk_create([Pilot(callsign="foo"), Pilot(callsign="bar")])
 
-    response = await authed_client.get("/api/pilots")
+    response = await authed_client.get("/pilots")
     assert response.status_code == 200
 
     pilots = PILOT_LIST_ADAPTER.validate_json(response.content)
@@ -170,7 +174,7 @@ async def test_get_event(authed_client: AsyncClient, basic_event: RaceEvent):
     """
     Test getting individual events through the api
     """
-    response = await authed_client.get("/api/events/1")
+    response = await authed_client.get("/events/1")
     assert response.status_code == 200
 
     event = RACE_EVENT_ADAPTER.validate_json(response.content)
@@ -185,7 +189,7 @@ async def test_get_event_does_not_exist(authed_client: AsyncClient):
     Test getting a pilot that doesn't exist
     """
 
-    response = await authed_client.get("/api/events/1")
+    response = await authed_client.get("/events/1")
     assert response.status_code == 204
 
 
@@ -194,7 +198,7 @@ async def test_get_events(authed_client: AsyncClient, basic_event: RaceEvent):
     """
     Test getting events through the rest api
     """
-    response = await authed_client.get("/api/events")
+    response = await authed_client.get("/events")
     assert response.status_code == 200
 
     events = RACE_EVENT_LIST_ADAPTER.validate_json(response.content)
@@ -209,7 +213,7 @@ async def test_get_raceclass(authed_client: AsyncClient, basic_raceclass: RaceCl
     """
     Test getting individual raceclasses through the api
     """
-    response = await authed_client.get("/api/raceclasses/1")
+    response = await authed_client.get("/raceclasses/1")
     assert response.status_code == 200
 
     raceclass = RACECLASS_ADAPTER.validate_json(response.content)
@@ -222,7 +226,7 @@ async def test_get_raceclasses_does_not_exist(authed_client: AsyncClient):
     """
     Test getting a pilot that doesn't exist
     """
-    response = await authed_client.get("/api/raceclasses/1")
+    response = await authed_client.get("/raceclasses/1")
     assert response.status_code == 204
 
 
@@ -233,7 +237,7 @@ async def test_get_event_raceclasses(
     """
     Test getting raceclasses for an event through the api
     """
-    response = await authed_client.get("/api/events/1/raceclasses")
+    response = await authed_client.get("/events/1/raceclasses")
     assert response.status_code == 200
 
     raceclasses = RACECLASS_LIST_ADAPTER.validate_json(response.content)
@@ -247,7 +251,7 @@ async def test_get_round(authed_client: AsyncClient, basic_round: Round):
     """
     Test getting individual raceclasses through the api
     """
-    response = await authed_client.get("/api/rounds/1")
+    response = await authed_client.get("/rounds/1")
     assert response.status_code == 200
 
     round_ = ROUND_ADAPTER.validate_json(response.content)
@@ -260,7 +264,7 @@ async def test_get_round_does_not_exist(authed_client: AsyncClient):
     """
     Test getting a pilot that doesn't exist
     """
-    response = await authed_client.get("/api/rounds/1")
+    response = await authed_client.get("/rounds/1")
     assert response.status_code == 204
 
 
@@ -269,7 +273,7 @@ async def test_get_raceclass_rounds(authed_client: AsyncClient, basic_round: Rou
     """
     Test getting individual raceclasses through the api
     """
-    response = await authed_client.get("/api/raceclasses/1/rounds")
+    response = await authed_client.get("/raceclasses/1/rounds")
     assert response.status_code == 200
 
     rounds = ROUND_LIST_ADAPTER.validate_json(response.content)
@@ -282,7 +286,7 @@ async def test_get_heat(authed_client: AsyncClient, basic_heat: Heat):
     """
     Test getting individual raceclasses through the api
     """
-    response = await authed_client.get("/api/heats/1")
+    response = await authed_client.get("/heats/1")
     assert response.status_code == 200
 
     heat = HEAT_ADAPTER.validate_json(response.content)
@@ -295,7 +299,7 @@ async def test_get_heat_does_not_exist(authed_client: AsyncClient):
     """
     Test getting a pilot that doesn't exist
     """
-    response = await authed_client.get("/api/heats/1")
+    response = await authed_client.get("/heats/1")
     assert response.status_code == 204
 
 
@@ -304,7 +308,7 @@ async def test_get_round_heats(authed_client: AsyncClient, basic_heat: Heat):
     """
     Test getting individual raceclasses through the api
     """
-    response = await authed_client.get("/api/rounds/1/heats")
+    response = await authed_client.get("/rounds/1/heats")
     assert response.status_code == 200
 
     heats = HEAT_LIST_ADAPTER.validate_json(response.content)

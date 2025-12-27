@@ -10,7 +10,7 @@ import signal
 from collections.abc import Awaitable, Callable
 from typing import ParamSpec, TypeVar
 
-from pydantic import UUID4, BaseModel, ValidationError
+from pydantic import UUID4, BaseModel, TypeAdapter, ValidationError
 from starlette.authentication import requires
 from starlette.routing import WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
@@ -38,6 +38,9 @@ class WSEventData(BaseModel):
     id: UUID4
     event_id: str
     data: dict
+
+
+WS_EVENT_ADAPTER = TypeAdapter(WSEventData)
 
 
 def ws_event(event: _ApplicationEvt):
@@ -85,10 +88,10 @@ async def _recieve_data() -> None:
     """
     websocket = ctx.websocket_ctx.get()
     while True:
-        data = await websocket.receive_text()
+        data = await websocket.receive_bytes()
 
         try:
-            model = WSEventData.model_validate_json(data)
+            model = WS_EVENT_ADAPTER.validate_json(data)
         except ValidationError:
             logger.debug("Error validating websocket data: %s", data)
         else:
@@ -118,7 +121,7 @@ async def _write_data() -> None:
             evt_data = WSEventData(
                 id=event.uuid, event_id=event.evt.id, data=event.data
             )
-            await websocket.send_text(evt_data.model_dump_json())
+            await websocket.send_bytes(WS_EVENT_ADAPTER.dump_json(evt_data))
 
 
 async def handle_ws_event(ws_data: WSEventData):
@@ -193,6 +196,6 @@ async def race_stop():
     ctx.race_state_ctx.get().stop_race()
 
 
-routes = [
-    WebSocketRoute("/server", endpoint=server_event_ws),
+ROUTES = [
+    WebSocketRoute("/ws", endpoint=server_event_ws),
 ]
