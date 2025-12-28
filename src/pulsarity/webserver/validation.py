@@ -14,6 +14,14 @@ class PaginationParams(BaseModel):
     limit: int = Field(default=10, gt=0, le=100)
 
 
+class LookupParams(BaseModel):
+    """
+    Model for parsing object id path params
+    """
+
+    id: int = Field(gt=0)
+
+
 class BaseResponse(BaseModel):
     """
     Basic Response with status

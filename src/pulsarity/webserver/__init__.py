@@ -12,6 +12,8 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.cors import CORSMiddleware
+from starlette.routing import Mount
+from starlette.staticfiles import StaticFiles
 from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddleware
 
 from pulsarity import ctx
@@ -19,8 +21,8 @@ from pulsarity.utils.crypto import generate_self_signed_cert
 from pulsarity.webserver._auth import PulsarityAuthBackend
 from pulsarity.webserver.lifespan import ContextState, shutdown_signaled
 from pulsarity.webserver.lifespan import lifespan as _lifespan
-from pulsarity.webserver.routes import routes as http_routes
-from pulsarity.webserver.websockets import routes as ws_routes
+from pulsarity.webserver.routes import ROUTES as http_routes
+from pulsarity.webserver.websockets import ROUTES as ws_routes
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,21 @@ class ContextMiddleware:
             ctx.interface_manager_ctx.reset(timer_interface_token)
 
 
+class SPAStaticFiles(StaticFiles):
+    """
+    Staticfiles for single-page-apps
+
+    Wraps the base `lookup_path` to fallback to the root `index.html`.
+    """
+
+    def lookup_path(self, path):
+        full_path, stat_result = super().lookup_path(path)
+        if stat_result is None:
+            return super().lookup_path("./index.html")
+
+        return full_path, stat_result
+
+
 def generate_application(*, test_mode: bool = False) -> Starlette:
     """
     Generates the Pulsarity application
@@ -80,6 +97,7 @@ def generate_application(*, test_mode: bool = False) -> Starlette:
             cookie_https_only=configs.webserver.force_redirects,
             rolling=True,
             lifetime=60 * 30,
+            cookie_same_site="strict",
         ),
         Middleware(SessionAutoloadMiddleware),
         Middleware(AuthenticationMiddleware, backend=PulsarityAuthBackend()),
@@ -88,10 +106,24 @@ def generate_application(*, test_mode: bool = False) -> Starlette:
     if not test_mode:
         middleware.append(Middleware(ContextMiddleware))
 
-    all_routes = http_routes + ws_routes
+    routes = [
+        Mount(path="/api", routes=http_routes + ws_routes, name="api"),  # type: ignore
+    ]
+
+    if configs.webserver.spa_path is not None:
+        routes.append(
+            Mount(
+                path="/",
+                app=SPAStaticFiles(
+                    directory=configs.webserver.spa_path,
+                    html=True,
+                ),
+                name="root",
+            ),
+        )
 
     return Starlette(
-        routes=all_routes,
+        routes=routes,
         lifespan=None if test_mode else _lifespan,
         middleware=middleware,
     )

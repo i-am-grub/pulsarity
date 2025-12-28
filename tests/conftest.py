@@ -93,7 +93,7 @@ async def unauthenticated_client():
 
     transport = ASGITransport(app=generate_application(test_mode=True))
     async with AsyncClient(
-        transport=transport, base_url="https://localhost"
+        transport=transport, base_url="https://localhost/api"
     ) as client_:
         yield client_
 

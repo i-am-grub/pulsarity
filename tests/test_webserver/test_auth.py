@@ -14,7 +14,7 @@ async def test_webserver_unauthorized(client: AsyncClient):
     Test accessing the ability to access a privileged route without
     being logged in
     """
-    response = await client.get("/api/pilots")
+    response = await client.get("/pilots")
     assert response.status_code == 401
 
 
@@ -47,7 +47,7 @@ async def test_webserver_lack_permissions(client: AsyncClient):
     assert response.status_code == 200
     assert response.cookies
 
-    response = await client.get("/api/pilots")
+    response = await client.get("/pilots")
     assert response.status_code == 403
 
 
@@ -56,5 +56,5 @@ async def test_webserver_authorized(authed_client: AsyncClient):
     """
     Test accessing a route while being logged in with proper permissions
     """
-    response = await authed_client.get("/api/pilots")
+    response = await authed_client.get("/pilots")
     assert response.status_code == 200

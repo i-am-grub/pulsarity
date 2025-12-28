@@ -11,7 +11,7 @@ from typing import TypeVar
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import Response
 
 from pulsarity import ctx
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
@@ -23,14 +23,29 @@ _T = TypeVar("_T")
 logger = logging.getLogger(__name__)
 
 
-class JSONBytesResponse(JSONResponse):
+class _AdaptedResponse(Response):
     """
-    Class used for setting JSON Response data as bytes
+    Class used for sending dumped Pydantic JSON data
     """
 
-    content: bytes
+    # pylint: disable=R0913,R0917
 
-    def render(self, content: bytes) -> bytes:
+    media_type = "application/json"
+
+    def __init__(
+        self,
+        content: bytes | None = None,
+        status_code=200,
+        headers=None,
+        media_type=None,
+        background=None,
+    ):
+        super().__init__(content, status_code, headers, media_type, background)
+
+    def render(self, content: bytes | None) -> bytes:
+        if content is None:
+            return b""
+
         return content
 
 
@@ -39,81 +54,61 @@ def endpoint(
     requires_auth: bool = True,
     request_model: type[BaseModel] | None = None,
     query_model: type[BaseModel] | None = None,
-    response_adapter: TypeAdapter | None = None,
-    response_model: type[BaseModel] | None = None,
+    path_model: type[BaseModel] | None = None,
+    response_model: type[BaseModel] | TypeAdapter | None = None,
 ):
     """
     Decorator for validating request data, user permissions, and
     response data for a route
 
     :param permission: The permissions required to access the route
+    :param requires_auth: Whether the endpoint request authentication or nots, defaults to True
     :param request_model: The model to use to validate the request, defaults to None
-    :param response_adapter: The adapter model to use to validate the response, defaults to None
-    :param response_model: The model to use to validate teh respones, defaults to None
+    :param query_model: The adapter model to use to validate the query parameters, defaults to None
+    :param path_model: The adapter model to use to validate the query parameters, defaults to None
+    :param response_model: The model to use to validate the response, defaults to None
     """
-    # pylint: disable=R0912
 
     def inner(
         func: Callable[..., _T],
     ) -> Callable[[Request], Coroutine[None, None, Response]]:
-        num_args = len(inspect.signature(func).parameters.keys())
+        # pylint: disable=R0912
+
+        adapter: TypeAdapter | None = None
+        base_kwargs = {"request", "query", "path"}
+        function_kwargs = set(inspect.signature(func).parameters.keys())
+
         try:
-            if request_model is not None or query_model is not None:
-                assert num_args == 1
-            else:
-                assert num_args == 0
+            assert function_kwargs.issubset(base_kwargs)
         except AssertionError as ex:
             raise KeyError(
-                f"{func.__name__} does not contain valid number of args"
+                f"{func.__name__} uses incompatible argument names. "
+                f"Arguments must be limited to {base_kwargs}"
             ) from ex
 
         for perm in permissions:
             try:
                 assert isinstance(perm, UserPermission)
             except AssertionError as ex:
-                raise KeyError(
+                raise ValueError(
                     f"{perm} is not a valid {UserPermission.__name__}"
                 ) from ex
 
-        if request_model is not None:
-            try:
-                assert issubclass(request_model, BaseModel)
-            except AssertionError as ex:
-                raise ValueError(
-                    f"{func.__name__} request model is not a subclass of {BaseModel.__name__}"
-                ) from ex
+        _validate_compatibility(func, request_model, function_kwargs, "request")
+        _validate_compatibility(func, query_model, function_kwargs, "query")
+        _validate_compatibility(func, path_model, function_kwargs, "path")
 
-        if query_model is not None:
-            try:
-                assert issubclass(query_model, BaseModel)
-            except AssertionError as ex:
-                raise ValueError(
-                    f"{func.__name__} query model is not a subclass of {BaseModel.__name__}"
-                ) from ex
-
-        assert request_model is None or query_model is None, (
-            "Request model and query model can not be used together"
-        )
-
-        if response_adapter is not None:
-            try:
-                assert isinstance(response_adapter, TypeAdapter)
-            except AssertionError as ex:
-                raise ValueError(
-                    f"{func.__name__}response adapter is not a instance of {TypeAdapter.__name__}"
-                ) from ex
-
-        if response_model is not None:
-            try:
-                assert issubclass(response_model, BaseModel)
-            except AssertionError as ex:
-                raise ValueError(
-                    f"{func.__name__}response model is not a subclass of {BaseModel.__name__}"
-                ) from ex
-
-        assert response_model is None or response_adapter is None, (
-            "Response model and response adapter can not be used together"
-        )
+        if isinstance(response_model, TypeAdapter):
+            adapter = response_model
+        elif response_model is not None and issubclass(response_model, BaseModel):
+            adapter = TypeAdapter(response_model)
+        elif response_model is not None:
+            raise ValueError(
+                (
+                    f"{func.__name__} response model is not a subclass of "
+                    f"{BaseModel.__name__} or instance of {TypeAdapter.__name__}"
+                )
+            )
 
         if requires_auth:
 
@@ -126,8 +121,8 @@ def endpoint(
                     request,
                     request_model,
                     query_model,
-                    response_adapter,
-                    response_model,
+                    path_model,
+                    adapter,
                 )
 
         else:
@@ -139,8 +134,8 @@ def endpoint(
                     request,
                     request_model,
                     query_model,
-                    response_adapter,
-                    response_model,
+                    path_model,
+                    adapter,
                 )
 
         return wrapper
@@ -148,13 +143,45 @@ def endpoint(
     return inner
 
 
+def _validate_compatibility(
+    func: Callable, model: type[BaseModel] | None, used_kwargs: set[str], arg_id: str
+):
+    """
+    Validate the compatibility between the function and provided model
+    """
+
+    if model is not None:
+        try:
+            assert arg_id in used_kwargs
+        except AssertionError as ex:
+            raise KeyError(
+                f"'{arg_id}` must be an argument of the endpoint function "
+                "when a request model has been provided"
+            ) from ex
+
+        try:
+            assert issubclass(model, BaseModel)
+        except AssertionError as ex:
+            raise ValueError(
+                f"{func.__name__} query model is not a subclass of {BaseModel.__name__}"
+            ) from ex
+    else:
+        try:
+            assert arg_id not in used_kwargs
+        except AssertionError as ex:
+            raise KeyError(
+                f"'{arg_id}` must NOT be an argument of the endpoint "
+                f"function when a {arg_id} model has NOT been provided"
+            ) from ex
+
+
 async def _process_request(
     func: Callable,
     request: Request,
     request_model: type[BaseModel] | None,
     query_model: type[BaseModel] | None,
+    path_model: type[BaseModel] | None,
     response_adapter: TypeAdapter | None,
-    response_model: type[BaseModel] | None,
 ) -> Response:
     """
     Processes the incoming request
@@ -163,35 +190,34 @@ async def _process_request(
 
     ctx.request_ctx.set(request)
     ctx.user_ctx.set(request.user)
+    kwargs: dict[str, BaseModel] = {}
 
     if request_model is not None:
         try:
             data = await request.body()
-            parsed_model = request_model.model_validate_json(data)
+            kwargs["request"] = request_model.model_validate_json(data)
         except (JSONDecodeError, ValidationError):
             return Response(status_code=400)
 
-        endpoint_result = await ensure_async(func, parsed_model)
-
-    elif query_model is not None:
+    if query_model is not None:
         try:
-            parsed_model = query_model.model_validate(request.query_params)
+            kwargs["query"] = query_model.model_validate(request.query_params)
         except (JSONDecodeError, ValidationError):
             return Response(status_code=400)
 
-        endpoint_result = await ensure_async(func, parsed_model)
+    if path_model is not None:
+        try:
+            kwargs["path"] = path_model.model_validate(request.path_params)
+        except (JSONDecodeError, ValidationError):
+            return Response(status_code=400)
 
-    else:
-        endpoint_result = await ensure_async(func)
-
-    if response_adapter is not None:
-        return _process_response_adapter(func, response_adapter, endpoint_result)
+    endpoint_result = await ensure_async(func, **kwargs)
 
     if isinstance(endpoint_result, Response):
         return endpoint_result
 
-    if response_model is not None:
-        return _process_response_model(func, response_model, endpoint_result)
+    if response_adapter is not None:
+        return _process_response_adapter(func, response_adapter, endpoint_result)
 
     return Response()
 
@@ -202,9 +228,6 @@ def _process_response_adapter(
     """
     Serialize the endpoint result to a response
     """
-    if endpoint_result is None:
-        return Response(status_code=204)
-
     try:
         model = response_adapter.validate_python(endpoint_result, from_attributes=True)
     except ValidationError:
@@ -215,26 +238,4 @@ def _process_response_adapter(
         )
         return Response(status_code=500)
 
-    return JSONBytesResponse(response_adapter.dump_json(model))
-
-
-def _process_response_model(
-    func: Callable, response_model: type[BaseModel], endpoint_result: _T
-) -> Response:
-    """
-    Serialize the endpoint result to a response
-    """
-    if endpoint_result is None:
-        return Response(status_code=204)
-
-    try:
-        model = response_model.model_validate(endpoint_result, from_attributes=True)
-    except ValidationError:
-        logger.exception(
-            "Returned object from %s does not match response model %s",
-            func.__name__,
-            response_model.__name__,
-        )
-        return Response(status_code=500)
-
-    return JSONResponse(model.model_dump_json())
+    return _AdaptedResponse(response_adapter.dump_json(model))

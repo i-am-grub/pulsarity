@@ -9,7 +9,6 @@ from typing import Any, ParamSpec
 from urllib.parse import urlencode
 from uuid import UUID
 
-from starlette._utils import is_async_callable
 from starlette.authentication import (
     AuthenticationBackend,
     BaseUser,
@@ -84,7 +83,7 @@ def requires(
 
             return websocket_wrapper
 
-        if is_async_callable(func):
+        if inspect.iscoroutinefunction(func):
 
             @functools.wraps(func)
             async def async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
