@@ -16,12 +16,17 @@ from pulsarity.webserver import generate_webserver_coroutine
 
 if sys.platform in ("linux", "darwin"):
     from uvloop import run
-
+elif sys.platform == "win32":
+    from winloop import run
 else:
     from asyncio import run
 
     warnings.warn(
-        "Attempting to run application with non-supported operating system",
+        (
+            "The detected operating system does not support accelerated "
+            "event loops; defaulting to the base event loop. Unexpected "
+            "system behaviors may occur."
+        ),
         RuntimeWarning,
     )
 
