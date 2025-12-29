@@ -6,10 +6,12 @@ import functools
 import inspect
 import logging
 from collections.abc import Callable, Coroutine
+from dataclasses import dataclass
 from json.decoder import JSONDecodeError
 from typing import TypeVar
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
+from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -21,6 +23,14 @@ from pulsarity.webserver._auth import requires
 _T = TypeVar("_T")
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class _ValModels:
+    request: type[BaseModel] | None
+    query: type[BaseModel] | None
+    path: type[BaseModel] | None
+    response: TypeAdapter | None
 
 
 class _AdaptedResponse(Response):
@@ -110,33 +120,21 @@ def endpoint(
                 )
             )
 
+        models = _ValModels(request_model, query_model, path_model, adapter)
+
         if requires_auth:
 
             @functools.wraps(func)
             @requires(SystemDefaultPerms.AUTHENTICATED, status_code=401)
             @requires(permissions, status_code=403)
             async def wrapper(request: Request) -> Response:
-                return await _process_request(
-                    func,
-                    request,
-                    request_model,
-                    query_model,
-                    path_model,
-                    adapter,
-                )
+                return await _process_request(func, request, models)
 
         else:
 
             @functools.wraps(func)
             async def wrapper(request: Request) -> Response:
-                return await _process_request(
-                    func,
-                    request,
-                    request_model,
-                    query_model,
-                    path_model,
-                    adapter,
-                )
+                return await _process_request(func, request, models)
 
         return wrapper
 
@@ -176,48 +174,41 @@ def _validate_compatibility(
 
 
 async def _process_request(
-    func: Callable,
-    request: Request,
-    request_model: type[BaseModel] | None,
-    query_model: type[BaseModel] | None,
-    path_model: type[BaseModel] | None,
-    response_adapter: TypeAdapter | None,
+    func: Callable, request: Request, models: _ValModels
 ) -> Response:
     """
     Processes the incoming request
     """
-    # pylint: disable=R0913,R0917
-
     ctx.request_ctx.set(request)
     ctx.user_ctx.set(request.user)
     kwargs: dict[str, BaseModel] = {}
 
-    if request_model is not None:
+    if models.request is not None:
         try:
             data = await request.body()
-            kwargs["request"] = request_model.model_validate_json(data)
-        except (JSONDecodeError, ValidationError):
-            return Response(status_code=400)
+            kwargs["request"] = models.request.model_validate_json(data)
+        except (JSONDecodeError, ValidationError) as ex:
+            raise HTTPException(status_code=400) from ex
 
-    if query_model is not None:
+    if models.query is not None:
         try:
-            kwargs["query"] = query_model.model_validate(request.query_params)
-        except (JSONDecodeError, ValidationError):
-            return Response(status_code=400)
+            kwargs["query"] = models.query.model_validate(request.query_params)
+        except (JSONDecodeError, ValidationError) as ex:
+            raise HTTPException(status_code=400) from ex
 
-    if path_model is not None:
+    if models.path is not None:
         try:
-            kwargs["path"] = path_model.model_validate(request.path_params)
-        except (JSONDecodeError, ValidationError):
-            return Response(status_code=400)
+            kwargs["path"] = models.path.model_validate(request.path_params)
+        except (JSONDecodeError, ValidationError) as ex:
+            raise HTTPException(status_code=400) from ex
 
     endpoint_result = await ensure_async(func, **kwargs)
 
     if isinstance(endpoint_result, Response):
         return endpoint_result
 
-    if response_adapter is not None:
-        return _process_response_adapter(func, response_adapter, endpoint_result)
+    if models.response is not None:
+        return _process_response_adapter(func, models.response, endpoint_result)
 
     return Response()
 
