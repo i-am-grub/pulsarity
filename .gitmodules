@@ -1,0 +1,3 @@
+[submodule "src/pulsarity/frontend"]
+	path = src/pulsarity/frontend
+	url = https://github.com/i-am-grub/pulsarity-frontend.git

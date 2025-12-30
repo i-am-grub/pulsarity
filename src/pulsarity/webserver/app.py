@@ -85,7 +85,7 @@ def _generate_static_files_application() -> SPAStaticFiles:
     :return: The file serving application
     """
     return SPAStaticFiles(
-        directory=Path(files("pulsarity") / "client"),  # type: ignore
+        directory=Path(files("pulsarity.frontend.src") / "client"),  # type: ignore
         html=True,
     )
 
