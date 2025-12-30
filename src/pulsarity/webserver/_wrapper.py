@@ -44,7 +44,7 @@ class _AdaptedResponse(Response):
 
     def __init__(
         self,
-        content: bytes | None = None,
+        content: bytes = b"",
         status_code=200,
         headers=None,
         media_type=None,
@@ -52,10 +52,7 @@ class _AdaptedResponse(Response):
     ):
         super().__init__(content, status_code, headers, media_type, background)
 
-    def render(self, content: bytes | None) -> bytes:
-        if content is None:
-            return b""
-
+    def render(self, content: bytes) -> bytes:
         return content
 
 

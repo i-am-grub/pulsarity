@@ -36,7 +36,6 @@ class _WebserverConfig(BaseModel):
     key_password: str | None = None
     cert_file: Path = Field(default_factory=partial(Path, "cert.pem"))
     ca_cert_file: Path | None = None
-    spa_path: Path | None = None
 
 
 class _GeneralConfig(BaseModel):
