@@ -11,8 +11,6 @@ from typing import TYPE_CHECKING
 from starlette.requests import Request
 from starlette.websockets import WebSocket
 
-from pulsarity.utils.config import DEFAULT_CONFIG_FILE, PulsarityConfig
-
 if TYPE_CHECKING:
     from pulsarity.events.broker import EventBroker
     from pulsarity.interface.timer_manager import TimerInterfaceManager
@@ -22,9 +20,6 @@ if TYPE_CHECKING:
 
 
 loop_ctx: ContextVar[AbstractEventLoop] = ContextVar("loop_ctx")
-config_ctx: ContextVar[PulsarityConfig] = ContextVar(
-    "config_ctx", default=PulsarityConfig.from_file(DEFAULT_CONFIG_FILE)
-)
 
 event_broker_ctx: ContextVar[EventBroker] = ContextVar("event_broker_ctx")
 race_state_ctx: ContextVar[RaceStateManager] = ContextVar("race_state_ctx")

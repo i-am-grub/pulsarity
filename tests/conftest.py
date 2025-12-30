@@ -12,20 +12,21 @@ from tortoise import Tortoise, connections
 from pulsarity import ctx
 from pulsarity.database import (
     Heat,
+    Permission,
     Pilot,
     RaceClass,
     RaceEvent,
     RaceFormat,
+    Role,
     Round,
     Slot,
-    setup_default_objects,
+    User,
 )
 from pulsarity.events.broker import EventBroker
 from pulsarity.interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.processor import RaceProcessorManager
 from pulsarity.race.state import RaceStateManager
 from pulsarity.utils import background
-from pulsarity.utils.config import PulsarityConfig
 from pulsarity.webserver import generate_application
 
 
@@ -46,8 +47,19 @@ async def context_and_cleanup():
     await background.shutdown(5)
 
 
+@pytest.fixture(name="user_creds")
+def default_user_creds():
+    """
+    Generates default authentication creds
+    """
+    username = "admin"
+    password = "pulsarity"
+
+    yield username, password
+
+
 @pytest_asyncio.fixture(autouse=True)
-async def database_init():
+async def database_init(user_creds: tuple[str, str]):
     """
     Establish the test database connection
     """
@@ -78,7 +90,9 @@ async def database_init():
     )
     await Tortoise.generate_schemas()
 
-    await setup_default_objects()
+    await Permission.verify_persistant()
+    await Role.verify_persistant()
+    await User.verify_persistant(*user_creds)
 
     yield
 
@@ -91,24 +105,11 @@ async def unauthenticated_client():
     Generate an unauthenticated client
     """
 
-    transport = ASGITransport(app=generate_application(test_mode=True))
+    transport = ASGITransport(app=generate_application())
     async with AsyncClient(
-        transport=transport, base_url="https://localhost/api"
+        transport=transport, base_url="https://localhost"
     ) as client_:
         yield client_
-
-
-@pytest.fixture(name="user_creds")
-def default_user_creds():
-    """
-    Generates default authentication creds
-    """
-    configs = PulsarityConfig()
-
-    username = configs.secrets.default_username
-    password = configs.secrets.default_password
-
-    yield username, password
 
 
 @pytest_asyncio.fixture(name="authed_client")

@@ -20,10 +20,8 @@ async def test_server_websocket_unauth():
     """
     Test accessing a websocket route without being logged in
     """
-    transport = ASGIWebSocketTransport(app=generate_application(test_mode=True))
-    async with AsyncClient(
-        transport=transport, base_url="https://localhost/api"
-    ) as client:
+    transport = ASGIWebSocketTransport(app=generate_application())
+    async with AsyncClient(transport=transport, base_url="https://localhost") as client:
         with pytest.raises(httpx_ws.WebSocketDisconnect):
             async with httpx_ws.aconnect_ws("/ws", client):
                 ...
@@ -39,10 +37,8 @@ async def test_server_websocket_auth(user_creds: tuple[str, str]):
         id=uuid.uuid4(), event_id=SpecialEvt.HEARTBEAT.id, data={"foo": "bar"}
     )
 
-    transport = ASGIWebSocketTransport(app=generate_application(test_mode=True))
-    async with AsyncClient(
-        transport=transport, base_url="https://localhost/api"
-    ) as client:
+    transport = ASGIWebSocketTransport(app=generate_application())
+    async with AsyncClient(transport=transport, base_url="https://localhost") as client:
         response = await client.post("/login", json=login_data)
         assert response.status_code == 200
 
