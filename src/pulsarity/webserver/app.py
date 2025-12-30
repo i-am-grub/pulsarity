@@ -4,6 +4,8 @@ Webserver Components
 
 import logging
 from collections.abc import Coroutine
+from importlib.resources import files
+from pathlib import Path
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
@@ -18,9 +20,9 @@ from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddlewa
 
 from pulsarity import ctx
 from pulsarity.utils.crypto import generate_self_signed_cert
+from pulsarity.webserver import lifespan
 from pulsarity.webserver._auth import PulsarityAuthBackend
-from pulsarity.webserver.lifespan import ContextState, shutdown_signaled
-from pulsarity.webserver.lifespan import lifespan as _lifespan
+from pulsarity.webserver.lifespan import ContextState
 from pulsarity.webserver.routes import ROUTES as http_routes
 from pulsarity.webserver.websockets import ROUTES as ws_routes
 
@@ -76,21 +78,29 @@ class SPAStaticFiles(StaticFiles):
         return full_path, stat_result
 
 
-def generate_application(*, test_mode: bool = False) -> Starlette:
+def _generate_static_files_application() -> SPAStaticFiles:
     """
-    Generates the Pulsarity application
+    Generates the file serving application for SPAs.
 
-    :return: The starlette application object
+    :return: The file serving application
+    """
+    return SPAStaticFiles(
+        directory=Path(files("pulsarity") / "client"),  # type: ignore
+        html=True,
+    )
+
+
+def generate_api_application() -> Starlette:
+    """
+    Generates the api and timing application with session and
+    context middleware.
+
+    :return: The api application object
     """
     configs = ctx.config_ctx.get()
     assert configs.secrets is not None
 
     middleware = [
-        Middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_methods=["GET", "POST"],
-        ),
         Middleware(
             SessionMiddleware,
             store=CookieStore(secret_key=configs.secrets.secret_key),
@@ -103,34 +113,51 @@ def generate_application(*, test_mode: bool = False) -> Starlette:
         Middleware(AuthenticationMiddleware, backend=PulsarityAuthBackend()),
     ]
 
-    if not test_mode:
-        middleware.append(Middleware(ContextMiddleware))
+    return Starlette(
+        routes=http_routes + ws_routes,  # type: ignore
+        middleware=middleware,
+    )
 
-    routes = [
-        Mount(path="/api", routes=http_routes + ws_routes, name="api"),  # type: ignore
+
+def generate_webserver_application() -> Starlette:
+    """
+    Generates the RotorHazard application with CORS middlesware and
+    routes to the sub application.
+
+    File serving app is mounted to the root of the domain (`/`) and the
+    api application is mounted to (`/api`)
+
+    :return: The webserver application
+    """
+
+    middleware = [
+        Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["GET", "POST"],
+            allow_headers=["*"],
+        ),
+        Middleware(ContextMiddleware),
     ]
 
-    if configs.webserver.spa_path is not None:
-        routes.append(
-            Mount(
-                path="/",
-                app=SPAStaticFiles(
-                    directory=configs.webserver.spa_path,
-                    html=True,
-                ),
-                name="root",
-            ),
-        )
+    routes = [
+        Mount(path="/api", app=generate_api_application(), name="api"),
+        Mount(
+            path="/",
+            app=_generate_static_files_application(),
+            name="root",
+        ),
+    ]
 
     return Starlette(
         routes=routes,
-        lifespan=None if test_mode else _lifespan,
+        lifespan=lifespan.lifespan,
         middleware=middleware,
     )
 
 
 def generate_webserver_coroutine(
-    app: Starlette | None = None,
+    app: Starlette,
 ) -> Coroutine[None, None, None]:
     """
     An awaitable task for the application deployed with a hypercorn ASGI server.
@@ -167,10 +194,7 @@ def generate_webserver_coroutine(
 
     webserver_config.keyfile_password = configs.webserver.key_password
 
-    if app is None:
-        app = generate_application()
-
     if configs.webserver.force_redirects:
         app = HTTPToHTTPSRedirectMiddleware(app, secure_bind[0])  # type: ignore
 
-    return serve(app, webserver_config, shutdown_trigger=shutdown_signaled)  # type: ignore
+    return serve(app, webserver_config, shutdown_trigger=lifespan.shutdown_signaled)  # type: ignore

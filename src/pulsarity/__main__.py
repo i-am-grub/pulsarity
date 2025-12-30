@@ -10,7 +10,7 @@ import warnings
 
 import pulsarity
 from pulsarity import ctx
-from pulsarity.webserver import generate_webserver_coroutine
+from pulsarity.webserver import app
 
 # pylint: disable=E0401
 
@@ -50,7 +50,8 @@ def main() -> None:
     logger = logging.getLogger(__name__)
     logger.info("Server version: %s", pulsarity.__version__)
 
-    coro = generate_webserver_coroutine()
+    app_ = app.generate_webserver_application()
+    coro = app.generate_webserver_coroutine(app_)
     run(coro)
 
     if os.environ["REBOOT_PULSARITY_FLAG"] == "active":

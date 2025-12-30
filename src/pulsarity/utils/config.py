@@ -31,7 +31,7 @@ class _WebserverConfig(BaseModel):
     host: str = "localhost"
     http_port: int = 5000
     https_port: int = 5443
-    force_redirects: bool = True
+    force_redirects: bool = False
     key_file: Path = Field(default_factory=partial(Path, "key.pem"))
     key_password: str | None = None
     cert_file: Path = Field(default_factory=partial(Path, "cert.pem"))
