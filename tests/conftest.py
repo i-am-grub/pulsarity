@@ -26,7 +26,7 @@ from pulsarity.race.processor import RaceProcessorManager
 from pulsarity.race.state import RaceStateManager
 from pulsarity.utils import background
 from pulsarity.utils.config import PulsarityConfig
-from pulsarity.webserver import generate_application
+from pulsarity.webserver import app
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -91,9 +91,9 @@ async def unauthenticated_client():
     Generate an unauthenticated client
     """
 
-    transport = ASGITransport(app=generate_application(test_mode=True))
+    transport = ASGITransport(app=app.generate_api_application())
     async with AsyncClient(
-        transport=transport, base_url="https://localhost/api"
+        transport=transport, base_url="https://localhost"
     ) as client_:
         yield client_
 
