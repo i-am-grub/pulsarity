@@ -40,7 +40,7 @@ class _EvtData:
     """Identifier for the event"""
 
 
-class _ApplicationEvt(_EvtData, Enum):
+class ApplicationEvt(_EvtData, Enum):
     """
     Parent enum for system events. Primarily
     used for typing.
@@ -55,7 +55,7 @@ class _ApplicationEvt(_EvtData, Enum):
         return name.lower()
 
 
-class SpecialEvt(_ApplicationEvt):
+class SpecialEvt(ApplicationEvt):
     """
     Special Events
     """
@@ -67,7 +67,7 @@ class SpecialEvt(_ApplicationEvt):
     RESTART = EvtPriority.LOW, SystemDefaultPerms.SYSTEM_CONTROL, auto()
 
 
-class EventSetupEvt(_ApplicationEvt):
+class EventSetupEvt(ApplicationEvt):
     """
     Events associated with modification to race objects
     """
@@ -77,7 +77,7 @@ class EventSetupEvt(_ApplicationEvt):
     PILOT_DELETE = EvtPriority.MEDUIUM, SystemDefaultPerms.READ_PILOTS, auto()
 
 
-class RaceSequenceEvt(_ApplicationEvt):
+class RaceSequenceEvt(ApplicationEvt):
     """
     Events associated with live race sequence
     """

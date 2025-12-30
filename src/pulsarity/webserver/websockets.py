@@ -18,7 +18,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 from pulsarity import ctx
 from pulsarity.database import RaceFormat
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
-from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt
+from pulsarity.events import ApplicationEvt, RaceSequenceEvt, SpecialEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
 
@@ -43,7 +43,7 @@ class WSEventData(BaseModel):
 WS_EVENT_ADAPTER = TypeAdapter(WSEventData)
 
 
-def ws_event(event: _ApplicationEvt):
+def ws_event(event: ApplicationEvt):
     """
     Decorator to route recieved websocket event data
 

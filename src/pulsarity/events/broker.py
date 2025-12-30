@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any, Self
 
 from pulsarity import ctx
-from pulsarity.events.enums import EvtPriority, _ApplicationEvt
+from pulsarity.events.enums import ApplicationEvt, EvtPriority
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
 
@@ -28,7 +28,7 @@ class _QueuedEvtData:
     Dataclass used for containing event data across the queue
     """
 
-    evt: _ApplicationEvt
+    evt: ApplicationEvt
     uuid: uuid.UUID
     data: dict
 
@@ -79,7 +79,7 @@ class EventBroker:
 
     def publish(
         self,
-        event: _ApplicationEvt,
+        event: ApplicationEvt,
         data: dict[str, Any],
         *,
         uuid_: uuid.UUID | None = None,
@@ -99,7 +99,7 @@ class EventBroker:
 
     async def trigger(
         self,
-        event: _ApplicationEvt,
+        event: ApplicationEvt,
         data: dict[str, Any],
         *,
         uuid_: uuid.UUID | None = None,
@@ -118,7 +118,7 @@ class EventBroker:
 
     def trigger_background(
         self,
-        event: _ApplicationEvt,
+        event: ApplicationEvt,
         data: dict[str, Any],
         *,
         uuid_: uuid.UUID | None = None,
@@ -162,7 +162,7 @@ class EventBroker:
     def register_event_callback(
         self,
         callback: Callable,
-        event: _ApplicationEvt,
+        event: ApplicationEvt,
         *,
         priority: EvtPriority = EvtPriority.LOWEST,
         default_kwargs: dict[str, Any] | None = None,
@@ -187,7 +187,7 @@ class EventBroker:
     def unregister_event_callback(
         self,
         callback: Callable,
-        event: _ApplicationEvt,
+        event: ApplicationEvt,
     ) -> None:
         """
         Unregister an event callback
@@ -221,7 +221,7 @@ class EventBroker:
 
 
 def register_as_callback(
-    event: _ApplicationEvt,
+    event: ApplicationEvt,
     *,
     priority: EvtPriority = EvtPriority.LOWEST,
     default_kwargs: dict[str, Any] | None = None,
