@@ -6,12 +6,6 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import os
-import sys
-
-topdir = os.path.split(os.path.split(__file__)[0])[0]
-sys.path.insert(0, os.path.join(topdir, "src"))
-
 from pulsarity import __version__ as release
 
 project = "Pulsarity"
