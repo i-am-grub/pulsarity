@@ -5,8 +5,6 @@ Webserver Websocket Connections
 import asyncio
 import inspect
 import logging
-import os
-import signal
 from collections.abc import Awaitable, Callable
 from typing import ParamSpec, TypeVar
 
@@ -156,23 +154,6 @@ async def heatbeat_echo(ws_data: WSEventData):
     """
     event_broker = ctx.event_broker_ctx.get()
     event_broker.publish(SpecialEvt.HEARTBEAT, ws_data.data, uuid_=ws_data.id)
-
-
-@ws_event(SpecialEvt.SHUTDOWN)
-async def shutdown_server():
-    """
-    Shutdown the webserver
-    """
-    signal.raise_signal(signal.Signals.SIGINT)
-
-
-@ws_event(SpecialEvt.RESTART)
-async def restart_server():
-    """
-    Restart the webserver
-    """
-    os.environ["REBOOT_PULSARITY_FLAG"] = "active"
-    signal.raise_signal(signal.Signals.SIGINT)
 
 
 @ws_event(RaceSequenceEvt.RACE_SCHEDULE)
