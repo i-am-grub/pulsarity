@@ -2,7 +2,7 @@
 Race processor
 """
 
-from collections.abc import Iterable
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
@@ -44,20 +44,22 @@ class RaceProcessor(Protocol):
         :param race_format: The active race format
         """
 
-    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> None:
+    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> int:
         """
         Add lap record to the supervisor instance
 
         :param slot: Slot to assign the lap record
         :param lap_data: Lap data
+        :return: The key for the slot record
         """
 
-    def remove_lap_record(self, slot: int, index: int) -> None:
+    def remove_lap_record(self, slot: int, key: int) -> None:
         """
         Remove lap record from the supervisor instance
 
         :param slot: Slot where the lap record is stored
-        :param index: The index of the slot lap record
+        :param key: The key of the slot lap record
+        :raises: `KeyError` when key not found
         """
 
     def is_slot_done(self, slot_num: int) -> bool:
@@ -68,7 +70,7 @@ class RaceProcessor(Protocol):
         :return: Done status
         """
 
-    def get_race_results(self) -> Iterable[SlotResult]:
+    def get_race_results(self) -> Sequence[SlotResult]:
         """
         Get the results of the race
 
@@ -123,7 +125,7 @@ class RaceProcessorManager:
         return self._registered_processors.get(ruleset_uid)
 
 
-def register_interface(interface_class: type[RaceProcessor]) -> type[RaceProcessor]:
+def register_processor(interface_class: type[RaceProcessor]) -> type[RaceProcessor]:
     """
     Decorator used for registering RaceProcessor classes
 

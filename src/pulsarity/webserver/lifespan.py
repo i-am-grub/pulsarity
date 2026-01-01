@@ -16,8 +16,8 @@ from pulsarity import ctx
 from pulsarity.database import setup_default_objects
 from pulsarity.events import EventBroker, SpecialEvt
 from pulsarity.interface.timer_manager import TimerInterfaceManager
+from pulsarity.race.manager import RaceManager
 from pulsarity.race.processor import RaceProcessorManager
-from pulsarity.race.state import RaceStateManager
 from pulsarity.utils import background
 from pulsarity.utils.config import DEFAULT_CONFIG_FILE
 
@@ -49,7 +49,7 @@ class ContextState(TypedDict):
 
     loop: asyncio.AbstractEventLoop
     event: EventBroker
-    race_state: RaceStateManager
+    race_state: RaceManager
     race_processor: RaceProcessorManager
     timer_inferface_manager: TimerInterfaceManager
 
@@ -67,7 +67,7 @@ async def lifespan(_app: Starlette):
     state = ContextState(
         loop=asyncio.get_running_loop(),
         event=EventBroker(),
-        race_state=RaceStateManager(),
+        race_state=RaceManager(),
         race_processor=RaceProcessorManager(),
         timer_inferface_manager=TimerInterfaceManager(),
     )

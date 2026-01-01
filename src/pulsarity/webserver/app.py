@@ -46,7 +46,7 @@ class ContextMiddleware:
         state: ContextState = scope["state"]
         loop_token = ctx.loop_ctx.set(state["loop"])
         event_token = ctx.event_broker_ctx.set(state["event"])
-        race_state_token = ctx.race_state_ctx.set(state["race_state"])
+        race_state_token = ctx.race_manager_ctx.set(state["race_state"])
         race_processor_token = ctx.race_processor_ctx.set(state["race_processor"])
         timer_interface_token = ctx.interface_manager_ctx.set(
             state["timer_inferface_manager"]
@@ -58,7 +58,7 @@ class ContextMiddleware:
         finally:
             ctx.loop_ctx.reset(loop_token)
             ctx.event_broker_ctx.reset(event_token)
-            ctx.race_state_ctx.reset(race_state_token)
+            ctx.race_manager_ctx.reset(race_state_token)
             ctx.race_processor_ctx.reset(race_processor_token)
             ctx.interface_manager_ctx.reset(timer_interface_token)
 

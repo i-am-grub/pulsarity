@@ -22,8 +22,8 @@ from pulsarity.database import (
 )
 from pulsarity.events.broker import EventBroker
 from pulsarity.interface.timer_manager import TimerInterfaceManager
+from pulsarity.race.manager import RaceManager
 from pulsarity.race.processor import RaceProcessorManager
-from pulsarity.race.state import RaceStateManager
 from pulsarity.utils import background
 from pulsarity.utils.config import PulsarityConfig
 from pulsarity.webserver import app
@@ -37,7 +37,7 @@ async def context_and_cleanup():
 
     ctx.loop_ctx.set(asyncio.get_running_loop())
     ctx.event_broker_ctx.set(EventBroker())
-    ctx.race_state_ctx.set(RaceStateManager())
+    ctx.race_manager_ctx.set(RaceManager())
     ctx.race_processor_ctx.set(RaceProcessorManager())
     ctx.interface_manager_ctx.set(TimerInterfaceManager())
 
