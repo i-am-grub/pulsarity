@@ -11,7 +11,8 @@ from pulsarity.database.raceevent import RaceEvent, RaceEventAttribute
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.database.role import Role
 from pulsarity.database.round import Round, RoundAttribute
-from pulsarity.database.slot import Slot, SlotAttribute, SlotHistory, SlotHistoryRecord
+from pulsarity.database.signal import SignalHistory
+from pulsarity.database.slot import Slot, SlotAttribute
 from pulsarity.database.user import User
 
 __all__ = [
@@ -32,8 +33,7 @@ __all__ = [
     "HeatAttribute",
     "Slot",
     "SlotAttribute",
-    "SlotHistory",
-    "SlotHistoryRecord",
+    "SignalHistory",
     "Lap",
 ]
 

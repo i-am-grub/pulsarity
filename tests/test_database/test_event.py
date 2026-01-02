@@ -15,9 +15,8 @@ from pulsarity.database import (
     RaceEvent,
     RaceFormat,
     Round,
+    SignalHistory,
     Slot,
-    SlotHistory,
-    SlotHistoryRecord,
 )
 from pulsarity.interface import TimerMode
 
@@ -297,10 +296,14 @@ async def test_slot_history(basic_slot: Slot):
     Test raceclass deletion as a result of event deletion
     """
     num = 5
-    records = [
-        SlotHistoryRecord(time=timedelta(0.1 * i), value=i * 0.1) for i in range(num)
-    ]
-    history = await SlotHistory.create(slot=basic_slot, history=records)
+    records = [(timedelta(seconds=0.1 * i), i * 0.1) for i in range(num)]
+    history = await SignalHistory.create(
+        slot=basic_slot,
+        history=records,
+        timer_identifier="foo",
+        timer_mode=TimerMode.PRIMARY,
+        timer_index=1,
+    )
 
     assert history.id
     assert len(history.history) == num
