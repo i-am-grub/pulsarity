@@ -2,8 +2,14 @@
 Race state/timing management
 """
 
+import asyncio
+from collections import defaultdict
+from datetime import timedelta
+
 from pulsarity import ctx
+from pulsarity.database.lap import Lap
 from pulsarity.database.raceformat import RaceFormat
+from pulsarity.database.signal import SignalHistory
 from pulsarity.interface.timer_manager import ExtendedTimerData
 from pulsarity.race._state import RaceStateManager
 from pulsarity.race.enums import RaceStatus
@@ -18,9 +24,15 @@ class RaceManager:
     _processor: RaceProcessor | None = None
     """The processor used for processing race data"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._state = RaceStateManager()
         """The underlying race state manager"""
+        self._save_lock = asyncio.Lock()
+        """Save in progress lock"""
+        self._signal_data: dict[int, dict[int, list[ExtendedTimerData]]] = defaultdict(
+            lambda: defaultdict(list)
+        )
+        """Race signal data storage"""
 
     @property
     def status(self) -> RaceStatus:
@@ -90,12 +102,18 @@ class RaceManager:
         """
         self._state.pause_race()
 
-    def reset(self) -> None:
+    async def reset(self) -> None:
         """
-        Reset the manager for the next race
+        Reset the manager for the next race. The reset can only occur
+        when the race has been stopped.
+
+        `WARNING`: This will clear all data (including unsaved)
         """
-        self._state.reset()
-        self._processor = None
+        if self._state.status == RaceStatus.STOPPED:
+            async with self._save_lock:
+                self._state.reset()
+                self._processor = None
+                self._signal_data.clear()
 
     def add_lap_record(self, slot: int, record: ExtendedTimerData) -> None:
         """
@@ -108,8 +126,6 @@ class RaceManager:
             self._processor.add_lap_record(slot, record)
         else:
             raise RuntimeError("Unable to add record when processor is not set")
-
-        event_broker = ctx.event_broker_ctx.get()
 
     def remove_lap_record(self, slot: int, key: int) -> None:
         """
@@ -126,4 +142,70 @@ class RaceManager:
         else:
             raise RuntimeError("Unable to remove record when processor is not set")
 
-        event_broker = ctx.event_broker_ctx.get()
+    def status_aware_lap_record(self, slot: int, record: ExtendedTimerData) -> None:
+        """
+        Add a lap record to the processor instance if the race status is underway
+
+        :param slot: _description_
+        :param record: _description_
+        """
+        if self.status in RaceStatus.UNDERWAY:
+            assert self._processor is not None
+            self._processor.add_lap_record(slot, record)
+
+    def status_aware_signal_record(self, record: ExtendedTimerData) -> None:
+        """
+        Add a lap record to the processor instance if the race status is underway
+
+        :param slot: _description_
+        :param record: _description_
+        """
+        if self.status in RaceStatus.UNDERWAY:
+            self._signal_data[record.node_index][record.interface_index].append(record)
+
+    async def _save_lap_data(self) -> None:
+        """
+        Saves the lap data to the database
+        """
+        if self._processor is not None:
+            laps = (
+                Lap(
+                    slot_id=lap.node_index,
+                    time=timedelta(seconds=lap.timestamp),
+                    mode=lap.interface_mode,
+                )
+                for lap in self._processor.get_laps()
+            )
+            await Lap.bulk_create(laps, batch_size=25)
+        else:
+            raise RuntimeError("Unable to save laps when process is not set")
+
+    async def _save_signal_data(self) -> None:
+        """
+        Saves the lap data to the database
+        """
+
+        def get_slot_data():
+            for slot, _data in self._signal_data.items():
+                for idx, data in _data.items():
+                    history = [(timedelta(seconds=x.timestamp), x.value) for x in data]
+
+                    yield SignalHistory(
+                        slot_id=slot,
+                        timer_index=idx,
+                        timer_identifier=data[0].timer_identifier,
+                        timer_mode=data[0].interface_mode,
+                        history=history,
+                    )
+
+        if self._signal_data:
+            await SignalHistory.bulk_create(get_slot_data(), batch_size=5)
+
+    async def save_race_data(self) -> None:
+        """
+        Saves the race data to the database
+        """
+        if self._state.status == RaceStatus.STOPPED:
+            async with self._save_lock, asyncio.TaskGroup() as tg:
+                tg.create_task(self._save_lap_data())
+                tg.create_task(self._save_signal_data())

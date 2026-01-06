@@ -2,7 +2,7 @@
 Race processor
 """
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
@@ -10,7 +10,7 @@ from pulsarity import ctx
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import ExtendedTimerData
 
-T = TypeVar("T")
+T = TypeVar("T", bound=dict)
 
 
 @dataclass(frozen=True)
@@ -83,6 +83,13 @@ class RaceProcessor(Protocol):
 
         :param slot_num: The slot number
         :return: The results for the slot
+        """
+
+    def get_laps(self) -> Iterable[ExtendedTimerData]:
+        """
+        Gets all of the laps stored by the race processor
+
+        :return: An iterable of the lap data
         """
 
 
