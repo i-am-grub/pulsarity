@@ -2,10 +2,15 @@
 Webserver Components
 """
 
+import asyncio
+import contextlib
+import json
 import logging
-from collections.abc import Coroutine
+from asyncio import Event
+from collections.abc import Callable, Coroutine
 from importlib.resources import files
 from pathlib import Path
+from typing import TypedDict
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
@@ -14,19 +19,37 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.cors import CORSMiddleware
-from starlette.routing import Mount
+from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddleware
+from tortoise import Tortoise, connections
 
 from pulsarity import ctx
+from pulsarity.database import setup_default_objects
+from pulsarity.events import EventBroker, SpecialEvt
+from pulsarity.interface.timer_manager import TimerInterfaceManager
+from pulsarity.race.processor import RaceProcessorManager
+from pulsarity.race.state import RaceStateManager
+from pulsarity.utils import background
 from pulsarity.utils.crypto import generate_self_signed_cert
-from pulsarity.webserver import lifespan
 from pulsarity.webserver._auth import PulsarityAuthBackend
-from pulsarity.webserver.lifespan import ContextState
+from pulsarity.webserver._wrapper import endpoint
 from pulsarity.webserver.routes import ROUTES as http_routes
 from pulsarity.webserver.websockets import ROUTES as ws_routes
 
 logger = logging.getLogger(__name__)
+
+
+class ContextState(TypedDict):
+    """
+    Context payload
+    """
+
+    loop: asyncio.AbstractEventLoop
+    event: EventBroker
+    race_state: RaceStateManager
+    race_processor: RaceProcessorManager
+    timer_inferface_manager: TimerInterfaceManager
 
 
 class ContextMiddleware:
@@ -78,14 +101,14 @@ class SPAStaticFiles(StaticFiles):
         return full_path, stat_result
 
 
-def _generate_static_files_application() -> SPAStaticFiles:
+def _generate_static_files_application(path: str) -> SPAStaticFiles:
     """
     Generates the file serving application for SPAs.
 
     :return: The file serving application
     """
     return SPAStaticFiles(
-        directory=Path(files("pulsarity.frontend.src") / "client"),  # type: ignore
+        directory=Path(files("pulsarity.frontend.src") / path),  # type: ignore
         html=True,
     )
 
@@ -144,20 +167,60 @@ def generate_webserver_application() -> Starlette:
         Mount(path="/api", app=generate_api_application(), name="api"),
         Mount(
             path="/",
-            app=_generate_static_files_application(),
+            app=_generate_static_files_application("client"),
             name="root",
         ),
     ]
 
     return Starlette(
         routes=routes,
-        lifespan=lifespan.lifespan,
+        lifespan=lifespan,
         middleware=middleware,
     )
 
 
+def generate_setup_application(shudown_evt: Event) -> Starlette:
+    """
+    Generates the "first time setup" application with CORS middlesware
+
+    File serving app is mounted to the root of the domain (`/`) and the
+    api application is mounted to (`/api`)
+
+    :return: The webserver application
+    """
+    middleware = [
+        Middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["GET", "POST"],
+            allow_headers=["*"],
+        )
+    ]
+
+    @endpoint(requires_auth=False)
+    async def save_settings():
+        """
+        Validate setting data and save to config file
+        """
+        config = ctx.config_ctx.get()
+        await config.write_config_to_file_async()
+        shudown_evt.set()
+
+    api_routes = [Route("/save", endpoint=save_settings, methods=["POST"])]
+    routes = [
+        Mount(path="/api", routes=api_routes, name="api"),
+        Mount(
+            path="/",
+            app=_generate_static_files_application("startup"),
+            name="root",
+        ),
+    ]
+
+    return Starlette(routes=routes, middleware=middleware)
+
+
 def generate_webserver_coroutine(
-    app: Starlette,
+    app: Starlette, shutdown_trigger: Callable | None = None
 ) -> Coroutine[None, None, None]:
     """
     An awaitable task for the application deployed with a hypercorn ASGI server.
@@ -197,4 +260,92 @@ def generate_webserver_coroutine(
     if configs.webserver.force_redirects:
         app = HTTPToHTTPSRedirectMiddleware(app, secure_bind[0])  # type: ignore
 
-    return serve(app, webserver_config, shutdown_trigger=lifespan.shutdown_signaled)  # type: ignore
+    return serve(app, webserver_config, shutdown_trigger=shutdown_trigger)  # type: ignore
+
+
+@contextlib.asynccontextmanager
+async def lifespan(_app: Starlette):
+    """
+    Startup and shutdown procedures for the webserver
+
+    :param _app: The application
+    """
+
+    logger.info("Starting Pulsarity...")
+
+    state = ContextState(
+        loop=asyncio.get_running_loop(),
+        event=EventBroker(),
+        race_state=RaceStateManager(),
+        race_processor=RaceProcessorManager(),
+        timer_inferface_manager=TimerInterfaceManager(),
+    )
+
+    await server_starup_workflow(state)
+    logger.info("Pulsarity startup completed...")
+
+    yield state
+
+    logger.info("Stopping Pulsarity...")
+    await server_shutdown_workflow(state)
+    logger.info("Pulsarity shutdown completed...")
+
+
+async def server_starup_workflow(state: ContextState) -> None:
+    """
+    Startup workflow
+    """
+    loop = state["loop"]
+    token = ctx.loop_ctx.set(loop)
+    state["timer_inferface_manager"].start()
+    ctx.loop_ctx.reset(token)
+
+    await database_startup()
+
+    await state["event"].trigger(SpecialEvt.STARTUP, {})
+
+
+async def server_shutdown_workflow(state: ContextState) -> None:
+    """
+    Shutdown workflow
+    """
+    await state["event"].trigger(SpecialEvt.SHUTDOWN, {})
+
+    await state["timer_inferface_manager"].shutdown(5)
+    await background.shutdown(5)
+    await database_shutdown()
+
+
+async def database_startup() -> None:
+    """
+    Initialize the database
+    """
+    await Tortoise.init(
+        {
+            "connections": ctx.config_ctx.get().database.model_dump(),
+            "apps": {
+                "system": {
+                    "models": ["pulsarity.database"],
+                    "default_connection": "system_db",
+                },
+                "event": {
+                    "models": ["pulsarity.database"],
+                    "default_connection": "event_db",
+                },
+            },
+        }
+    )
+
+    await Tortoise.generate_schemas(True)
+    await setup_default_objects()
+
+    logger.debug("Database started, %s", json.dumps(tuple(Tortoise.apps)))
+
+
+async def database_shutdown() -> None:
+    """
+    Shutdown the database
+    """
+    await connections.close_all()
+
+    logger.debug("Database shutdown")
