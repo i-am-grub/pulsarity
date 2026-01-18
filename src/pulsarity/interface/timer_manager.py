@@ -5,8 +5,7 @@ Manage timer interfaces
 import asyncio
 import logging
 import uuid
-from collections.abc import AsyncGenerator
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import IntEnum, auto
 
 from pulsarity import ctx
@@ -64,12 +63,6 @@ class _ActiveTimer:
     """The index of the timer. Used for ordering split timers"""
 
 
-@dataclass(frozen=True)
-class _DataManager:
-    queue: asyncio.Queue[TimerData] = field(default_factory=asyncio.Queue)
-    connections: set[asyncio.Queue[ExtendedTimerData]] = field(default_factory=set)
-
-
 class TimerInterfaceManager:
     """
     Manages the abstract and active timer interfaces
@@ -80,8 +73,8 @@ class TimerInterfaceManager:
         self._active_interfaces: dict[str, _ActiveTimer] = {}
         self._shutdown_evt = asyncio.Event()
 
-        self._lap_manager = _DataManager()
-        self._signal_manager = _DataManager()
+        self._lap_queue: asyncio.Queue[TimerData] = asyncio.Queue()
+        self._signal_queue: asyncio.Queue[TimerData] = asyncio.Queue()
 
         self._tasks: tuple[asyncio.Task, asyncio.Task] | None = None
 
@@ -94,55 +87,25 @@ class TimerInterfaceManager:
 
         self._shutdown_evt.clear()
 
-        lap_task = background.add_background_task(
-            self._process_queue_data, self._lap_manager
+        self._tasks = (
+            background.add_background_task(self._process_lap_data),
+            background.add_background_task(self._process_signal_data),
         )
-
-        signal_task = background.add_background_task(
-            self._process_queue_data, self._signal_manager
-        )
-
-        self._tasks = (lap_task, signal_task)
 
         for interface in self._active_interfaces.values():
-            interface.interface.subscribe(
-                self._lap_manager.queue, self._signal_manager.queue
-            )
+            interface.interface.subscribe(self._lap_queue, self._signal_queue)
 
-    async def subscribe_laps(self) -> AsyncGenerator[ExtendedTimerData, None]:
-        """
-        Subscribe to the incoming lap data
-        """
-        connection: asyncio.Queue[ExtendedTimerData] = asyncio.Queue()
-        self._lap_manager.connections.add(connection)
-        try:
-            while not self._shutdown_evt.is_set():
-                yield await connection.get()
-        finally:
-            self._lap_manager.connections.remove(connection)
-
-    async def subscribe_signal(self) -> AsyncGenerator[ExtendedTimerData, None]:
-        """
-        Subscribe to the incoming signal data
-        """
-        connection: asyncio.Queue[ExtendedTimerData] = asyncio.Queue()
-        self._signal_manager.connections.add(connection)
-        try:
-            while not self._shutdown_evt.is_set():
-                yield await connection.get()
-        finally:
-            self._signal_manager.connections.remove(connection)
-
-    async def _process_queue_data(self, manager: _DataManager):
+    async def _process_lap_data(self):
         """
         Add interface data to the incoming rimer data and pass
         along to the next stage
 
         :param manager: The manager to use for processing
         """
+        race_manager = ctx.race_manager_ctx.get()
 
         while not self._shutdown_evt.is_set():
-            recieved = await manager.queue.get()
+            recieved = await self._lap_queue.get()
             interface = self._active_interfaces[recieved.timer_identifier]
             outgoing = ExtendedTimerData(
                 recieved.timestamp,
@@ -153,8 +116,30 @@ class TimerInterfaceManager:
                 interface.index,
             )
 
-            for connection in manager.connections:
-                await connection.put(outgoing)
+            race_manager.status_aware_lap_record(recieved.node_index, outgoing)
+
+    async def _process_signal_data(self):
+        """
+        Add interface data to the incoming rimer data and pass
+        along to the next stage
+
+        :param manager: The manager to use for processing
+        """
+        race_manager = ctx.race_manager_ctx.get()
+
+        while not self._shutdown_evt.is_set():
+            recieved = await self._signal_queue.get()
+            interface = self._active_interfaces[recieved.timer_identifier]
+            outgoing = ExtendedTimerData(
+                recieved.timestamp,
+                recieved.timer_identifier,
+                recieved.node_index,
+                recieved.value,
+                interface.mode,
+                interface.index,
+            )
+
+            race_manager.status_aware_signal_record(outgoing)
 
     def register(self, interface: type[TimerInterface]) -> None:
         """
@@ -214,7 +199,7 @@ class TimerInterfaceManager:
             instance = interface()
 
             if self._tasks is not None:
-                instance.subscribe(self._lap_manager.queue, self._signal_manager.queue)
+                instance.subscribe(self._lap_queue, self._signal_queue)
 
             self._active_interfaces[uuid_.hex] = _ActiveTimer(
                 interface=instance, mode=mode, index=index

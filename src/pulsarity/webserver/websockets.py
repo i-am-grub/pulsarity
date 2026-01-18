@@ -175,21 +175,16 @@ async def restart_server():
 
 
 @ws_event(RaceSequenceEvt.RACE_SCHEDULE)
-async def schedule_race(ws_data: WSEventData):
+async def schedule_race():
     """
     Schedule the start of a race.
-
-    :param ws_data: Recieved websocket event data
     """
-    # ctx.race_manager_ctx.get().schedule_race(format_, **ws_data.data)
 
 
 @ws_event(RaceSequenceEvt.RACE_STOP)
 async def race_stop():
     """
     Stop the current race
-
-    :param _ws_data: Recieved websocket event data
     """
     ctx.race_manager_ctx.get().stop_race()
 

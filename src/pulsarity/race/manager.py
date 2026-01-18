@@ -85,10 +85,10 @@ class RaceManager:
         processor = processor_manager.get_processor(format_.processor_id)
 
         if processor is None:
-            raise ValueError("Processor with witching id not found")
+            raise ValueError("Processor with matching uid not found")
 
-        self._state.schedule_race(format_, assigned_start=assigned_start)
         self._processor = processor(format_)
+        self._state.schedule_race(format_, assigned_start=assigned_start)
 
     def stop_race(self) -> None:
         """
@@ -107,7 +107,7 @@ class RaceManager:
         Reset the manager for the next race. The reset can only occur
         when the race has been stopped.
 
-        `WARNING`: This will clear all data (including unsaved)
+        `WARNING`: This will clear all unsaved data
         """
         if self._state.status == RaceStatus.STOPPED:
             async with self._save_lock:
@@ -127,6 +127,33 @@ class RaceManager:
         else:
             raise RuntimeError("Unable to add record when processor is not set")
 
+    def status_aware_lap_record(self, slot: int, record: ExtendedTimerData) -> None:
+        """
+        Add a lap record to the processor instance if the race status is underway
+
+        :param slot: The slot to add the lap record to
+        :param record: The lap record to add
+        """
+        if self.status in RaceStatus.UNDERWAY:
+            self.add_lap_record(slot, record)
+
+    def add_signal_record(self, record: ExtendedTimerData) -> None:
+        """
+        Add a signal record to the race manager
+
+        :param record: The signal record to store
+        """
+        self._signal_data[record.node_index][record.interface_index].append(record)
+
+    def status_aware_signal_record(self, record: ExtendedTimerData) -> None:
+        """
+        Add a signal record to the race manager if the race status is underway
+
+        :param record: The signal record to store
+        """
+        if self.status in RaceStatus.UNDERWAY:
+            self.add_signal_record(record)
+
     def remove_lap_record(self, slot: int, key: int) -> None:
         """
         Add remove record from the processor instance
@@ -141,27 +168,6 @@ class RaceManager:
                 raise ValueError("Invalid value for lap key") from ex
         else:
             raise RuntimeError("Unable to remove record when processor is not set")
-
-    def status_aware_lap_record(self, slot: int, record: ExtendedTimerData) -> None:
-        """
-        Add a lap record to the processor instance if the race status is underway
-
-        :param slot: _description_
-        :param record: _description_
-        """
-        if self.status in RaceStatus.UNDERWAY:
-            assert self._processor is not None
-            self._processor.add_lap_record(slot, record)
-
-    def status_aware_signal_record(self, record: ExtendedTimerData) -> None:
-        """
-        Add a lap record to the processor instance if the race status is underway
-
-        :param slot: _description_
-        :param record: _description_
-        """
-        if self.status in RaceStatus.UNDERWAY:
-            self._signal_data[record.node_index][record.interface_index].append(record)
 
     async def _save_lap_data(self) -> None:
         """
