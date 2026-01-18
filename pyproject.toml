@@ -16,7 +16,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "starlette==0.51.0",
+    "starlette==0.52.1",
     "starsessions==2.2.1",
     "aiosqlite==0.22.1",
     "hypercorn==0.18.0",
