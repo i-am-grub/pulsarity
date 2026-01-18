@@ -5,8 +5,6 @@ Webserver Websocket Connections
 import asyncio
 import inspect
 import logging
-import os
-import signal
 from collections.abc import Awaitable, Callable
 from typing import ParamSpec, TypeVar
 
@@ -26,6 +24,9 @@ T = TypeVar("T")
 P = ParamSpec("P")
 
 logger = logging.getLogger(__name__)
+
+ws_shutdown = asyncio.Event()
+ws_restart = asyncio.Event()
 
 _wse_routes: dict[str, tuple[UserPermission, Callable]] = {}
 
@@ -163,7 +164,7 @@ async def shutdown_server():
     """
     Shutdown the webserver
     """
-    signal.raise_signal(signal.Signals.SIGINT)
+    ws_shutdown.set()
 
 
 @ws_event(SpecialEvt.RESTART)
@@ -171,8 +172,7 @@ async def restart_server():
     """
     Restart the webserver
     """
-    os.environ["REBOOT_PULSARITY_FLAG"] = "active"
-    signal.raise_signal(signal.Signals.SIGINT)
+    ws_restart.set()
 
 
 @ws_event(RaceSequenceEvt.RACE_SCHEDULE)
