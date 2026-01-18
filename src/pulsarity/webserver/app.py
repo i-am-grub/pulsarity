@@ -202,6 +202,9 @@ def generate_setup_application(shudown_evt: Event) -> Starlette:
         """
         Validate setting data and save to config file
         """
+        # pylint: disable=W0511
+        # TODO: Process setup info
+
         config = ctx.config_ctx.get()
         await config.write_config_to_file_async()
         shudown_evt.set()
