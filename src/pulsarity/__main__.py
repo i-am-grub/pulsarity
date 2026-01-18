@@ -33,7 +33,7 @@ else:
         RuntimeWarning,
     )
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 _shutdown_event = asyncio.Event()
 _shutdown_setup_event = asyncio.Event()
 
