@@ -132,9 +132,7 @@ class RaceStateManager:
         self._status = status
         self._race_record.append((status, ctx.loop_ctx.get().time()))
 
-    def schedule_race(
-        self, format_: RaceFormat, *, assigned_start: float, **_kwargs
-    ) -> None:
+    def schedule_race(self, format_: RaceFormat, assigned_start: float) -> None:
         """
         Schedule the sequence of events for the race
 
@@ -157,7 +155,9 @@ class RaceStateManager:
             self._set_status(RaceStatus.SCHEDULED)
 
         else:
-            logger.warning("All conditions are not met to program race")
+            raise RuntimeError(
+                "Unable to resume race state when race status is not paused"
+            )
 
     def stop_race(self) -> None:
         """
@@ -228,7 +228,9 @@ class RaceStateManager:
         event_broker = ctx.event_broker_ctx.get()
 
         if self.status != RaceStatus.PAUSED:
-            return
+            raise RuntimeError(
+                "Unable to resume race state when race status is not paused"
+            )
 
         assert self._format is not None, "Can not resume race with an unset schedule"
 
@@ -351,3 +353,7 @@ class RaceStateManager:
             self._race_record.clear()
             self._status = RaceStatus.READY
             logger.info("Race manager reset")
+        else:
+            raise RuntimeError(
+                "Unable to reset race state when race status is not stopped"
+            )

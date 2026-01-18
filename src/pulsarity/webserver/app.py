@@ -28,8 +28,8 @@ from pulsarity import ctx
 from pulsarity.database import setup_default_objects
 from pulsarity.events import EventBroker, SpecialEvt
 from pulsarity.interface.timer_manager import TimerInterfaceManager
+from pulsarity.race.manager import RaceManager
 from pulsarity.race.processor import RaceProcessorManager
-from pulsarity.race.state import RaceStateManager
 from pulsarity.utils import background
 from pulsarity.utils.crypto import generate_self_signed_cert
 from pulsarity.webserver._auth import PulsarityAuthBackend
@@ -47,7 +47,7 @@ class ContextState(TypedDict):
 
     loop: asyncio.AbstractEventLoop
     event: EventBroker
-    race_state: RaceStateManager
+    race_state: RaceManager
     race_processor: RaceProcessorManager
     timer_inferface_manager: TimerInterfaceManager
 
@@ -69,7 +69,7 @@ class ContextMiddleware:
         state: ContextState = scope["state"]
         loop_token = ctx.loop_ctx.set(state["loop"])
         event_token = ctx.event_broker_ctx.set(state["event"])
-        race_state_token = ctx.race_state_ctx.set(state["race_state"])
+        race_state_token = ctx.race_manager_ctx.set(state["race_state"])
         race_processor_token = ctx.race_processor_ctx.set(state["race_processor"])
         timer_interface_token = ctx.interface_manager_ctx.set(
             state["timer_inferface_manager"]
@@ -81,7 +81,7 @@ class ContextMiddleware:
         finally:
             ctx.loop_ctx.reset(loop_token)
             ctx.event_broker_ctx.reset(event_token)
-            ctx.race_state_ctx.reset(race_state_token)
+            ctx.race_manager_ctx.reset(race_state_token)
             ctx.race_processor_ctx.reset(race_processor_token)
             ctx.interface_manager_ctx.reset(timer_interface_token)
 
@@ -279,7 +279,7 @@ async def lifespan(_app: Starlette):
     state = ContextState(
         loop=asyncio.get_running_loop(),
         event=EventBroker(),
-        race_state=RaceStateManager(),
+        race_state=RaceManager(),
         race_processor=RaceProcessorManager(),
         timer_inferface_manager=TimerInterfaceManager(),
     )

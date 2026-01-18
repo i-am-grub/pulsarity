@@ -9,8 +9,8 @@ import pytest
 import pytest_asyncio
 
 from pulsarity.database import RaceFormat
+from pulsarity.race._state import RaceStateManager
 from pulsarity.race.enums import RaceStatus
-from pulsarity.race.state import RaceStateManager
 from pulsarity.utils import background
 
 # pylint: disable=W0212
@@ -427,7 +427,10 @@ async def test_limited_sequence_pause_resume_fail(
 
     race_manager.pause_race()
     assert race_manager.status == RaceStatus.SCHEDULED
-    race_manager.resume_race()
+
+    with pytest.raises(RuntimeError):
+        race_manager.resume_race()
+
     assert race_manager.status == RaceStatus.SCHEDULED
 
     await asyncio.sleep(offset)
@@ -436,19 +439,22 @@ async def test_limited_sequence_pause_resume_fail(
 
     race_manager.pause_race()
     assert race_manager.status == RaceStatus.STAGING
-    race_manager.resume_race()
+    with pytest.raises(RuntimeError):
+        race_manager.resume_race()
     assert race_manager.status == RaceStatus.STAGING
 
     await asyncio.sleep(limited_schedule.stage_time_sec)
 
     assert race_manager.status == RaceStatus.RACING
-    race_manager.resume_race()
+    with pytest.raises(RuntimeError):
+        race_manager.resume_race()
     assert race_manager.status == RaceStatus.RACING
 
     await asyncio.sleep(limited_schedule.race_time_sec)
 
     assert race_manager.status == RaceStatus.OVERTIME
-    race_manager.resume_race()
+    with pytest.raises(RuntimeError):
+        race_manager.resume_race()
     assert race_manager.status == RaceStatus.OVERTIME
 
     await asyncio.sleep(limited_schedule.overtime_sec)
@@ -458,7 +464,8 @@ async def test_limited_sequence_pause_resume_fail(
 
     race_manager.pause_race()
     assert race_manager.status == RaceStatus.STOPPED
-    race_manager.resume_race()
+    with pytest.raises(RuntimeError):
+        race_manager.resume_race()
     assert race_manager.status == RaceStatus.STOPPED
 
 

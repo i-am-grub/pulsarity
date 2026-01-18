@@ -16,8 +16,8 @@ from pulsarity.utils.config import DEFAULT_CONFIG_FILE, PulsarityConfig
 if TYPE_CHECKING:
     from pulsarity.events.broker import EventBroker
     from pulsarity.interface.timer_manager import TimerInterfaceManager
+    from pulsarity.race.manager import RaceManager
     from pulsarity.race.processor import RaceProcessorManager
-    from pulsarity.race.state import RaceStateManager
     from pulsarity.webserver._auth import PulsarityUser
 
 
@@ -27,7 +27,7 @@ config_ctx: ContextVar[PulsarityConfig] = ContextVar(
 )
 
 event_broker_ctx: ContextVar[EventBroker] = ContextVar("event_broker_ctx")
-race_state_ctx: ContextVar[RaceStateManager] = ContextVar("race_state_ctx")
+race_manager_ctx: ContextVar[RaceManager] = ContextVar("race_manager_ctx")
 race_processor_ctx: ContextVar[RaceProcessorManager] = ContextVar("race_processor_ctx")
 interface_manager_ctx: ContextVar[TimerInterfaceManager] = ContextVar(
     "interface_manager_ctx"

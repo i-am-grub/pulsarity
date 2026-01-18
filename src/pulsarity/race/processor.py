@@ -2,15 +2,17 @@
 Race processor
 """
 
-from collections.abc import Iterable
+import inspect
+from abc import ABC, abstractmethod
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Generic, Protocol, TypeVar, runtime_checkable
+from typing import Callable, Generic, TypeVar
 
 from pulsarity import ctx
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import ExtendedTimerData
 
-T = TypeVar("T")
+T = TypeVar("T", bound=dict)
 
 
 @dataclass(frozen=True)
@@ -27,16 +29,13 @@ class SlotResult(Generic[T]):
     data: T
 
 
-@runtime_checkable
-class RaceProcessor(Protocol):
+class RaceProcessor(ABC):
     """
-    Protocol for processing race data. Can be used to enforce
-    custom rulesets
+    Abstract base class for processing race data.
+    Can be used to enforce custom rulesets
     """
 
-    uid: str
-    """Processor unique identifier"""
-
+    @abstractmethod
     def __init__(self, race_format: RaceFormat) -> None:
         """
         Class initializer
@@ -44,22 +43,34 @@ class RaceProcessor(Protocol):
         :param race_format: The active race format
         """
 
-    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> None:
+    @property
+    @abstractmethod
+    def uid(self) -> str:
+        """
+        Processor unique identifier
+        """
+
+    @abstractmethod
+    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> int:
         """
         Add lap record to the supervisor instance
 
         :param slot: Slot to assign the lap record
         :param lap_data: Lap data
+        :return: The key for the slot record
         """
 
-    def remove_lap_record(self, slot: int, index: int) -> None:
+    @abstractmethod
+    def remove_lap_record(self, slot: int, key: int) -> None:
         """
         Remove lap record from the supervisor instance
 
         :param slot: Slot where the lap record is stored
-        :param index: The index of the slot lap record
+        :param key: The key of the slot lap record
+        :raises: `KeyError` when key not found
         """
 
+    @abstractmethod
     def is_slot_done(self, slot_num: int) -> bool:
         """
         Check if the slot has finished
@@ -68,19 +79,29 @@ class RaceProcessor(Protocol):
         :return: Done status
         """
 
-    def get_race_results(self) -> Iterable[SlotResult]:
+    @abstractmethod
+    def get_race_results(self) -> Sequence[SlotResult]:
         """
         Get the results of the race
 
         :return: An iterable of the results for all the slots
         """
 
+    @abstractmethod
     def get_slot_results(self, slot_num: int) -> SlotResult:
         """
         Get the race results for a slot
 
         :param slot_num: The slot number
         :return: The results for the slot
+        """
+
+    @abstractmethod
+    def get_laps(self) -> Iterable[ExtendedTimerData]:
+        """
+        Gets all of the laps stored by the race processor
+
+        :return: An iterable of the lap data
         """
 
 
@@ -90,7 +111,9 @@ class RaceProcessorManager:
     """
 
     def __init__(self) -> None:
-        self._registered_processors: dict[str, type[RaceProcessor]] = {}
+        self._registered_processors: dict[
+            str | Callable[[RaceProcessor], str], type[RaceProcessor]
+        ] = {}
 
     def register(self, processor_class: type[RaceProcessor]) -> type[RaceProcessor]:
         """
@@ -101,7 +124,9 @@ class RaceProcessorManager:
         :raises RuntimeError: Class already registered
         """
 
-        if isinstance(processor_class, RaceProcessor):
+        if issubclass(processor_class, RaceProcessor) and not inspect.isabstract(
+            processor_class
+        ):
             if processor_class.uid in self._registered_processors:
                 raise RuntimeError(
                     "Interface type with matching identifier already registered"
@@ -111,7 +136,9 @@ class RaceProcessorManager:
 
             return processor_class
 
-        raise RuntimeError("Attempted to register an invalid race processor class")
+        raise TypeError(
+            f"Attempted to register an invalid race processor: {processor_class.__name__}"
+        )
 
     def get_processor(self, ruleset_uid: str) -> type[RaceProcessor] | None:
         """
@@ -123,7 +150,7 @@ class RaceProcessorManager:
         return self._registered_processors.get(ruleset_uid)
 
 
-def register_interface(interface_class: type[RaceProcessor]) -> type[RaceProcessor]:
+def register_processor(interface_class: type[RaceProcessor]) -> type[RaceProcessor]:
     """
     Decorator used for registering RaceProcessor classes
 

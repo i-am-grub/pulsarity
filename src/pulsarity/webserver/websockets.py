@@ -14,7 +14,6 @@ from starlette.routing import WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from pulsarity import ctx
-from pulsarity.database import RaceFormat
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt
 from pulsarity.utils import background
@@ -176,24 +175,18 @@ async def restart_server():
 
 
 @ws_event(RaceSequenceEvt.RACE_SCHEDULE)
-async def schedule_race(ws_data: WSEventData):
+async def schedule_race():
     """
     Schedule the start of a race.
-
-    :param ws_data: Recieved websocket event data
     """
-    format_ = RaceFormat()
-    ctx.race_state_ctx.get().schedule_race(format_, **ws_data.data)
 
 
 @ws_event(RaceSequenceEvt.RACE_STOP)
 async def race_stop():
     """
     Stop the current race
-
-    :param _ws_data: Recieved websocket event data
     """
-    ctx.race_state_ctx.get().stop_race()
+    ctx.race_manager_ctx.get().stop_race()
 
 
 ROUTES = [
