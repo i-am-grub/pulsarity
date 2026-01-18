@@ -47,7 +47,7 @@ class ContextState(TypedDict):
 
     loop: asyncio.AbstractEventLoop
     event: EventBroker
-    race_state: RaceManager
+    race_manager: RaceManager
     race_processor: RaceProcessorManager
     timer_inferface_manager: TimerInterfaceManager
 
@@ -69,7 +69,7 @@ class ContextMiddleware:
         state: ContextState = scope["state"]
         loop_token = ctx.loop_ctx.set(state["loop"])
         event_token = ctx.event_broker_ctx.set(state["event"])
-        race_state_token = ctx.race_manager_ctx.set(state["race_state"])
+        race_manager_token = ctx.race_manager_ctx.set(state["race_manager"])
         race_processor_token = ctx.race_processor_ctx.set(state["race_processor"])
         timer_interface_token = ctx.interface_manager_ctx.set(
             state["timer_inferface_manager"]
@@ -81,7 +81,7 @@ class ContextMiddleware:
         finally:
             ctx.loop_ctx.reset(loop_token)
             ctx.event_broker_ctx.reset(event_token)
-            ctx.race_manager_ctx.reset(race_state_token)
+            ctx.race_manager_ctx.reset(race_manager_token)
             ctx.race_processor_ctx.reset(race_processor_token)
             ctx.interface_manager_ctx.reset(timer_interface_token)
 
@@ -144,7 +144,7 @@ def generate_api_application() -> Starlette:
 
 def generate_webserver_application() -> Starlette:
     """
-    Generates the RotorHazard application with CORS middlesware and
+    Generates the Pulsarity application with CORS middlesware and
     routes to the sub application.
 
     File serving app is mounted to the root of the domain (`/`) and the
@@ -279,18 +279,35 @@ async def lifespan(_app: Starlette):
     state = ContextState(
         loop=asyncio.get_running_loop(),
         event=EventBroker(),
-        race_state=RaceManager(),
+        race_manager=RaceManager(),
         race_processor=RaceProcessorManager(),
         timer_inferface_manager=TimerInterfaceManager(),
     )
 
+    loop_token = ctx.loop_ctx.set(state["loop"])
+    event_token = ctx.event_broker_ctx.set(state["event"])
+    race_manager_token = ctx.race_manager_ctx.set(state["race_manager"])
+    race_processor_token = ctx.race_processor_ctx.set(state["race_processor"])
+    timer_inferface_manager_token = ctx.interface_manager_ctx.set(
+        state["timer_inferface_manager"]
+    )
+
     await server_starup_workflow(state)
+
     logger.info("Pulsarity startup completed...")
 
     yield state
 
     logger.info("Stopping Pulsarity...")
+
     await server_shutdown_workflow(state)
+
+    ctx.loop_ctx.reset(loop_token)
+    ctx.event_broker_ctx.reset(event_token)
+    ctx.race_manager_ctx.reset(race_manager_token)
+    ctx.race_processor_ctx.reset(race_processor_token)
+    ctx.interface_manager_ctx.reset(timer_inferface_manager_token)
+
     logger.info("Pulsarity shutdown completed...")
 
 
