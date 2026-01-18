@@ -11,21 +11,52 @@ package) prevents usage of.
 
 ## Development
 
-The development of this project currently relies on python 3.11+ due to new features that were introduced
-in this specific version. With python 3.11 being shipped with the release of Debian bookworm
-(the preferred operating system for running this project), this constraint is currently accepted.
-In the future, a rework may occur to allow for all currently supported versions of pythons.
+The development of this project currently relies on python 3.14 due to new ensuring compatibility 
+with the freethreading capabilities in that version. Depending on the release schedule of this
+project, the project may be backported to support eariler versions of python to be compatible with
+the python version being shipped with the current release of Debian (Raspbian) at the time of the
+release.
+
+### UV Environment
+
+The project currently uses the [uv package manager](https://docs.astral.sh/uv/). With uv installed
+as a command line tool, the standard and development dependencies can be installed with running the
+following command at the root of the repo
+
+```
+uv sync
+```
+
+To start the default webserver, use
+
+```
+uv run pulsarity
+```
+
+### Venv and Pip Environment
+
+The standard venv and pip packages can be used as well. Install your python virtual environment at the
+root of the repo and use the following command to install the dependencies and an editable version of
+the project into the virtual environment
+
+```
+python -m pip install -e .
+```
+
+To start the default webserver, use
+
+```
+python -m pulsarity
+```
 
 ### Utilites
 
-A few different utilites are used to help the development process. If contributing, 
-please follow any guidelines/practices recommended by the following projects:
+A few different utilites are used to help the development process.
 
 - uv - dependency management
 - mypy - static type checking
 - Black - code formating
 - pytest - unit testing
 - pytest-cov - coverage testing
-- pylint - more static type analysis
-- tox - automated testing
+- pylint - more static type analysis/linting
 - sphinx - documentation

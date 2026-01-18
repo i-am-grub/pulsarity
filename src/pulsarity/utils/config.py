@@ -72,6 +72,7 @@ class PulsarityConfig(BaseModel):
     database: _DatabaseConfig = Field(default_factory=_DatabaseConfig)
     logging: dict = Field(default_factory=generate_default_config)
     _lock: asyncio.locks.Lock = PrivateAttr(default_factory=asyncio.locks.Lock)
+    _from_save: bool = PrivateAttr(default=False)
 
     @classmethod
     def from_file(cls, filepath: Path) -> Self:
@@ -82,7 +83,9 @@ class PulsarityConfig(BaseModel):
         """
         try:
             with filepath.open("rb") as file:
-                return cls.model_validate_json(file.read())
+                config = cls.model_validate_json(file.read())
+                config.from_save = True
+                return config
 
         except ValidationError:
             _logger.error("Invalid server config file. Using defaults.")
@@ -92,7 +95,21 @@ class PulsarityConfig(BaseModel):
             _logger.info("Config file not found. Loading defaults")
             return cls()
 
-    def write_config_to_file(self, filepath: Path) -> None:
+    @property
+    def from_save(self) -> bool:
+        """
+        Status of the config file loading from a previous config file
+        """
+        return self._from_save
+
+    @from_save.setter
+    def from_save(self, status: bool) -> None:
+        """
+        Status of the config file loading from a previous config file
+        """
+        self._from_save = status
+
+    def write_config_to_file(self, filepath: Path = DEFAULT_CONFIG_FILE) -> None:
         """
         Writes the current config to a file
 
@@ -103,7 +120,9 @@ class PulsarityConfig(BaseModel):
         with filepath.open("w", encoding="utf-8") as file:
             file.write(self.model_dump_json(indent=4))
 
-    async def write_config_to_file_async(self, filepath: Path) -> None:
+    async def write_config_to_file_async(
+        self, filepath: Path = DEFAULT_CONFIG_FILE
+    ) -> None:
         """
         Writes the current config to a file
 
