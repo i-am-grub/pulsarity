@@ -24,7 +24,7 @@ from starlette.staticfiles import StaticFiles
 from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddleware
 from tortoise import Tortoise, connections
 
-from pulsarity import ctx
+from pulsarity import ctx, defaults
 from pulsarity.database import setup_default_objects
 from pulsarity.events import EventBroker, SpecialEvt
 from pulsarity.interface.timer_manager import TimerInterfaceManager
@@ -292,7 +292,7 @@ async def lifespan(_app: Starlette):
         state["timer_inferface_manager"]
     )
 
-    await server_starup_workflow(state)
+    await server_starup_workflow()
 
     logger.info("Pulsarity startup completed...")
 
@@ -300,7 +300,7 @@ async def lifespan(_app: Starlette):
 
     logger.info("Stopping Pulsarity...")
 
-    await server_shutdown_workflow(state)
+    await server_shutdown_workflow()
 
     ctx.loop_ctx.reset(loop_token)
     ctx.event_broker_ctx.reset(event_token)
@@ -311,27 +311,24 @@ async def lifespan(_app: Starlette):
     logger.info("Pulsarity shutdown completed...")
 
 
-async def server_starup_workflow(state: ContextState) -> None:
+async def server_starup_workflow() -> None:
     """
     Startup workflow
     """
-    loop = state["loop"]
-    token = ctx.loop_ctx.set(loop)
-    state["timer_inferface_manager"].start()
-    ctx.loop_ctx.reset(token)
 
     await database_startup()
+    defaults.import_all_submodules()
+    ctx.interface_manager_ctx.get().start()
 
-    await state["event"].trigger(SpecialEvt.STARTUP, {})
+    await ctx.event_broker_ctx.get().trigger(SpecialEvt.STARTUP, {})
 
 
-async def server_shutdown_workflow(state: ContextState) -> None:
+async def server_shutdown_workflow() -> None:
     """
     Shutdown workflow
     """
-    await state["event"].trigger(SpecialEvt.SHUTDOWN, {})
-
-    await state["timer_inferface_manager"].shutdown(5)
+    await ctx.event_broker_ctx.get().trigger(SpecialEvt.SHUTDOWN, {})
+    await ctx.interface_manager_ctx.get().shutdown(5)
     await background.shutdown(5)
     await database_shutdown()
 

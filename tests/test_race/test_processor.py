@@ -2,8 +2,8 @@ from collections.abc import Iterable, Sequence
 
 import pytest
 
-from pulsarity.builtins.processors.most_laps import MostLapsProcessor
 from pulsarity.database.raceformat import RaceFormat
+from pulsarity.defaults.processors.most_laps import MostLapsProcessor
 from pulsarity.interface.timer_manager import ExtendedTimerData, TimerMode
 from pulsarity.race.processor import RaceProcessor, RaceProcessorManager, SlotResult
 
