@@ -24,8 +24,6 @@ class TimerMode(IntEnum):
     """The primary timer for scoring"""
     SPLIT = auto()
     """Timer to support split laps"""
-    FAILOVER = auto()
-    """A failover in the event the primary fails"""
 
 
 @dataclass(frozen=True)
@@ -161,14 +159,6 @@ class TimerInterfaceManager:
             return interface
 
         raise RuntimeError("Attempted to register an invalid timer interface type")
-
-    def unregister(self, identifier: str) -> None:
-        """
-        Unregisters an interface type from the system
-
-        :param identifier: The identifier of the interface
-        """
-        self._interfaces.pop(identifier)
 
     def instantiate_interface(
         self,

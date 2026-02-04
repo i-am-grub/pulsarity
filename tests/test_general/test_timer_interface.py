@@ -84,23 +84,6 @@ def test_register_interface_duplicate_error(interface_manager: TimerInterfaceMan
         interface_manager.register(TestTimerInterface)
 
 
-def test_unregister_interface(interface_manager: TimerInterfaceManager):
-    """
-    Test unregistering an interface
-    """
-    interface_manager.register(TestTimerInterface)
-    interface_manager.unregister(TestTimerInterface.identifier)
-
-
-def test_unregister_interface_error(interface_manager: TimerInterfaceManager):
-    """
-    Test unregister an interface that wasn't registered
-    """
-
-    with pytest.raises(KeyError):
-        interface_manager.unregister(TestTimerInterface.identifier)
-
-
 def test_already_instantiated_interface(interface_manager: TimerInterfaceManager):
     """
     Test multiple instantiation of interface with the same data
