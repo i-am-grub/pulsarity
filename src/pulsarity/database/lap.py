@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from tortoise import fields
 
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
-from pulsarity.interface.timer_manager import TimerMode
 
 if TYPE_CHECKING:
     from pulsarity.database.slot import Slot
@@ -44,8 +43,8 @@ class Lap(_PulsarityBase):
     """The slot the lap belongs to"""
     time = fields.TimeDeltaField()
     """The time delta from race start"""
-    mode = fields.IntEnumField(TimerMode)
-    """The lap kind"""
+    timer_index = fields.IntField()
+    """The index of the timer the lap was recorded from"""
     attributes: fields.ReverseRelation[LapAttribute]
     """The attributes assigned to the event"""
 
@@ -54,4 +53,4 @@ class Lap(_PulsarityBase):
 
         app = "event"
         table = "lap"
-        unique_together = (("slot", "time", "mode"),)
+        unique_together = (("slot", "time", "timer_index"),)

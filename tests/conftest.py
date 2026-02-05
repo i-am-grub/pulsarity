@@ -35,15 +35,22 @@ async def context_and_cleanup():
     Setup and tear down the application context
     """
 
-    ctx.loop_ctx.set(asyncio.get_running_loop())
-    ctx.event_broker_ctx.set(EventBroker())
-    ctx.race_manager_ctx.set(RaceManager())
-    ctx.race_processor_ctx.set(RaceProcessorManager())
-    ctx.interface_manager_ctx.set(TimerInterfaceManager())
+    loop_token = ctx.loop_ctx.set(asyncio.get_running_loop())
+    event_token = ctx.event_broker_ctx.set(EventBroker())
+    race_manager_token = ctx.race_manager_ctx.set(RaceManager())
+    timer_inferface_manager_token = ctx.timer_manager_ctx.set(TimerInterfaceManager())
 
     yield
 
     await background.shutdown(5)
+
+    TimerInterfaceManager.clear_registered()
+    RaceProcessorManager.clear_registered()
+
+    ctx.loop_ctx.reset(loop_token)
+    ctx.event_broker_ctx.reset(event_token)
+    ctx.race_manager_ctx.reset(race_manager_token)
+    ctx.timer_manager_ctx.reset(timer_inferface_manager_token)
 
 
 @pytest_asyncio.fixture(autouse=True)

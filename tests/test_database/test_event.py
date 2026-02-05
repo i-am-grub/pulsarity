@@ -18,7 +18,6 @@ from pulsarity.database import (
     SignalHistory,
     Slot,
 )
-from pulsarity.interface import TimerMode
 
 
 @pytest.mark.asyncio
@@ -229,11 +228,11 @@ async def test_basic_lap(basic_slot: Slot):
     """
     delta = timedelta(seconds=1)
 
-    lap1 = await Lap.create(slot=basic_slot, time=delta, mode=TimerMode.PRIMARY)
+    lap1 = await Lap.create(slot=basic_slot, time=delta, timer_index=0)
     num_laps = await basic_slot.laps.all().count()
     assert num_laps == 1
 
-    lap2 = await Lap.create(slot=basic_slot, time=delta, mode=TimerMode.SPLIT)
+    lap2 = await Lap.create(slot=basic_slot, time=delta, timer_index=1)
     num_laps = await basic_slot.laps.all().count()
     assert num_laps == 2
 
@@ -250,10 +249,10 @@ async def test_unique_lap(basic_slot: Slot):
     """
     delta = timedelta(seconds=1)
 
-    await Lap.create(slot=basic_slot, time=delta, mode=TimerMode.PRIMARY)
+    await Lap.create(slot=basic_slot, time=delta, timer_index=0)
 
     with pytest.raises(IntegrityError):
-        await Lap.create(slot=basic_slot, time=delta, mode=TimerMode.PRIMARY)
+        await Lap.create(slot=basic_slot, time=delta, timer_index=0)
 
 
 @pytest.mark.asyncio
@@ -265,7 +264,7 @@ async def test_cascade_delete(basic_slot: Slot):
     assert slot is not None
 
     delta = timedelta(seconds=1)
-    lap = await Lap.create(slot=basic_slot, time=delta, mode=TimerMode.PRIMARY)
+    lap = await Lap.create(slot=basic_slot, time=delta, timer_index=0)
     assert await Lap.get_by_id(lap.id) is not None
 
     heat = await slot.heat
@@ -301,7 +300,7 @@ async def test_slot_history(basic_slot: Slot):
         slot=basic_slot,
         history=records,
         timer_identifier="foo",
-        timer_mode=TimerMode.PRIMARY,
+        timer_timer_index=0,
         timer_index=1,
     )
 

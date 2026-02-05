@@ -4,7 +4,7 @@ import uuid
 
 import pytest
 
-from pulsarity.interface import TimerData, TimerMode
+from pulsarity.interface import TimerData
 from pulsarity.interface.timer_manager import TimerInterfaceManager
 
 
@@ -84,36 +84,17 @@ def test_register_interface_duplicate_error(interface_manager: TimerInterfaceMan
         interface_manager.register(TestTimerInterface)
 
 
-def test_unregister_interface(interface_manager: TimerInterfaceManager):
-    """
-    Test unregistering an interface
-    """
-    interface_manager.register(TestTimerInterface)
-    interface_manager.unregister(TestTimerInterface.identifier)
-
-
-def test_unregister_interface_error(interface_manager: TimerInterfaceManager):
-    """
-    Test unregister an interface that wasn't registered
-    """
-
-    with pytest.raises(KeyError):
-        interface_manager.unregister(TestTimerInterface.identifier)
-
-
 def test_already_instantiated_interface(interface_manager: TimerInterfaceManager):
     """
     Test multiple instantiation of interface with the same data
     """
     interface_manager.register(TestTimerInterface)
     uuid_ = uuid.uuid4()
-    interface_manager.instantiate_interface(
-        TestTimerInterface.identifier, TimerMode.PRIMARY, uuid_=uuid_
-    )
+    interface_manager.instantiate_interface(TestTimerInterface.identifier, uuid_=uuid_)
 
     with pytest.raises(RuntimeError):
         interface_manager.instantiate_interface(
-            TestTimerInterface.identifier, TimerMode.PRIMARY, uuid_=uuid_
+            TestTimerInterface.identifier, uuid_=uuid_
         )
 
 
@@ -123,7 +104,7 @@ def test_instantiate_interface_error(interface_manager: TimerInterfaceManager):
     """
     with pytest.raises(RuntimeError):
         interface_manager.instantiate_interface(
-            TestTimerInterface.identifier, TimerMode.PRIMARY
+            TestTimerInterface.identifier,
         )
 
 
