@@ -76,7 +76,7 @@ def test_most_laps_processor():
 
     Does not currently test the split lap scoring
     """
-    race_format = RaceFormat(race_time_sec=4)
+    race_format = RaceFormat(race_time_sec=4, overtime_sec=-1)
     processor = MostLapsProcessor(race_format)
 
     # Test adding 1 lap
