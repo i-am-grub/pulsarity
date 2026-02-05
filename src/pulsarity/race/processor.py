@@ -9,9 +9,8 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Callable, Generic, Self, TypedDict, TypeVar
 
-from pulsarity import ctx
 from pulsarity.database.raceformat import RaceFormat
-from pulsarity.interface.timer_manager import ExtendedTimerData, TimerMode
+from pulsarity.interface.timer_manager import ExtendedTimerData
 
 
 class _BaseTypedDict(TypedDict):
@@ -61,14 +60,12 @@ class LapsManager(ABC):
         :param key: The key to save the lap with
         :param lap: The lap data
         """
-        if lap.interface_mode == TimerMode.PRIMARY:
+        if lap.timer_index == 0:
             self._score = None
             self._primary_laps[key] = lap
-        elif lap.interface_mode == TimerMode.SPLIT:
+        else:
             self._score = None
             self._split_laps[key] = lap
-        else:
-            raise ValueError("Unsupported TimerMode")
 
     def remove_lap(self, key: int) -> None:
         """
@@ -146,13 +143,13 @@ class RaceProcessor(ABC):
         """
 
     @abstractmethod
-    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> int:
+    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> int | None:
         """
         Add lap record to the supervisor instance
 
         :param slot: The slot to assign the lap record
         :param record: The lap record to add
-        :return: The key for the slot record
+        :return: The key for the slot record or None if the record was not added
         """
 
     @abstractmethod
@@ -205,12 +202,12 @@ class RaceProcessorManager:
     Manages the race processors
     """
 
-    def __init__(self) -> None:
-        self._registered_processors: dict[
-            str | Callable[[RaceProcessor], str], type[RaceProcessor]
-        ] = {}
+    _registered_processors: dict[
+        str | Callable[[RaceProcessor], str], type[RaceProcessor]
+    ] = {}
 
-    def register(self, processor_class: type[RaceProcessor]) -> type[RaceProcessor]:
+    @classmethod
+    def register(cls, processor_class: type[RaceProcessor]) -> type[RaceProcessor]:
         """
         Registers a rulesets type to be used by the system.
         Can be used as a decorator
@@ -223,12 +220,12 @@ class RaceProcessorManager:
             processor_class
         ):
             uid = processor_class.get_uid()
-            if uid in self._registered_processors:
+            if uid in cls._registered_processors:
                 raise RuntimeError(
                     "Interface type with matching identifier already registered"
                 )
 
-            self._registered_processors[uid] = processor_class
+            cls._registered_processors[uid] = processor_class
 
             return processor_class
 
@@ -236,14 +233,22 @@ class RaceProcessorManager:
             f"Attempted to register an invalid race processor: {processor_class.__name__}"
         )
 
-    def get_processor(self, processor_uid: str) -> type[RaceProcessor] | None:
+    @classmethod
+    def get_processor(cls, processor_uid: str) -> type[RaceProcessor] | None:
         """
         Gets the processor for the provided uid
 
         :param ruleset_uid: The uid of the processor
         :return:
         """
-        return self._registered_processors.get(processor_uid)
+        return cls._registered_processors.get(processor_uid)
+
+    @classmethod
+    def clear_registered(cls) -> None:
+        """
+        UNIT TESTING ONLY: Clears all registered processors.
+        """
+        cls._registered_processors.clear()
 
 
 def register_processor(interface_class: type[RaceProcessor]) -> type[RaceProcessor]:
@@ -253,9 +258,5 @@ def register_processor(interface_class: type[RaceProcessor]) -> type[RaceProcess
     :param interface_class: The race processor class to register
     :return: The registered race processor
     """
-    try:
-        ctx.race_processor_ctx.get().register(interface_class)
-    except LookupError:
-        ...
-
+    RaceProcessorManager.register(interface_class)
     return interface_class

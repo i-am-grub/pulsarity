@@ -29,7 +29,6 @@ from pulsarity.database import setup_default_objects
 from pulsarity.events import EventBroker, SpecialEvt
 from pulsarity.interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.manager import RaceManager
-from pulsarity.race.processor import RaceProcessorManager
 from pulsarity.utils import background
 from pulsarity.utils.crypto import generate_self_signed_cert
 from pulsarity.webserver._auth import PulsarityAuthBackend
@@ -46,10 +45,9 @@ class ContextState(TypedDict):
     """
 
     loop: asyncio.AbstractEventLoop
-    event: EventBroker
+    event_broker: EventBroker
     race_manager: RaceManager
-    race_processor: RaceProcessorManager
-    timer_inferface_manager: TimerInterfaceManager
+    timer_manager: TimerInterfaceManager
 
 
 class ContextMiddleware:
@@ -68,12 +66,9 @@ class ContextMiddleware:
 
         state: ContextState = scope["state"]
         loop_token = ctx.loop_ctx.set(state["loop"])
-        event_token = ctx.event_broker_ctx.set(state["event"])
+        event_token = ctx.event_broker_ctx.set(state["event_broker"])
         race_manager_token = ctx.race_manager_ctx.set(state["race_manager"])
-        race_processor_token = ctx.race_processor_ctx.set(state["race_processor"])
-        timer_interface_token = ctx.interface_manager_ctx.set(
-            state["timer_inferface_manager"]
-        )
+        timer_manager_token = ctx.timer_manager_ctx.set(state["timer_manager"])
 
         try:
             await self.app(scope, receive, send)
@@ -82,8 +77,7 @@ class ContextMiddleware:
             ctx.loop_ctx.reset(loop_token)
             ctx.event_broker_ctx.reset(event_token)
             ctx.race_manager_ctx.reset(race_manager_token)
-            ctx.race_processor_ctx.reset(race_processor_token)
-            ctx.interface_manager_ctx.reset(timer_interface_token)
+            ctx.timer_manager_ctx.reset(timer_manager_token)
 
 
 class SPAStaticFiles(StaticFiles):
@@ -278,19 +272,14 @@ async def lifespan(_app: Starlette):
 
     state = ContextState(
         loop=asyncio.get_running_loop(),
-        event=EventBroker(),
+        event_broker=EventBroker(),
         race_manager=RaceManager(),
-        race_processor=RaceProcessorManager(),
-        timer_inferface_manager=TimerInterfaceManager(),
+        timer_manager=TimerInterfaceManager(),
     )
 
     loop_token = ctx.loop_ctx.set(state["loop"])
-    event_token = ctx.event_broker_ctx.set(state["event"])
+    event_token = ctx.event_broker_ctx.set(state["event_broker"])
     race_manager_token = ctx.race_manager_ctx.set(state["race_manager"])
-    race_processor_token = ctx.race_processor_ctx.set(state["race_processor"])
-    timer_inferface_manager_token = ctx.interface_manager_ctx.set(
-        state["timer_inferface_manager"]
-    )
 
     await server_starup_workflow()
 
@@ -305,8 +294,6 @@ async def lifespan(_app: Starlette):
     ctx.loop_ctx.reset(loop_token)
     ctx.event_broker_ctx.reset(event_token)
     ctx.race_manager_ctx.reset(race_manager_token)
-    ctx.race_processor_ctx.reset(race_processor_token)
-    ctx.interface_manager_ctx.reset(timer_inferface_manager_token)
 
     logger.info("Pulsarity shutdown completed...")
 
@@ -318,7 +305,7 @@ async def server_starup_workflow() -> None:
 
     await database_startup()
     defaults.import_all_submodules()
-    ctx.interface_manager_ctx.get().start()
+    ctx.timer_manager_ctx.get().start()
 
     await ctx.event_broker_ctx.get().trigger(SpecialEvt.STARTUP, {})
 
@@ -328,7 +315,7 @@ async def server_shutdown_workflow() -> None:
     Shutdown workflow
     """
     await ctx.event_broker_ctx.get().trigger(SpecialEvt.SHUTDOWN, {})
-    await ctx.interface_manager_ctx.get().shutdown(5)
+    await ctx.timer_manager_ctx.get().shutdown(5)
     await background.shutdown(5)
     await database_shutdown()
 

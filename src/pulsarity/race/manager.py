@@ -5,15 +5,15 @@ Race state/timing management
 import asyncio
 from collections import defaultdict
 from datetime import timedelta
+from functools import partial
 
-from pulsarity import ctx
 from pulsarity.database.lap import Lap
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.database.signal import SignalHistory
 from pulsarity.interface.timer_manager import ExtendedTimerData
 from pulsarity.race._state import RaceStateManager
 from pulsarity.race.enums import RaceStatus
-from pulsarity.race.processor import RaceProcessor
+from pulsarity.race.processor import RaceProcessor, RaceProcessorManager
 
 
 class RaceManager:
@@ -30,7 +30,7 @@ class RaceManager:
         self._save_lock = asyncio.Lock()
         """Save in progress lock"""
         self._signal_data: dict[int, dict[int, list[ExtendedTimerData]]] = defaultdict(
-            lambda: defaultdict(list)
+            partial(defaultdict, list)
         )
         """Race signal data storage"""
 
@@ -81,8 +81,7 @@ class RaceManager:
         :param assigned_start: The event loop start time of the race.
         Currently equivalent to monotonic time
         """
-        processor_manager = ctx.race_processor_ctx.get()
-        processor = processor_manager.get_processor(format_.processor_id)
+        processor = RaceProcessorManager.get_processor(format_.processor_id)
 
         if processor is None:
             raise ValueError("Processor with matching uid not found")
@@ -143,7 +142,7 @@ class RaceManager:
 
         :param record: The signal record to store
         """
-        self._signal_data[record.node_index][record.interface_index].append(record)
+        self._signal_data[record.node_index][record.timer_index].append(record)
 
     def status_aware_signal_record(self, record: ExtendedTimerData) -> None:
         """
@@ -178,7 +177,6 @@ class RaceManager:
                 Lap(
                     slot_id=lap.node_index,
                     time=timedelta(seconds=lap.timestamp),
-                    mode=lap.interface_mode,
                 )
                 for lap in self._processor.get_laps()
             )
@@ -200,7 +198,6 @@ class RaceManager:
                         slot_id=slot,
                         timer_index=idx,
                         timer_identifier=data[0].timer_identifier,
-                        timer_mode=data[0].interface_mode,
                         history=history,
                     )
 

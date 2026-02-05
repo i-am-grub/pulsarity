@@ -6,24 +6,12 @@ import asyncio
 import logging
 import uuid
 from dataclasses import dataclass
-from enum import IntEnum, auto
 
 from pulsarity import ctx
 from pulsarity.interface.timer_interface import TimerData, TimerInterface
 from pulsarity.utils import background
 
 logger = logging.getLogger(__name__)
-
-
-class TimerMode(IntEnum):
-    """
-    The different modes a timer can registered as
-    """
-
-    PRIMARY = auto()
-    """The primary timer for scoring"""
-    SPLIT = auto()
-    """Timer to support split laps"""
 
 
 @dataclass(frozen=True)
@@ -41,10 +29,8 @@ class ExtendedTimerData:
     """Index of the node"""
     value: float
     """The data value"""
-    interface_mode: TimerMode
-    """The mode of the interface"""
-    interface_index: int
-    """The index of the interface"""
+    timer_index: int
+    """The index of the interface. 0 is the PRIMARY timer"""
 
 
 @dataclass
@@ -55,10 +41,8 @@ class _ActiveTimer:
 
     interface: TimerInterface
     """The timer's interface"""
-    mode: TimerMode
-    """The mode the timer is in"""
     index: int
-    """The index of the timer. Used for ordering split timers"""
+    """The index of the timer. Used for ordering timers. 0 is the PRIMARY timer"""
 
 
 class TimerInterfaceManager:
@@ -66,8 +50,9 @@ class TimerInterfaceManager:
     Manages the abstract and active timer interfaces
     """
 
+    _interfaces: dict[str, type[TimerInterface]] = {}
+
     def __init__(self) -> None:
-        self._interfaces: dict[str, type[TimerInterface]] = {}
         self._active_interfaces: dict[str, _ActiveTimer] = {}
         self._shutdown_evt = asyncio.Event()
 
@@ -110,7 +95,6 @@ class TimerInterfaceManager:
                 recieved.timer_identifier,
                 recieved.node_index,
                 recieved.value,
-                interface.mode,
                 interface.index,
             )
 
@@ -133,13 +117,13 @@ class TimerInterfaceManager:
                 recieved.timer_identifier,
                 recieved.node_index,
                 recieved.value,
-                interface.mode,
                 interface.index,
             )
 
             race_manager.status_aware_signal_record(outgoing)
 
-    def register(self, interface: type[TimerInterface]) -> None:
+    @classmethod
+    def register(cls, interface: type[TimerInterface]) -> None:
         """
         Registers an interface type to be used by the system
 
@@ -149,22 +133,27 @@ class TimerInterfaceManager:
         """
 
         if isinstance(interface, TimerInterface):
-            if interface.identifier in self._interfaces:
+            if interface.identifier in cls._interfaces:
                 raise RuntimeError(
                     "Interface type with matching identifier already registered"
                 )
 
-            self._interfaces[interface.identifier] = interface
+            cls._interfaces[interface.identifier] = interface
 
             return interface
 
         raise RuntimeError("Attempted to register an invalid timer interface type")
 
+    @classmethod
+    def clear_registered(cls) -> None:
+        """
+        UNIT TESTING ONLY: Clears all registered interfaces.
+        """
+        cls._interfaces.clear()
+
     def instantiate_interface(
         self,
         identifier: str,
-        mode: TimerMode,
-        index: int = 0,
         *,
         uuid_: uuid.UUID | None = None,
     ):
@@ -191,8 +180,9 @@ class TimerInterfaceManager:
             if self._tasks is not None:
                 instance.subscribe(self._lap_queue, self._signal_queue)
 
+            index = len(self._active_interfaces)
             self._active_interfaces[uuid_.hex] = _ActiveTimer(
-                interface=instance, mode=mode, index=index
+                interface=instance, index=index
             )
         else:
             raise RuntimeError(
@@ -243,5 +233,5 @@ def register_interface(interface_class: type[TimerInterface]) -> type[TimerInter
     :param interface_class: The timer interface class to register
     :return: The registered timer interface
     """
-    ctx.interface_manager_ctx.get().register(interface_class)
+    TimerInterfaceManager.register(interface_class)
     return interface_class

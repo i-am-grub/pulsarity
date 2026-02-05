@@ -13,7 +13,6 @@ from tortoise import Model, fields
 from tortoise.fields import BinaryField
 
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
-from pulsarity.interface.timer_manager import TimerMode
 
 if TYPE_CHECKING:
     from pulsarity.database.slot import Slot
@@ -81,8 +80,6 @@ class SignalHistory(_PulsarityBase):
     """The slot the history belongs to"""
     timer_identifier = fields.CharField(32)
     """Identifier of the signal's origin interface"""
-    timer_mode = fields.IntEnumField(TimerMode)
-    """The mode of the timer the signal originated from"""
     timer_index = fields.IntField()
     """The index of the timer the signal originated from"""
     history = _EncodedBinaryField[Sequence[_SignalHistoryRecord]](

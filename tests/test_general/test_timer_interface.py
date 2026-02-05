@@ -4,7 +4,7 @@ import uuid
 
 import pytest
 
-from pulsarity.interface import TimerData, TimerMode
+from pulsarity.interface import TimerData
 from pulsarity.interface.timer_manager import TimerInterfaceManager
 
 
@@ -90,13 +90,11 @@ def test_already_instantiated_interface(interface_manager: TimerInterfaceManager
     """
     interface_manager.register(TestTimerInterface)
     uuid_ = uuid.uuid4()
-    interface_manager.instantiate_interface(
-        TestTimerInterface.identifier, TimerMode.PRIMARY, uuid_=uuid_
-    )
+    interface_manager.instantiate_interface(TestTimerInterface.identifier, uuid_=uuid_)
 
     with pytest.raises(RuntimeError):
         interface_manager.instantiate_interface(
-            TestTimerInterface.identifier, TimerMode.PRIMARY, uuid_=uuid_
+            TestTimerInterface.identifier, uuid_=uuid_
         )
 
 
@@ -106,7 +104,7 @@ def test_instantiate_interface_error(interface_manager: TimerInterfaceManager):
     """
     with pytest.raises(RuntimeError):
         interface_manager.instantiate_interface(
-            TestTimerInterface.identifier, TimerMode.PRIMARY
+            TestTimerInterface.identifier,
         )
 
 

@@ -18,10 +18,18 @@ from pulsarity.race.processor import (
 
 
 class _ResultExtras(TypedDict):
+    """
+    Temporary result extra definition
+    """
+
     total_laps: int
 
 
 class _MostLapsManager(LapsManager):
+    """
+    Lap data manager for a single slot
+    """
+
     __slots__ = ("_primary_laps", "_split_laps", "_lap_data", "_score")
 
     @property
@@ -70,7 +78,7 @@ class _MostLapsManager(LapsManager):
             last_split = next(reversed(self._split_laps.values()))
 
             if last_split.timestamp > last_timestamp:
-                last_index = last_split.interface_index
+                last_index = last_split.timer_index
                 last_timestamp = last_split.timestamp
 
         self._score = (major_laps, last_index, -last_timestamp)
@@ -97,7 +105,13 @@ class MostLapsProcessor(RaceProcessor):
     def get_uid(cls) -> str:
         return cls._uid
 
-    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> int:
+    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> int | None:
+        if (
+            self._format.overtime_sec == 0
+            and record.timestamp >= self._format.race_time_sec
+        ):
+            return None
+
         id_ = next(self._count)
         self._lap_data[slot].add_lap(id_, record)
         self._cache.clear()
