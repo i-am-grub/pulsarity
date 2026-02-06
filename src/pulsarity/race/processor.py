@@ -4,13 +4,15 @@ Race processor
 
 import inspect
 from abc import ABC, abstractmethod
-from collections import ChainMap
+from collections import ChainMap, deque
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Callable, Generic, Self, TypedDict, TypeVar
 
+from sortedcollections import ValueSortedDict  # type: ignore
+
 from pulsarity.database.raceformat import RaceFormat
-from pulsarity.interface.timer_manager import ExtendedTimerData
+from pulsarity.interface.timer_manager import FullLapData, TimerMode
 
 
 class _BaseTypedDict(TypedDict):
@@ -20,7 +22,7 @@ class _BaseTypedDict(TypedDict):
 T = TypeVar("T", bound=_BaseTypedDict)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SlotResult(Generic[T]):
     """
     Basic class for representing race data.
@@ -29,8 +31,8 @@ class SlotResult(Generic[T]):
     dicts, lists, and tuples
     """
 
-    slot_num: int
     position: int
+    slot_num: int
     data: T
 
     def __lt__(self, other: Self):
@@ -48,19 +50,20 @@ class LapsManager(ABC):
     """
 
     def __init__(self) -> None:
-        self._primary_laps: dict[int, ExtendedTimerData] = {}
-        self._split_laps: dict[int, ExtendedTimerData] = {}
+        self._primary_laps: dict[int, FullLapData] = ValueSortedDict()
+        self._split_laps: dict[int, FullLapData] = ValueSortedDict()
         self._all_laps = ChainMap(self._primary_laps, self._split_laps)
         self._score: tuple | None = None
 
-    def add_lap(self, key: int, lap: ExtendedTimerData) -> None:
+    def add_lap(self, key: int, lap: FullLapData) -> None:
         """
-        Save a lap into the
+        Save a lap into the manager. Does not check if lap
+        key already exists within manager,
 
         :param key: The key to save the lap with
         :param lap: The lap data
         """
-        if lap.timer_index == 0:
+        if lap.timer_mode == TimerMode.PRIMARY:
             self._score = None
             self._primary_laps[key] = lap
         else:
@@ -77,13 +80,80 @@ class LapsManager(ABC):
         self._all_laps.pop(key)
         self._score = None
 
-    def get_all_laps(self) -> Iterable[ExtendedTimerData]:
+    def get_all_laps(self) -> Iterable[FullLapData]:
         """
         Get the lap data
 
         :return: The lap data
         """
         return self._all_laps.values()
+
+    def get_fastest_time(self, holeshot: bool = False) -> float | None:
+        """
+        Get the fastest lap time
+
+        :param holeshot: Holeshot active, defaults to False
+        :return: The time associated with the fastest lap
+        """
+        fastest_time = None
+        prev_time = 0.0
+
+        start = 0 if holeshot else 1
+        for num_laps, lap in enumerate(self._primary_laps.values(), start):
+            if num_laps == 0:
+                prev_time = lap.timedelta
+                continue
+
+            time_diff = lap.timedelta - prev_time
+            prev_time = lap.timedelta
+
+            if num_laps > 1:
+                assert fastest_time is not None
+                fastest_time = min(fastest_time, time_diff)
+            else:
+                fastest_time = time_diff
+
+        return fastest_time
+
+    def get_fastest_consecutive_time(
+        self, max_laps: int = 3, holeshot: bool = False
+    ) -> tuple[int, float] | None:
+        """
+        Get the fastest consecutive lap times
+
+        :param max_laps: The max consecutive laps, defaults to 3
+        :param holeshot: Holeshot active, defaults to False
+        :return: A tuple of number of laps and the time associated with the laps
+        """
+        store: deque[float] = deque(maxlen=max_laps + 1)
+        fastest_time = None
+
+        prev_time = 0.0
+        windowed_time = 0.0
+        num_laps = 0
+
+        start = 0 if holeshot else 1
+        for num_laps, lap in enumerate(self._primary_laps.values(), start):
+            if num_laps == 0:
+                prev_time = lap.timedelta
+                continue
+
+            time_diff = lap.timedelta - prev_time
+            store.append(time_diff)
+            windowed_time += time_diff
+            prev_time = lap.timedelta
+
+            if len(store) > max_laps:
+                assert fastest_time is not None
+                windowed_time -= store.popleft()
+                fastest_time = min(fastest_time, windowed_time)
+            else:
+                fastest_time = windowed_time
+
+        if fastest_time is None:
+            return None
+
+        return min(num_laps, max_laps), fastest_time
 
     @abstractmethod
     def get_score(self) -> tuple:
@@ -143,7 +213,7 @@ class RaceProcessor(ABC):
         """
 
     @abstractmethod
-    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> int | None:
+    def add_lap_record(self, slot: int, record: FullLapData) -> int | None:
         """
         Add lap record to the supervisor instance
 
@@ -189,7 +259,7 @@ class RaceProcessor(ABC):
         """
 
     @abstractmethod
-    def get_laps(self) -> Iterable[ExtendedTimerData]:
+    def get_laps(self) -> Iterable[FullLapData]:
         """
         Gets all of the laps stored by the race processor
 

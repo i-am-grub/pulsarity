@@ -5,7 +5,6 @@ ORM classes for signal data
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Callable, Self, TypeVar
 
 from pydantic import TypeAdapter
@@ -20,7 +19,7 @@ if TYPE_CHECKING:
 # pylint: disable=R0903,E1136, E1101
 
 _T = TypeVar("_T")
-_SignalHistoryRecord = tuple[timedelta, float]
+_SignalHistoryRecord = tuple[float, float]
 _SLOT_HISTORY_ENCODE_ADAPTER = TypeAdapter(list[_SignalHistoryRecord])
 _SLOT_HISTORY_DECODE_ADAPTER = TypeAdapter(tuple[_SignalHistoryRecord, ...])
 

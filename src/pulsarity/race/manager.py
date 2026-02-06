@@ -6,14 +6,20 @@ import asyncio
 from collections import defaultdict
 from datetime import timedelta
 from functools import partial
+from typing import NamedTuple
 
 from pulsarity.database.lap import Lap
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.database.signal import SignalHistory
-from pulsarity.interface.timer_manager import ExtendedTimerData
+from pulsarity.interface.timer_manager import FullLapData, FullSignalData
 from pulsarity.race._state import RaceStateManager
 from pulsarity.race.enums import RaceStatus
 from pulsarity.race.processor import RaceProcessor, RaceProcessorManager
+
+
+class _SignalRecord(NamedTuple):
+    timedelta: float
+    value: float
 
 
 class RaceManager:
@@ -29,8 +35,8 @@ class RaceManager:
         """The underlying race state manager"""
         self._save_lock = asyncio.Lock()
         """Save in progress lock"""
-        self._signal_data: dict[int, dict[int, list[ExtendedTimerData]]] = defaultdict(
-            partial(defaultdict, list)
+        self._signal_data: dict[int, dict[tuple[int, str], list[_SignalRecord]]] = (
+            defaultdict(partial(defaultdict, list))
         )
         """Race signal data storage"""
 
@@ -114,7 +120,7 @@ class RaceManager:
                 self._processor = None
                 self._signal_data.clear()
 
-    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> None:
+    def add_lap_record(self, slot: int, record: FullLapData) -> None:
         """
         Add lap record to the processor instance
 
@@ -126,7 +132,7 @@ class RaceManager:
         else:
             raise RuntimeError("Unable to add record when processor is not set")
 
-    def status_aware_lap_record(self, slot: int, record: ExtendedTimerData) -> None:
+    def status_aware_lap_record(self, slot: int, record: FullLapData) -> None:
         """
         Add a lap record to the processor instance if the race status is underway
 
@@ -136,15 +142,17 @@ class RaceManager:
         if self.status in RaceStatus.UNDERWAY:
             self.add_lap_record(slot, record)
 
-    def add_signal_record(self, record: ExtendedTimerData) -> None:
+    def add_signal_record(self, record: FullSignalData) -> None:
         """
         Add a signal record to the race manager
 
         :param record: The signal record to store
         """
-        self._signal_data[record.node_index][record.timer_index].append(record)
+        key = (record.timer_index, record.timer_identifier)
+        record_ = _SignalRecord(record.timedelta, record.value)
+        self._signal_data[record.node_index][key].append(record_)
 
-    def status_aware_signal_record(self, record: ExtendedTimerData) -> None:
+    def status_aware_signal_record(self, record: FullSignalData) -> None:
         """
         Add a signal record to the race manager if the race status is underway
 
@@ -176,7 +184,9 @@ class RaceManager:
             laps = (
                 Lap(
                     slot_id=lap.node_index,
-                    time=timedelta(seconds=lap.timestamp),
+                    time=timedelta(seconds=lap.timedelta),
+                    timer_index=lap.timer_index,
+                    timer_identifier=lap.timer_identifier,
                 )
                 for lap in self._processor.get_laps()
             )
@@ -191,14 +201,13 @@ class RaceManager:
 
         def get_slot_data():
             for slot, _data in self._signal_data.items():
-                for idx, data in _data.items():
-                    history = [(timedelta(seconds=x.timestamp), x.value) for x in data]
-
+                for (idx, ident), data in _data.items():
+                    data.sort()
                     yield SignalHistory(
                         slot_id=slot,
                         timer_index=idx,
-                        timer_identifier=data[0].timer_identifier,
-                        history=history,
+                        timer_identifier=ident,
+                        history=data,
                     )
 
         if self._signal_data:

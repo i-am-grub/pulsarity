@@ -228,11 +228,15 @@ async def test_basic_lap(basic_slot: Slot):
     """
     delta = timedelta(seconds=1)
 
-    lap1 = await Lap.create(slot=basic_slot, time=delta, timer_index=0)
+    lap1 = await Lap.create(
+        slot=basic_slot, timedelta=delta, timer_index=0, timer_identifier="foo"
+    )
     num_laps = await basic_slot.laps.all().count()
     assert num_laps == 1
 
-    lap2 = await Lap.create(slot=basic_slot, time=delta, timer_index=1)
+    lap2 = await Lap.create(
+        slot=basic_slot, timedelta=delta, timer_index=1, timer_identifier="foo"
+    )
     num_laps = await basic_slot.laps.all().count()
     assert num_laps == 2
 
@@ -249,10 +253,14 @@ async def test_unique_lap(basic_slot: Slot):
     """
     delta = timedelta(seconds=1)
 
-    await Lap.create(slot=basic_slot, time=delta, timer_index=0)
+    await Lap.create(
+        slot=basic_slot, timedelta=delta, timer_index=0, timer_identifier="foo"
+    )
 
     with pytest.raises(IntegrityError):
-        await Lap.create(slot=basic_slot, time=delta, timer_index=0)
+        await Lap.create(
+            slot=basic_slot, timedelta=delta, timer_index=0, timer_identifier="foo"
+        )
 
 
 @pytest.mark.asyncio
@@ -264,7 +272,9 @@ async def test_cascade_delete(basic_slot: Slot):
     assert slot is not None
 
     delta = timedelta(seconds=1)
-    lap = await Lap.create(slot=basic_slot, time=delta, timer_index=0)
+    lap = await Lap.create(
+        slot=basic_slot, timedelta=delta, timer_index=0, timer_identifier="foo"
+    )
     assert await Lap.get_by_id(lap.id) is not None
 
     heat = await slot.heat
@@ -295,7 +305,7 @@ async def test_slot_history(basic_slot: Slot):
     Test raceclass deletion as a result of event deletion
     """
     num = 5
-    records = [(timedelta(seconds=0.1 * i), i * 0.1) for i in range(num)]
+    records = [(0.1 * i, i * 0.1) for i in range(num)]
     history = await SignalHistory.create(
         slot=basic_slot,
         history=records,

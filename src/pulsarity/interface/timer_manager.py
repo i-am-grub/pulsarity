@@ -6,34 +6,84 @@ import asyncio
 import logging
 import uuid
 from dataclasses import dataclass
+from enum import IntEnum, auto
+from typing import NamedTuple
 
 from pulsarity import ctx
-from pulsarity.interface.timer_interface import TimerData, TimerInterface
+from pulsarity.interface.timer_interface import (
+    BasicLapData,
+    BasicSignalData,
+    TimerInterface,
+)
 from pulsarity.utils import background
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
-class ExtendedTimerData:
+class TimerMode(IntEnum):
     """
-    Dataclass for passing timer data to other parts of the
-    system
+    The different modes a timer can registered as
     """
 
-    timestamp: float
+    PRIMARY = auto()
+    """The primary timer for scoring"""
+    SPLIT = auto()
+    """Timer to support split laps"""
+
+
+class FullSignalData(NamedTuple):
+    """
+    Tuple for passing timer signal data to
+    other parts of the system
+    """
+
+    timedelta: float
     """The time of processing the value"""
-    timer_identifier: str
-    """Identifier of the origin interface"""
     node_index: int
     """Index of the node"""
     value: float
     """The data value"""
+    timer_identifier: str
+    """Identifier of the origin interface"""
     timer_index: int
-    """The index of the interface. 0 is the PRIMARY timer"""
+    """The index of the interface"""
+
+    @property
+    def timer_mode(self) -> TimerMode:
+        """
+        Mode of the timer
+        """
+        if self.timer_index:
+            return TimerMode.SPLIT
+        return TimerMode.PRIMARY
 
 
-@dataclass
+class FullLapData(NamedTuple):
+    """
+    Tuple for passing timer lap data to
+    other parts of the system
+    """
+
+    timedelta: float
+    """The time of processing the value"""
+    node_index: int
+    """Index of the node"""
+    timer_identifier: str
+    """Identifier of the origin interface"""
+    timer_index: int
+    """The index of the interface"""
+
+    @property
+    def timer_mode(self) -> TimerMode:
+        """
+        Mode of the timer
+        """
+        if self.timer_index:
+            return TimerMode.SPLIT
+        return TimerMode.PRIMARY
+
+
+@dataclass(slots=True)
 class _ActiveTimer:
     """
     Timer interfaces with an active connection
@@ -56,8 +106,8 @@ class TimerInterfaceManager:
         self._active_interfaces: dict[str, _ActiveTimer] = {}
         self._shutdown_evt = asyncio.Event()
 
-        self._lap_queue: asyncio.Queue[TimerData] = asyncio.Queue()
-        self._signal_queue: asyncio.Queue[TimerData] = asyncio.Queue()
+        self._lap_queue: asyncio.Queue[BasicLapData] = asyncio.Queue()
+        self._signal_queue: asyncio.Queue[BasicSignalData] = asyncio.Queue()
 
         self._tasks: tuple[asyncio.Task, asyncio.Task] | None = None
 
@@ -90,11 +140,8 @@ class TimerInterfaceManager:
         while not self._shutdown_evt.is_set():
             recieved = await self._lap_queue.get()
             interface = self._active_interfaces[recieved.timer_identifier]
-            outgoing = ExtendedTimerData(
-                recieved.timestamp,
-                recieved.timer_identifier,
-                recieved.node_index,
-                recieved.value,
+            outgoing = FullLapData(
+                *recieved,
                 interface.index,
             )
 
@@ -112,11 +159,8 @@ class TimerInterfaceManager:
         while not self._shutdown_evt.is_set():
             recieved = await self._signal_queue.get()
             interface = self._active_interfaces[recieved.timer_identifier]
-            outgoing = ExtendedTimerData(
-                recieved.timestamp,
-                recieved.timer_identifier,
-                recieved.node_index,
-                recieved.value,
+            outgoing = FullSignalData(
+                *recieved,
                 interface.index,
             )
 

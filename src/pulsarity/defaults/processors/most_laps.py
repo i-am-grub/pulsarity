@@ -7,8 +7,10 @@ from collections.abc import Iterable, Sequence
 from itertools import count
 from typing import TypedDict
 
+from sortedcollections import ValueSortedDict  # type:ignore
+
 from pulsarity.database.raceformat import RaceFormat
-from pulsarity.interface.timer_manager import ExtendedTimerData
+from pulsarity.interface.timer_manager import FullLapData
 from pulsarity.race.processor import (
     LapsManager,
     RaceProcessor,
@@ -39,7 +41,7 @@ class _MostLapsManager(LapsManager):
         """
         return len(self._primary_laps)
 
-    def get_last_primary_lap(self) -> ExtendedTimerData | None:
+    def get_last_primary_lap(self) -> FullLapData | None:
         """
         Get the lap data from the last primary lap
 
@@ -52,7 +54,7 @@ class _MostLapsManager(LapsManager):
 
     def get_score(self) -> tuple:
         """
-        Build the score based on the following order:
+        Return from cache or build slot score based on the following order:
         - Primary laps completed
         - Index of the timer who recorded the last split lap that proceeds
         the last recorded primary lap
@@ -65,23 +67,23 @@ class _MostLapsManager(LapsManager):
         if self._score is not None:
             return self._score
 
-        major_laps = 0
+        primary_laps = 0
         last_index = 0
         last_timestamp = 0.0
 
         if self._primary_laps:
-            major_laps = len(self._primary_laps)
+            primary_laps = len(self._primary_laps)
             last_lap = next(reversed(self._primary_laps.values()))
-            last_timestamp = last_lap.timestamp
+            last_timestamp = last_lap.timedelta
 
         if self._split_laps:
             last_split = next(reversed(self._split_laps.values()))
 
-            if last_split.timestamp > last_timestamp:
+            if last_split.timedelta > last_timestamp:
                 last_index = last_split.timer_index
-                last_timestamp = last_split.timestamp
+                last_timestamp = last_split.timedelta
 
-        self._score = (major_laps, last_index, -last_timestamp)
+        self._score = (primary_laps, last_index, -last_timestamp)
 
         return self._score
 
@@ -98,17 +100,17 @@ class MostLapsProcessor(RaceProcessor):
     def __init__(self, race_format: RaceFormat) -> None:
         self._format = race_format
         self._lap_data: dict[int, _MostLapsManager] = defaultdict(_MostLapsManager)
-        self._cache: dict[int, SlotResult[_ResultExtras]] = {}
+        self._cache: dict[int, SlotResult[_ResultExtras]] = ValueSortedDict()
         self._count = count()
 
     @classmethod
     def get_uid(cls) -> str:
         return cls._uid
 
-    def add_lap_record(self, slot: int, record: ExtendedTimerData) -> int | None:
+    def add_lap_record(self, slot: int, record: FullLapData) -> int | None:
         if (
             self._format.overtime_sec == 0
-            and record.timestamp >= self._format.race_time_sec
+            and record.timedelta >= self._format.race_time_sec
         ):
             return None
 
@@ -126,7 +128,7 @@ class MostLapsProcessor(RaceProcessor):
 
         last_lap = slot_data.get_last_primary_lap()
         if last_lap is not None:
-            return last_lap.timestamp > self._format.race_time_sec
+            return last_lap.timedelta > self._format.race_time_sec
 
         return False
 
@@ -135,8 +137,7 @@ class MostLapsProcessor(RaceProcessor):
             slot_data = [(value, key) for key, value in self._lap_data.items()]
             slot_data.sort(reverse=True)
 
-            pos = 0
-            adv = 1
+            pos, adv = 0, 1
             last_manager: _MostLapsManager | None = None
             for manager, key in slot_data:
                 if manager == last_manager:
@@ -146,7 +147,7 @@ class MostLapsProcessor(RaceProcessor):
                     adv = 1
 
                 result = SlotResult(
-                    key, pos, _ResultExtras(total_laps=manager.total_laps)
+                    pos, key, _ResultExtras(total_laps=manager.total_laps)
                 )
                 self._cache.update({key: result})
                 last_manager = manager
@@ -154,11 +155,11 @@ class MostLapsProcessor(RaceProcessor):
         return self._cache
 
     def get_race_results(self) -> Sequence[SlotResult[_ResultExtras]]:
-        return sorted(self._get_cache().values())
+        return tuple(self._get_cache().values())
 
     def get_slot_result(self, slot_num: int) -> SlotResult[_ResultExtras] | None:
         return self._cache.get(slot_num, None)
 
-    def get_laps(self) -> Iterable[ExtendedTimerData]:
+    def get_laps(self) -> Iterable[FullLapData]:
         for slot in self._lap_data.values():
             yield from slot.get_all_laps()

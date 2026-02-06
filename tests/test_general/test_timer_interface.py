@@ -4,7 +4,7 @@ import uuid
 
 import pytest
 
-from pulsarity.interface import TimerData
+from pulsarity.interface import BasicLapData, BasicSignalData
 from pulsarity.interface.timer_manager import TimerInterfaceManager
 
 
@@ -23,8 +23,8 @@ class TestTimerInterface:
     settings = []
     actions = []
     connected = True
-    lap_queue: asyncio.Queue[TimerData] | None = None
-    signal_queue: asyncio.Queue[TimerData] | None = None
+    lap_queue: asyncio.Queue[BasicLapData] | None = None
+    signal_queue: asyncio.Queue[BasicSignalData] | None = None
 
     @property
     def num_nodes(self):
@@ -32,8 +32,8 @@ class TestTimerInterface:
 
     def subscribe(
         self,
-        lap_queue: asyncio.Queue[TimerData],
-        signal_queue: asyncio.Queue[TimerData],
+        lap_queue: asyncio.Queue[BasicLapData],
+        signal_queue: asyncio.Queue[BasicSignalData],
     ) -> None:
         self.lap_queue = lap_queue
         self.signal_queue = signal_queue
@@ -42,24 +42,23 @@ class TestTimerInterface:
         self.lap_queue = None
         self.signal_queue = None
 
-    def add_lap(self, value: float):
+    def add_lap(self):
         if self.lap_queue is not None:
-            data = TimerData(
+            data = BasicLapData(
                 timestamp=time.monotonic(),
-                timer_identifier=self.identifier,
                 node_index=0,
-                value=value,
+                timer_identifier=self.identifier,
             )
 
             self.lap_queue.put_nowait(data)
 
     def add_signal(self, value: float):
         if self.signal_queue is not None:
-            data = TimerData(
+            data = BasicSignalData(
                 timestamp=time.monotonic(),
-                timer_identifier=self.identifier,
                 node_index=0,
                 value=value,
+                timer_identifier=self.identifier,
             )
 
             self.signal_queue.put_nowait(data)

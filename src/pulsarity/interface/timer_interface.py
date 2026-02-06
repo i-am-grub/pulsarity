@@ -6,28 +6,42 @@ import asyncio
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Generic, Protocol, TypeVar, runtime_checkable
+from typing import Generic, NamedTuple, Protocol, TypeVar, runtime_checkable
 
 T = TypeVar("T", bound=int | str | bool | Enum)
 
 
-@dataclass(frozen=True)
-class TimerData:
+class BasicSignalData(NamedTuple):
     """
-    Parent class for incoming timer data
+    Tuple for passing timer signal data to
+    other parts of the system
     """
 
-    timestamp: float
+    timedelta: float
     """The time of processing the value"""
-    timer_identifier: str
-    """Identifier of the origin interface"""
     node_index: int
     """Index of the node"""
     value: float
     """The data value"""
+    timer_identifier: str
+    """Identifier of the origin interface"""
 
 
-@dataclass(frozen=True)
+class BasicLapData(NamedTuple):
+    """
+    Tuple for passing timer lap data to
+    other parts of the system
+    """
+
+    timedelta: float
+    """The time of processing the value"""
+    node_index: int
+    """Index of the node"""
+    timer_identifier: str
+    """Identifier of the origin interface"""
+
+
+@dataclass(frozen=True, slots=True)
 class TimerSetting(Generic[T]):
     """
     Interface settings
@@ -41,7 +55,7 @@ class TimerSetting(Generic[T]):
     """The callback to associate with the setting"""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Action:
     """
     Action callback
@@ -94,8 +108,8 @@ class TimerInterface(Protocol):
 
     def subscribe(
         self,
-        lap_queue: asyncio.Queue[TimerData],
-        signal_queue: asyncio.Queue[TimerData],
+        lap_queue: asyncio.Queue[BasicLapData],
+        signal_queue: asyncio.Queue[BasicSignalData],
     ) -> None:
         """
         Subscribe to recieve lap and signal data from the interface
