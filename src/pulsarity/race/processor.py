@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from collections import ChainMap, deque
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Callable, Generic, Self, TypedDict, TypeVar
+from typing import Callable, Generic, NamedTuple, Self, TypedDict, TypeVar
 
 from sortedcollections import ValueSortedDict  # type: ignore
 
@@ -20,6 +20,27 @@ class _BaseTypedDict(TypedDict):
 
 
 T = TypeVar("T", bound=_BaseTypedDict)
+
+
+class ConsecutiveMetric(NamedTuple):
+    """
+    Number of laps and the time associated with the laps
+    """
+
+    consec_base: int
+    consec_time: float
+
+
+class CombinedMetrics(NamedTuple):
+    """
+    All race metrics
+    """
+
+    laps: int
+    total_time: float
+    average_lap_time: float
+    fastest_time: float
+    fastest_consec: ConsecutiveMetric
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,16 +56,35 @@ class SlotResult(Generic[T]):
     slot_num: int
     data: T
 
-    def __lt__(self, other: Self):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SlotResult):
+            return False
+        return self.position == other.position
+
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, SlotResult):
+            return True
+        return self.position != other.position
+
+    def __lt__(self, other: Self) -> bool:
         return self.position < other.position
+
+    def __le__(self, other: Self) -> bool:
+        return self.position <= other.position
+
+    def __gt__(self, other: Self) -> bool:
+        return self.position > other.position
+
+    def __ge__(self, other: Self) -> bool:
+        return self.position >= other.position
 
 
 class LapsManager(ABC):
     """
     Helper class to assist with storing lap data in `RaceProcessor`s
 
-    This class automatically sorts lap data based on the timer mode and
-    implements some convience equality methods to enable sorting. The
+    This class automatically sorts lap data based on the `TimerMode` and
+    implements convience comparsion methods to enable sorting. The
     structure of this class is largely based on using python tuple comparsions
     to allow for scoring across multiple variables in an order of importance
     """
@@ -52,8 +92,9 @@ class LapsManager(ABC):
     def __init__(self) -> None:
         self._primary_laps: dict[int, FullLapData] = ValueSortedDict()
         self._split_laps: dict[int, FullLapData] = ValueSortedDict()
-        self._all_laps = ChainMap(self._primary_laps, self._split_laps)
-        self._score: tuple | None = None
+        self._all_laps: ChainMap[int, FullLapData] = ChainMap(
+            self._primary_laps, self._split_laps
+        )
 
     def add_lap(self, key: int, lap: FullLapData) -> None:
         """
@@ -64,11 +105,10 @@ class LapsManager(ABC):
         :param lap: The lap data
         """
         if lap.timer_mode == TimerMode.PRIMARY:
-            self._score = None
             self._primary_laps[key] = lap
         else:
-            self._score = None
             self._split_laps[key] = lap
+        self.add_lap_cb(key, lap)
 
     def remove_lap(self, key: int) -> None:
         """
@@ -77,8 +117,16 @@ class LapsManager(ABC):
         :param key: The lap key
         :raises: `KeyError` when key not found
         """
-        self._all_laps.pop(key)
-        self._score = None
+        for map_ in self._all_laps.maps:
+            try:
+                lap = map_.pop(key)
+            except KeyError:
+                continue
+            break
+        else:
+            raise KeyError("Key not stored in manager")
+
+        self.remove_lap_cb(key, lap)
 
     def get_all_laps(self) -> Iterable[FullLapData]:
         """
@@ -87,6 +135,69 @@ class LapsManager(ABC):
         :return: The lap data
         """
         return self._all_laps.values()
+
+    def get_last_primary_lap(self) -> FullLapData | None:
+        """
+        Get the lap data from the last primary lap
+
+        :return: The lap data
+        """
+        if self._primary_laps:
+            return self._primary_laps.values()[-1]  # type:ignore
+        return None
+
+    def get_num_laps(self, holeshot: bool = False) -> int:
+        """
+        Get number of laps
+
+        :param holeshot: Holeshot active, defaults to False
+        :return: The number of laps completed
+        """
+        num_laps = len(self._primary_laps)
+        if holeshot:
+            num_laps -= 1
+
+        return max(num_laps, 0)
+
+    def get_total_time(self, holeshot: bool = False) -> float | None:
+        """
+        Get the total time
+
+        :param holeshot: Holeshot active, defaults to False
+        :return: The total time
+        """
+        if self._primary_laps:
+            last_lap: FullLapData = self._primary_laps.values()[-1]  # type:ignore
+            last_time = last_lap.timedelta
+
+            if holeshot:
+                first_lap: FullLapData = self._primary_laps.values()[0]  # type:ignore
+                return last_time - first_lap.timedelta
+
+            return last_time
+
+        return None
+
+    def get_average_lap_time(self, holeshot: bool = False) -> float | None:
+        """
+        Get the average lap time
+
+        :param holeshot: Holeshot active, defaults to False
+        :return: The average time
+        """
+        if self._primary_laps:
+            num_laps = len(self._primary_laps)
+            last_lap: FullLapData = self._primary_laps.values()[-1]  # type:ignore
+            last_time = last_lap.timedelta
+
+            if holeshot:
+                num_laps -= 1
+                first_lap: FullLapData = self._primary_laps.values()[0]  # type:ignore
+                return (last_time - first_lap.timedelta) / num_laps
+
+            return last_time / num_laps
+
+        return None
 
     def get_fastest_time(self, holeshot: bool = False) -> float | None:
         """
@@ -115,22 +226,51 @@ class LapsManager(ABC):
 
         return fastest_time
 
-    def get_fastest_consecutive_time(
-        self, max_laps: int = 3, holeshot: bool = False
-    ) -> tuple[int, float] | None:
+    def get_fastest_consecutive_metric(
+        self, holeshot: bool = False, max_laps: int = 3
+    ) -> ConsecutiveMetric | None:
         """
         Get the fastest consecutive lap times
 
-        :param max_laps: The max consecutive laps, defaults to 3
+        Uses `get_combined_metrics` to generate the metrics
+        due to most of its logic is allocated to efficiently
+        calculating fastest consecutive time.
+
         :param holeshot: Holeshot active, defaults to False
+        :param max_laps: The max consecutive laps, defaults to 3
         :return: A tuple of number of laps and the time associated with the laps
         """
+        metrics = self.get_combined_metrics(holeshot, max_laps)
+        if metrics is None:
+            return None
+        return metrics.fastest_consec
+
+    def get_combined_metrics(
+        self, holeshot: bool = False, max_laps: int = 3
+    ) -> CombinedMetrics | None:
+        """
+        Generate multiple metrics at once.
+
+        Includes the following:
+        - number of laps completed
+        - total time
+        - average lap time
+        - fastest lap time
+        - consecutive lap base
+        - fastest consecutive lap time
+
+        :param holeshot: Holeshot active, defaults to False
+        :param max_laps: The max consecutive laps, defaults to 3
+        :return: The generated metrics
+        """
         store: deque[float] = deque(maxlen=max_laps + 1)
-        fastest_time = None
+        fastest_time = float("inf")
+        fastest_consec_time = float("inf")
 
         prev_time = 0.0
         windowed_time = 0.0
         num_laps = 0
+        total_time = 0.0
 
         start = 0 if holeshot else 1
         for num_laps, lap in enumerate(self._primary_laps.values(), start):
@@ -141,29 +281,51 @@ class LapsManager(ABC):
             time_diff = lap.timedelta - prev_time
             store.append(time_diff)
             windowed_time += time_diff
+            total_time += time_diff
+            fastest_time = min(fastest_time, time_diff)
             prev_time = lap.timedelta
 
             if len(store) > max_laps:
-                assert fastest_time is not None
                 windowed_time -= store.popleft()
-                fastest_time = min(fastest_time, windowed_time)
+                fastest_consec_time = min(fastest_consec_time, windowed_time)
             else:
-                fastest_time = windowed_time
+                fastest_consec_time = windowed_time
 
-        if fastest_time is None:
+        if num_laps == 0:
             return None
 
-        return min(num_laps, max_laps), fastest_time
+        consec = ConsecutiveMetric(min(num_laps, max_laps), fastest_consec_time)
+        return CombinedMetrics(
+            num_laps, total_time, total_time / num_laps, fastest_time, consec
+        )
+
+    @abstractmethod
+    def add_lap_cb(self, key: int, lap: FullLapData) -> None:
+        """
+        Callback for a lap being added to the manager
+
+        :param key: The key for the lap
+        :param lap: The added lap
+        """
+
+    @abstractmethod
+    def remove_lap_cb(self, key: int, lap: FullLapData) -> None:
+        """
+        Callback for a lap being removed from the manager
+
+        :param key: The key for the lap
+        :param lap: The removed lap
+        """
 
     @abstractmethod
     def get_score(self) -> tuple:
         """
-        Get the score tuple of the manager based on the currently stored
-        lap data. This method should return the `self._store` cache if avaliable
-        else build and return the cache.
+        Get the score of the manager based on the currently stored
+        lap data.
 
-        :return: A tuple of elements. The elements should be added to the tuple in
-        order of conserideration.
+        It is recommended to return a tuple to allow for scoring
+        across multiple parameters in an order of significance
+        (See tuple comparsions in Python)
         """
 
     def __eq__(self, other: object) -> bool:

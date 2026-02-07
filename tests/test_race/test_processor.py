@@ -15,8 +15,11 @@ from pulsarity.race.processor import (
 
 
 class TestManager(LapsManager):
-    def get_score(self):
-        return "foo", "bar"
+    def get_score(self): ...
+
+    def add_lap_cb(self, *_) -> None: ...
+
+    def remove_lap_cb(self, *_) -> None: ...
 
 
 class BadProcessor(RaceProcessor):
@@ -79,6 +82,60 @@ def test_get_processor():
     processor = RaceProcessorManager.get_processor("foo")
     assert processor is not None
     assert processor is TestProcessor
+
+
+def test_all_metrics():
+    """
+    Tests some of the basic functionality of the laps manager
+    """
+    keys = count()
+    manager = TestManager()
+
+    lap = FullLapData(1.0, 0, "foo", 0)
+    manager.add_lap(next(keys), lap)
+
+    lap = FullLapData(2.0, 0, "foo", 0)
+    manager.add_lap(next(keys), lap)
+
+    lap = FullLapData(4.0, 0, "foo", 0)
+    manager.add_lap(next(keys), lap)
+
+    lap = FullLapData(4.5, 0, "foo", 0)
+    manager.add_lap(next(keys), lap)
+
+    metrics = manager.get_combined_metrics()
+    assert metrics.laps == manager.get_num_laps()
+    assert metrics.total_time == manager.get_total_time()
+    assert metrics.average_lap_time == manager.get_average_lap_time()
+    assert metrics.fastest_time == manager.get_fastest_time()
+    assert metrics.fastest_consec == manager.get_fastest_consecutive_metric()
+
+
+def test_all_metrics_holeshot():
+    """
+    Tests some of the basic functionality of the laps manager
+    """
+    keys = count()
+    manager = TestManager()
+
+    lap = FullLapData(1.0, 0, "foo", 0)
+    manager.add_lap(next(keys), lap)
+
+    lap = FullLapData(2.0, 0, "foo", 0)
+    manager.add_lap(next(keys), lap)
+
+    lap = FullLapData(4.0, 0, "foo", 0)
+    manager.add_lap(next(keys), lap)
+
+    lap = FullLapData(4.5, 0, "foo", 0)
+    manager.add_lap(next(keys), lap)
+
+    metrics = manager.get_combined_metrics(True)
+    assert metrics.laps == manager.get_num_laps(True)
+    assert metrics.total_time == manager.get_total_time(True)
+    assert metrics.average_lap_time == manager.get_average_lap_time(True)
+    assert metrics.fastest_time == manager.get_fastest_time(True)
+    assert metrics.fastest_consec == manager.get_fastest_consecutive_metric(True)
 
 
 def test_laps_manager_fastest():
@@ -153,7 +210,7 @@ def test_laps_manager_consecutive():
     prev_time = 0.0
     consec = 3
 
-    assert manager.get_fastest_consecutive_time(consec) is None
+    assert manager.get_fastest_consecutive_metric(consec) is None
 
     lap = FullLapData(1.0, 0, "foo", 0)
     manager.add_lap(next(keys), lap)
@@ -161,7 +218,10 @@ def test_laps_manager_consecutive():
     total_time += lap.timedelta - prev_time
     prev_time = lap.timedelta
 
-    assert manager.get_fastest_consecutive_time(consec) == (num_laps, total_time)
+    assert manager.get_fastest_consecutive_metric(False, consec) == (
+        num_laps,
+        total_time,
+    )
 
     lap = FullLapData(5.0, 0, "foo", 0)
     manager.add_lap(next(keys), lap)
@@ -169,7 +229,10 @@ def test_laps_manager_consecutive():
     total_time += lap.timedelta - prev_time
     prev_time = lap.timedelta
 
-    assert manager.get_fastest_consecutive_time(consec) == (num_laps, total_time)
+    assert manager.get_fastest_consecutive_metric(False, consec) == (
+        num_laps,
+        total_time,
+    )
 
     lap = FullLapData(7.0, 0, "foo", 0)
     manager.add_lap(next(keys), lap)
@@ -177,7 +240,10 @@ def test_laps_manager_consecutive():
     total_time += lap.timedelta - prev_time
     prev_time = lap.timedelta
 
-    assert manager.get_fastest_consecutive_time(consec) == (num_laps, total_time)
+    assert manager.get_fastest_consecutive_metric(False, consec) == (
+        num_laps,
+        total_time,
+    )
 
     lap = FullLapData(9.0, 0, "foo", 0)
     manager.add_lap(next(keys), lap)
@@ -185,8 +251,11 @@ def test_laps_manager_consecutive():
     total_time += lap.timedelta - prev_time
     prev_time = lap.timedelta
 
-    assert manager.get_fastest_consecutive_time(consec) != (num_laps, total_time)
-    assert manager.get_fastest_consecutive_time(consec) == (consec, 7.0)
+    assert manager.get_fastest_consecutive_metric(False, consec) != (
+        num_laps,
+        total_time,
+    )
+    assert manager.get_fastest_consecutive_metric(False, consec) == (consec, 7.0)
 
     lap = FullLapData(11.0, 0, "foo", 0)
     manager.add_lap(next(keys), lap)
@@ -194,7 +263,7 @@ def test_laps_manager_consecutive():
     total_time += lap.timedelta - prev_time
     prev_time = lap.timedelta
 
-    assert manager.get_fastest_consecutive_time(consec) == (consec, 6.0)
+    assert manager.get_fastest_consecutive_metric(False, consec) == (consec, 6.0)
 
 
 def test_laps_manager_consecutive_holeshot():
@@ -210,7 +279,7 @@ def test_laps_manager_consecutive_holeshot():
     consec = 3
     start_time = 1.0
 
-    assert manager.get_fastest_consecutive_time(consec, True) is None
+    assert manager.get_fastest_consecutive_metric(True, consec) is None
 
     lap = FullLapData(start_time, 0, "foo", 0)
     manager.add_lap(next(keys), lap)
@@ -218,7 +287,7 @@ def test_laps_manager_consecutive_holeshot():
     total_time += lap.timedelta - prev_time
     prev_time = lap.timedelta
 
-    assert manager.get_fastest_consecutive_time(consec, True) is None
+    assert manager.get_fastest_consecutive_metric(True, consec) is None
 
     lap = FullLapData(5.0, 0, "foo", 0)
     manager.add_lap(next(keys), lap)
@@ -226,7 +295,7 @@ def test_laps_manager_consecutive_holeshot():
     total_time += lap.timedelta - prev_time
     prev_time = lap.timedelta
 
-    assert manager.get_fastest_consecutive_time(consec, True) == (
+    assert manager.get_fastest_consecutive_metric(True, consec) == (
         num_laps,
         total_time - start_time,
     )
@@ -237,7 +306,7 @@ def test_laps_manager_consecutive_holeshot():
     total_time += lap.timedelta - prev_time
     prev_time = lap.timedelta
 
-    assert manager.get_fastest_consecutive_time(consec, True) == (
+    assert manager.get_fastest_consecutive_metric(True, consec) == (
         num_laps,
         total_time - start_time,
     )
@@ -248,11 +317,11 @@ def test_laps_manager_consecutive_holeshot():
     total_time += lap.timedelta - prev_time
     prev_time = lap.timedelta
 
-    assert manager.get_fastest_consecutive_time(consec, True) != (
+    assert manager.get_fastest_consecutive_metric(True, consec) != (
         num_laps,
         total_time,
     )
-    assert manager.get_fastest_consecutive_time(consec, True) == (consec, 8.0)
+    assert manager.get_fastest_consecutive_metric(True, consec) == (consec, 8.0)
 
     lap = FullLapData(11.0, 0, "foo", 0)
     manager.add_lap(next(keys), lap)
@@ -260,7 +329,7 @@ def test_laps_manager_consecutive_holeshot():
     total_time += lap.timedelta - prev_time
     prev_time = lap.timedelta
 
-    assert manager.get_fastest_consecutive_time(consec, True) == (consec, 6.0)
+    assert manager.get_fastest_consecutive_metric(True, consec) == (consec, 6.0)
 
 
 def test_most_laps_processor():

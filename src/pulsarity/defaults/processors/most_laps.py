@@ -34,23 +34,15 @@ class _MostLapsManager(LapsManager):
 
     __slots__ = ("_primary_laps", "_split_laps", "_lap_data", "_score")
 
-    @property
-    def total_laps(self) -> int:
-        """
-        Gets number of completed primary laps
-        """
-        return len(self._primary_laps)
+    def __init__(self):
+        super().__init__()
+        self._score = None
 
-    def get_last_primary_lap(self) -> FullLapData | None:
-        """
-        Get the lap data from the last primary lap
+    def add_lap_cb(self, *_) -> None:
+        self._score = None
 
-        :return: The lap data
-        """
-        try:
-            return next(reversed(self._primary_laps.values()))
-        except StopIteration:
-            return None
+    def remove_lap_cb(self, *_) -> None:
+        self._score = None
 
     def get_score(self) -> tuple:
         """
@@ -73,11 +65,12 @@ class _MostLapsManager(LapsManager):
 
         if self._primary_laps:
             primary_laps = len(self._primary_laps)
-            last_lap = next(reversed(self._primary_laps.values()))
+            last_lap = self.get_last_primary_lap()
+            assert last_lap is not None
             last_timestamp = last_lap.timedelta
 
         if self._split_laps:
-            last_split = next(reversed(self._split_laps.values()))
+            last_split: FullLapData = self._split_laps.values()[-1]  # type:ignore
 
             if last_split.timedelta > last_timestamp:
                 last_index = last_split.timer_index
@@ -147,7 +140,7 @@ class MostLapsProcessor(RaceProcessor):
                     adv = 1
 
                 result = SlotResult(
-                    pos, key, _ResultExtras(total_laps=manager.total_laps)
+                    pos, key, _ResultExtras(total_laps=manager.get_num_laps())
                 )
                 self._cache.update({key: result})
                 last_manager = manager
