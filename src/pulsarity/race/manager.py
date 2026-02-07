@@ -27,8 +27,7 @@ class RaceManager:
     Links race state/timing and race data
     """
 
-    _processor: RaceProcessor | None = None
-    """The processor used for processing race data"""
+    ___slots__ = ("_state", "_save_lock", "_signal_data", "_processor")
 
     def __init__(self) -> None:
         self._state = RaceStateManager()
@@ -39,6 +38,8 @@ class RaceManager:
             defaultdict(partial(defaultdict, list))
         )
         """Race signal data storage"""
+        self._processor: RaceProcessor | None = None
+        """The processor used for processing race data"""
 
     @property
     def status(self) -> RaceStatus:

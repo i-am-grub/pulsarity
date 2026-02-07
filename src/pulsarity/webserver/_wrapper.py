@@ -40,6 +40,8 @@ class _AdaptedResponse(Response):
 
     # pylint: disable=R0913,R0917
 
+    __slots__ = ("status_code", "background", "body")
+
     media_type = "application/json"
 
     def __init__(

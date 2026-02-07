@@ -32,6 +32,8 @@ class PulsarityCredentials:
 
     # pylint: disable=R0903
 
+    __slots__ = ("scopes",)
+
     def __init__(self, scopes: Sequence[str] | None = None):
         self.scopes = set() if scopes is None else set(scopes)
 
@@ -122,6 +124,8 @@ class PulsarityUser(BaseUser):
     """
     User of the authentication system
     """
+
+    __slots__ = ("_auth_id", "_username", "_display_name")
 
     def __init__(self, db_user: User):
         self._auth_id = db_user.auth_id.hex

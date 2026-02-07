@@ -100,6 +100,14 @@ class TimerInterfaceManager:
     Manages the abstract and active timer interfaces
     """
 
+    __slots__ = (
+        "_active_interfaces",
+        "_shutdown_evt",
+        "_lap_queue",
+        "_signal_queue",
+        "_tasks",
+    )
+
     _interfaces: dict[str, type[TimerInterface]] = {}
 
     def __init__(self) -> None:

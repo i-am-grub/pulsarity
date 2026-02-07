@@ -22,16 +22,17 @@ class RaceStateManager:
     machine.
     """
 
-    _program_handle: asyncio.TimerHandle | None = None
-    """The handle for managine the race sequence"""
-    _status: RaceStatus = RaceStatus.READY
-    """Internal status of the race"""
-    _format: RaceFormat | None = None
-    """The current race format"""
+    __slots__ = ("_race_record", "_program_handle", "_status", "_format")
 
     def __init__(self) -> None:
         self._race_record: list[_RaceEventRecord] = []
         """The sequence of the race"""
+        self._program_handle: asyncio.TimerHandle | None = None
+        """The handle for managine the race sequence"""
+        self._status: RaceStatus = RaceStatus.READY
+        """Internal status of the race"""
+        self._format: RaceFormat | None = None
+        """The current race format"""
 
     @property
     def status(self) -> RaceStatus:
