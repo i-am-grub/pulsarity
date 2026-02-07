@@ -26,7 +26,7 @@ class EvtPriority(IntEnum):
     LOWEST = auto()
 
 
-@dataclass
+@dataclass(frozen=True)
 class _EvtData:
     """
     The dataclass used to define event enums

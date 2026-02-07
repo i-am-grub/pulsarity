@@ -14,7 +14,6 @@ from collections.abc import AsyncGenerator, Callable
 from dataclasses import dataclass, field
 from typing import Any, Self
 
-from pulsarity import ctx
 from pulsarity.events.enums import EvtPriority, _ApplicationEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
@@ -22,7 +21,7 @@ from pulsarity.utils.asyncio import ensure_async
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class _QueuedEvtData:
     """
     Dataclass used for containing event data across the queue
@@ -42,7 +41,7 @@ class _QueuedEvtData:
         return (self.evt.priority, self._id) < (other.evt.priority, other._id)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class _EvtCallbackData:
     """
     Dataclass used for containing event callback data
@@ -68,14 +67,15 @@ class EventBroker:
     triggering server side event callbacks.
     """
 
-    counter = itertools.count()
+    __slots__ = ("_connections",)
+
+    _callbacks: dict[str, list[_EvtCallbackData]] = defaultdict(list)
 
     def __init__(self) -> None:
         """
         Class initialization
         """
         self._connections: set[asyncio.PriorityQueue[_QueuedEvtData]] = set()
-        self._callbacks: dict[str, list[_EvtCallbackData]] = defaultdict(list)
 
     def publish(
         self,
@@ -159,8 +159,9 @@ class EventBroker:
                 )
                 continue
 
+    @classmethod
     def register_event_callback(
-        self,
+        cls,
         callback: Callable,
         event: _ApplicationEvt,
         *,
@@ -182,10 +183,11 @@ class EventBroker:
             default_kwargs_ = {}
 
         evt_cb = _EvtCallbackData(priority, callback, default_kwargs_)
-        bisect.insort_right(self._callbacks[event.id], evt_cb)
+        bisect.insort_right(cls._callbacks[event.id], evt_cb)
 
+    @classmethod
     def unregister_event_callback(
-        self,
+        cls,
         callback: Callable,
         event: _ApplicationEvt,
     ) -> None:
@@ -195,13 +197,20 @@ class EventBroker:
         :param callback: The callback to remove
         :param event_id: The identifier of the event to register the callback against
         """
-        callbacks = self._callbacks[event.id]
+        callbacks = cls._callbacks[event.id]
         for callback_ in callbacks:
             if callback is callback_.func:
                 callbacks.remove(callback_)
                 break
         else:
             raise RuntimeError("Callback not register in system")
+
+    @classmethod
+    def clear_registered(cls) -> None:
+        """
+        UNIT TESTING ONLY: Clears all registered interfaces.
+        """
+        cls._callbacks.clear()
 
     async def subscribe(
         self,
@@ -237,7 +246,7 @@ def register_as_callback(
 
     @functools.wraps
     def inner(func):
-        ctx.event_broker_ctx.get().register_event_callback(
+        EventBroker.register_event_callback(
             func, event, priority=priority, default_kwargs=default_kwargs
         )
 

@@ -46,6 +46,7 @@ async def context_and_cleanup():
 
     TimerInterfaceManager.clear_registered()
     RaceProcessorManager.clear_registered()
+    EventBroker.clear_registered()
 
     ctx.loop_ctx.reset(loop_token)
     ctx.event_broker_ctx.reset(event_token)
