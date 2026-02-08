@@ -41,7 +41,7 @@ pgsql = [ "asyncpg==0.31" ]
 pulsarity = "pulsarity.__main__:main"
 
 [build-system]
-requires = ["uv_build>=0.9.17,<0.10.0"]
+requires = ["uv_build>=0.9.17,<0.11.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
