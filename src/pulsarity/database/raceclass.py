@@ -5,14 +5,16 @@ ORM classes for race class data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Self
 
-from pydantic import BaseModel, TypeAdapter
+from pydantic import TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
 from pulsarity.database._base import AttributeModel as _AttributeModel
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
+from pulsarity.protobuf import database_pb2
+from pulsarity.webserver.validation import ProtocolBufferModel
 
 if TYPE_CHECKING:
     from pulsarity.database.raceevent import RaceEvent
@@ -110,15 +112,49 @@ class RaceClass(_PulsarityBase):
         return value + 1
 
 
-class _RaceClassModel(BaseModel):
+class RaceClassModel(ProtocolBufferModel):
     """
-    External class model
+    External raceclass model
     """
 
     id: int
     name: str
     attributes: list[_AttributeModel]
 
+    @classmethod
+    def from_protobuf(cls, data: bytes) -> Self:
+        message = database_pb2.RaceClass.FromString(data)
+        return cls.model_validate(message, from_attributes=True)
 
-RACECLASS_ADAPTER = TypeAdapter(_RaceClassModel)
-RACECLASS_LIST_ADAPTER = TypeAdapter(list[_RaceClassModel])
+    def to_message(self) -> database_pb2.RaceClass:
+        attrs = (attribute.to_message() for attribute in self.attributes)
+        return database_pb2.RaceClass(id=self.id, name=self.name, attributes=attrs)
+
+
+_ADAPTER = TypeAdapter(list[RaceClassModel])
+
+
+class RaceClassesModel(ProtocolBufferModel):
+    """
+    External raceclasses model
+    """
+
+    raceclasses: list[RaceClassModel]
+
+    @classmethod
+    def from_iterable(cls, raceclasses: Iterable[RaceClass]) -> Self:
+        """
+        Generates a validation model from a database iterable
+        """
+        return cls(
+            raceclasses=_ADAPTER.validate_python(raceclasses, from_attributes=True)
+        )
+
+    @classmethod
+    def from_protobuf(cls, data: bytes) -> Self:
+        message = database_pb2.RaceClasses.FromString(data)
+        return cls.model_validate(message, from_attributes=True)
+
+    def to_message(self) -> database_pb2.RaceClasses:
+        raceclasses = (raceclass.to_message() for raceclass in self.raceclasses)
+        return database_pb2.RaceClasses(raceclasses=raceclasses)

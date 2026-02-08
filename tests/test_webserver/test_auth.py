@@ -6,6 +6,7 @@ import pytest
 from httpx import AsyncClient
 
 from pulsarity.database import Permission, Role, SystemDefaultPerms, User
+from pulsarity.protobuf import http_pb2
 
 
 @pytest.mark.asyncio
@@ -41,9 +42,15 @@ async def test_webserver_lack_permissions(client: AsyncClient):
     await user.roles.add(*roles)
     await user.update_user_password("bar")
 
-    payload = {"username": "foo", "password": "bar"}
+    message = http_pb2.LoginRequest()
+    message.username = "foo"
+    message.password = "bar"
 
-    response = await client.post("/login", json=payload)
+    header = {"Content-Type": "application/x-protobuf"}
+    response = await client.post(
+        "/login", content=message.SerializeToString(), headers=header
+    )
+
     assert response.status_code == 200
     assert response.cookies
 

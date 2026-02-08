@@ -5,14 +5,16 @@ ORM classes for round data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Self
 
-from pydantic import BaseModel, TypeAdapter
+from pydantic import TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
 from pulsarity.database._base import AttributeModel as _AttributeModel
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
+from pulsarity.protobuf import database_pb2
+from pulsarity.webserver.validation import ProtocolBufferModel
 
 if TYPE_CHECKING:
     from pulsarity.database.heat import Heat
@@ -92,7 +94,7 @@ class Round(_PulsarityBase):
         return value + 1
 
 
-class _RoundModel(BaseModel):
+class RoundModel(ProtocolBufferModel):
     """
     External round model
     """
@@ -101,6 +103,40 @@ class _RoundModel(BaseModel):
     round_num: int
     attributes: list[_AttributeModel]
 
+    @classmethod
+    def from_protobuf(cls, data: bytes) -> Self:
+        message = database_pb2.Round.FromString(data)
+        return cls.model_validate(message, from_attributes=True)
 
-ROUND_ADAPTER = TypeAdapter(_RoundModel)
-ROUND_LIST_ADAPTER = TypeAdapter(list[_RoundModel])
+    def to_message(self) -> database_pb2.Round:
+        attrs = (attribute.to_message() for attribute in self.attributes)
+        return database_pb2.Round(
+            id=self.id, round_num=self.round_num, attributes=attrs
+        )
+
+
+_ADAPTER = TypeAdapter(list[RoundModel])
+
+
+class RoundsModel(ProtocolBufferModel):
+    """
+    External rounds model
+    """
+
+    rounds: list[RoundModel]
+
+    @classmethod
+    def from_iterable(cls, rounds: Iterable[Round]) -> Self:
+        """
+        Generates a validation model from a database iterable
+        """
+        return cls(rounds=_ADAPTER.validate_python(rounds, from_attributes=True))
+
+    @classmethod
+    def from_protobuf(cls, data: bytes) -> Self:
+        message = database_pb2.Rounds.FromString(data)
+        return cls.model_validate(message, from_attributes=True)
+
+    def to_message(self) -> database_pb2.Rounds:
+        rounds = (round.to_message() for round in self.rounds)
+        return database_pb2.Rounds(rounds=rounds)

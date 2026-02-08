@@ -5,13 +5,15 @@ ORM classes for heat data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Self
 
-from pydantic import BaseModel, TypeAdapter
+from pydantic import TypeAdapter
 from tortoise import fields
 
 from pulsarity.database._base import AttributeModel as _AttributeModel
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
+from pulsarity.protobuf import database_pb2
+from pulsarity.webserver.validation import ProtocolBufferModel
 
 if TYPE_CHECKING:
     from pulsarity.database.round import Round
@@ -67,7 +69,7 @@ class Heat(_PulsarityBase):
         unique_together = (("round", "heat_num"),)
 
 
-class _HeatModel(BaseModel):
+class HeatModel(ProtocolBufferModel):
     """
     External heat model
     """
@@ -76,6 +78,38 @@ class _HeatModel(BaseModel):
     heat_num: int
     attributes: list[_AttributeModel]
 
+    @classmethod
+    def from_protobuf(cls, data: bytes):
+        message = database_pb2.Heat.FromString(data)
+        return cls.model_validate(message, from_attributes=True)
 
-HEAT_ADAPTER = TypeAdapter(_HeatModel)
-HEAT_LIST_ADAPTER = TypeAdapter(list[_HeatModel])
+    def to_message(self):
+        attrs = (attribute.to_message() for attribute in self.attributes)
+        return database_pb2.Heat(id=self.id, heat_num=self.heat_num, attributes=attrs)
+
+
+_ADAPTER = TypeAdapter(list[HeatModel])
+
+
+class HeatsModel(ProtocolBufferModel):
+    """
+    External heats model
+    """
+
+    heats: list[HeatModel]
+
+    @classmethod
+    def from_iterable(cls, heats: Iterable[Heat]) -> Self:
+        """
+        Generates a validation model from a database iterable
+        """
+        return cls(heats=_ADAPTER.validate_python(heats, from_attributes=True))
+
+    @classmethod
+    def from_protobuf(cls, data: bytes) -> Self:
+        message = database_pb2.Heats.FromString(data)
+        return cls.model_validate(message, from_attributes=True)
+
+    def to_message(self) -> database_pb2.Heats:
+        heats = (heat.to_message() for heat in self.heats)
+        return database_pb2.Heats(heats=heats)

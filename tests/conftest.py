@@ -22,6 +22,7 @@ from pulsarity.database import (
 )
 from pulsarity.events.broker import EventBroker
 from pulsarity.interface.timer_manager import TimerInterfaceManager
+from pulsarity.protobuf import http_pb2
 from pulsarity.race.manager import RaceManager
 from pulsarity.race.processor import RaceProcessorManager
 from pulsarity.utils import background
@@ -124,8 +125,14 @@ async def _authenticated_client(client: AsyncClient, user_creds: tuple[str, str]
     """
     Generates an authenticated client
     """
-    login_data = {"username": user_creds[0], "password": user_creds[1]}
-    response = await client.post("/login", json=login_data)
+    message = http_pb2.LoginRequest()
+    message.username = user_creds[0]
+    message.password = user_creds[1]
+    response = await client.post(
+        "/login",
+        content=message.SerializeToString(),
+        headers={"Content-Type": "application/x-protobuf"},
+    )
     assert response.status_code == 200
 
     yield client

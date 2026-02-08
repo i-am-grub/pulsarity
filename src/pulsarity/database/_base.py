@@ -4,9 +4,11 @@ Abstract definition of database classes
 
 from typing import Self
 
-from pydantic import BaseModel
 from tortoise import fields
 from tortoise.models import Model
+
+from pulsarity.protobuf import database_pb2
+from pulsarity.webserver.validation import ProtocolBufferModel
 
 
 class PulsarityBase(Model):
@@ -38,9 +40,18 @@ class PulsarityBase(Model):
         return await cls.get_or_none(id=id_).prefetch_related("attributes")
 
 
-class AttributeModel(BaseModel):
+class AttributeModel(ProtocolBufferModel):
     """
     External attributes model
     """
 
     name: str
+
+    @classmethod
+    def from_protobuf(cls, data: bytes):
+        message = database_pb2.Attribute.FromString(data)
+        return cls.model_validate(message, from_attributes=True)
+
+    def to_message(self):
+        message = database_pb2.Attribute(name=self.name)
+        return message.SerializeToString()
