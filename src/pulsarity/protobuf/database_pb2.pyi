@@ -1,3 +1,4 @@
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -62,14 +63,16 @@ class RaceClasses(_message.Message):
     def __init__(self, raceclasses: _Optional[_Iterable[_Union[RaceClass, _Mapping]]] = ...) -> None: ...
 
 class RaceEvent(_message.Message):
-    __slots__ = ["attributes", "id", "name"]
+    __slots__ = ["attributes", "date", "id", "name"]
     ATTRIBUTES_FIELD_NUMBER: _ClassVar[int]
+    DATE_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
     attributes: _containers.RepeatedCompositeFieldContainer[Attribute]
+    date: _timestamp_pb2.Timestamp
     id: int
     name: str
-    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., attributes: _Optional[_Iterable[_Union[Attribute, _Mapping]]] = ...) -> None: ...
+    def __init__(self, id: _Optional[int] = ..., name: _Optional[str] = ..., date: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., attributes: _Optional[_Iterable[_Union[Attribute, _Mapping]]] = ...) -> None: ...
 
 class RaceEvents(_message.Message):
     __slots__ = ["events"]

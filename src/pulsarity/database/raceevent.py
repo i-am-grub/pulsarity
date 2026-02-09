@@ -4,8 +4,10 @@ ORM classes for event data
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Iterable, Self
 
+from google.protobuf import timestamp_pb2  # type: ignore
 from pydantic import TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
@@ -104,6 +106,9 @@ class RaceEvent(_PulsarityBase):
         return self.date < obj.date
 
 
+_ATT_ADAPTER = TypeAdapter(list[_AttributeModel])
+
+
 class RaceEventModel(ProtocolBufferModel):
     """
     External event model
@@ -111,16 +116,28 @@ class RaceEventModel(ProtocolBufferModel):
 
     id: int
     name: str
+    date: datetime
     attributes: list[_AttributeModel]
 
     @classmethod
     def from_protobuf(cls, data: bytes) -> Self:
         message = database_pb2.RaceEvent.FromString(data)
-        return cls.model_validate(message, from_attributes=True)
+        message.date = message.date.ToDatetime()
+        model = cls(
+            id=message.id,
+            name=message.name,
+            date=message.date.ToDatetime(),
+            attributes=_ATT_ADAPTER.validate_python(message.attributes),
+        )
+        return cls.model_validate(model)
 
     def to_message(self) -> database_pb2.RaceEvent:
         attrs = (attribute.to_message() for attribute in self.attributes)
-        return database_pb2.RaceEvent(id=self.id, name=self.name, attributes=attrs)
+        date = timestamp_pb2.Timestamp()
+        date.FromDatetime(self.date)
+        return database_pb2.RaceEvent(
+            id=self.id, name=self.name, date=date, attributes=attrs
+        )
 
 
 _ADAPTER = TypeAdapter(list[RaceEventModel])
