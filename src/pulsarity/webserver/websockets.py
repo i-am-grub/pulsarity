@@ -30,10 +30,15 @@ logger = logging.getLogger(__name__)
 ws_shutdown = asyncio.Event()
 ws_restart = asyncio.Event()
 
-_wse_routes: dict[websocket_pb2.EventID, tuple[UserPermission, Callable]] = {}  # type: ignore
-
-
 WS_EVENT_ADAPTER = TypeAdapter(ws_validation.WebsocketEvent)  # type: ignore
+
+
+class _Route(NamedTuple):
+    permission: UserPermission
+    func: Callable
+
+
+_wse_routes: dict[websocket_pb2.EventID, _Route] = {}  # type: ignore
 
 
 class _ExternalEvent(NamedTuple):
@@ -50,8 +55,7 @@ def ws_event(event: _ApplicationEvt):
     """
 
     def inner(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
-        _wse_routes[event.event_id] = (event.permission, func)
-
+        _wse_routes[event.event_id] = _Route(event.permission, func)
         return func
 
     return inner
@@ -72,16 +76,16 @@ async def server_event_ws(websocket: WebSocket):
 
     try:
         async with asyncio.TaskGroup() as tg:
-            task = tg.create_task(_recieve_data())
+            task = tg.create_task(_recieve_event_data())
             background.add_pregenerated_task(task)
-            await _write_data()
+            await _send_event_data()
     except* WebSocketDisconnect:
         logger.debug("%s disconnected from websocket", ctx.user_ctx.get().display_name)
     finally:
         await websocket.close()
 
 
-async def _recieve_data() -> None:
+async def _recieve_event_data() -> None:
     """
     Handles recieved data over the websocket
     """
@@ -104,7 +108,7 @@ async def _recieve_data() -> None:
             background.add_background_task(handle_ws_event, event_)
 
 
-async def _write_data() -> None:
+async def _send_event_data() -> None:
     """
     Handles writing event data over the websocket
     """
@@ -127,8 +131,8 @@ async def _write_data() -> None:
             evt_: ws_validation.BaseEvent = WS_EVENT_ADAPTER.validate_python(
                 evt, from_attributes=True
             )
-            data__ = evt_.model_dump_protobuf()
-            await websocket.send_bytes(data__)
+            data = evt_.model_dump_protobuf()
+            await websocket.send_bytes(data)
 
 
 async def handle_ws_event(event: ws_validation.WebsocketEvent):
@@ -136,18 +140,17 @@ async def handle_ws_event(event: ws_validation.WebsocketEvent):
     Handle the event identified in the websocket data while enforcing
     the its permissions
 
-    :param ws_data: The recieved websocket data
-    :param permissions: The permissions for the user
+    :param event: The websocket event
     """
+    try:
+        route = _wse_routes[event.event_id]
+    except KeyError:
+        logger.exception(
+            "Route not defined for websocket data. Event ID: %s", event.event_id
+        )
 
-    if event.event_id in _wse_routes:
-        permission, route = _wse_routes[event.event_id]
-
-        if permission in ctx.user_permsissions_ctx.get():
-            await ensure_async(route, event)
-
-    else:
-        logger.debug("Route not available for websocket data")
+    if route.permission in ctx.user_permsissions_ctx.get():
+        await ensure_async(route.func, event)
 
 
 @ws_event(SpecialEvt.HEARTBEAT)
@@ -155,7 +158,7 @@ async def heatbeat_echo(event: ws_validation.SystemHeartbeat):
     """
     Echo recieved heatbeat data
 
-    :param ws_data: Recieved websocket event data
+    :param event: The websocket event data
     """
     event_broker = ctx.event_broker_ctx.get()
     event_broker.publish(SpecialEvt.HEARTBEAT, uuid_=event.uuid)
