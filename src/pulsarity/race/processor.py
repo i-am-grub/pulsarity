@@ -206,8 +206,9 @@ class LapsManager(ABC):
         :param holeshot: Holeshot active, defaults to False
         :return: The time associated with the fastest lap
         """
-        fastest_time = None
-        prev_time = 0.0
+        fastest_time = float("inf")
+        prev_time: float = 0.0
+        num_laps: int = 0
 
         start = 0 if holeshot else 1
         for num_laps, lap in enumerate(self._primary_laps.values(), start):
@@ -219,10 +220,13 @@ class LapsManager(ABC):
             prev_time = lap.timedelta
 
             if num_laps > 1:
-                assert fastest_time is not None
-                fastest_time = min(fastest_time, time_diff)
+                if time_diff < fastest_time:
+                    fastest_time = time_diff
             else:
                 fastest_time = time_diff
+
+        if num_laps == 0:
+            return None
 
         return fastest_time
 
@@ -267,10 +271,10 @@ class LapsManager(ABC):
         fastest_time = float("inf")
         fastest_consec_time = float("inf")
 
-        prev_time = 0.0
-        windowed_time = 0.0
-        num_laps = 0
-        total_time = 0.0
+        prev_time: float = 0.0
+        windowed_time: float = 0.0
+        num_laps: int = 0
+        total_time: float = 0.0
 
         start = 0 if holeshot else 1
         for num_laps, lap in enumerate(self._primary_laps.values(), start):
@@ -282,19 +286,23 @@ class LapsManager(ABC):
             store.append(time_diff)
             windowed_time += time_diff
             total_time += time_diff
-            fastest_time = min(fastest_time, time_diff)
             prev_time = lap.timedelta
+
+            if time_diff < fastest_time:
+                fastest_time = time_diff
 
             if len(store) > max_laps:
                 windowed_time -= store.popleft()
-                fastest_consec_time = min(fastest_consec_time, windowed_time)
+                if windowed_time < fastest_consec_time:
+                    fastest_consec_time = windowed_time
             else:
                 fastest_consec_time = windowed_time
 
         if num_laps == 0:
             return None
 
-        consec = ConsecutiveMetric(min(num_laps, max_laps), fastest_consec_time)
+        laps = num_laps if num_laps < max_laps else max_laps
+        consec = ConsecutiveMetric(laps, fastest_consec_time)
         return CombinedMetrics(
             num_laps, total_time, total_time / num_laps, fastest_time, consec
         )
