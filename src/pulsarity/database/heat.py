@@ -79,12 +79,12 @@ class HeatModel(ProtocolBufferModel):
     attributes: list[_AttributeModel]
 
     @classmethod
-    def from_protobuf(cls, data: bytes):
+    def model_validate_protobuf(cls, data: bytes):
         message = database_pb2.Heat.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self):
-        attrs = (attribute.to_message() for attribute in self.attributes)
+    def model_dump_protobuf(self):
+        attrs = (attribute.model_dump_protobuf() for attribute in self.attributes)
         return database_pb2.Heat(id=self.id, heat_num=self.heat_num, attributes=attrs)
 
 
@@ -106,10 +106,10 @@ class HeatsModel(ProtocolBufferModel):
         return cls(heats=_ADAPTER.validate_python(heats, from_attributes=True))
 
     @classmethod
-    def from_protobuf(cls, data: bytes) -> Self:
+    def model_validate_protobuf(cls, data: bytes) -> Self:
         message = database_pb2.Heats.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self) -> database_pb2.Heats:
-        heats = (heat.to_message() for heat in self.heats)
+    def model_dump_protobuf(self) -> database_pb2.Heats:
+        heats = (heat.model_dump_protobuf() for heat in self.heats)
         return database_pb2.Heats(heats=heats)

@@ -70,7 +70,7 @@ exclude = ["tests", "src/pulsarity/protobuf"]
 
 [tool.pylint]
 ignore = ["tests", "src/pulsarity/protobuf"]
-ignored-modules = ["pulsarity.protobuf.*"]
+ignored-modules = ["pulsarity.protobuf.*", "google.protobuf.*"]
 
 [tool.ruff.lint]
 exclude = [".mypy_cache", "env", "src/pulsarity/protobuf"]

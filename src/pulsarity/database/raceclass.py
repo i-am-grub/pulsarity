@@ -122,12 +122,12 @@ class RaceClassModel(ProtocolBufferModel):
     attributes: list[_AttributeModel]
 
     @classmethod
-    def from_protobuf(cls, data: bytes) -> Self:
+    def model_validate_protobuf(cls, data: bytes) -> Self:
         message = database_pb2.RaceClass.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self) -> database_pb2.RaceClass:
-        attrs = (attribute.to_message() for attribute in self.attributes)
+    def model_dump_protobuf(self) -> database_pb2.RaceClass:
+        attrs = (attribute.model_dump_protobuf() for attribute in self.attributes)
         return database_pb2.RaceClass(id=self.id, name=self.name, attributes=attrs)
 
 
@@ -151,10 +151,12 @@ class RaceClassesModel(ProtocolBufferModel):
         )
 
     @classmethod
-    def from_protobuf(cls, data: bytes) -> Self:
+    def model_validate_protobuf(cls, data: bytes) -> Self:
         message = database_pb2.RaceClasses.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self) -> database_pb2.RaceClasses:
-        raceclasses = (raceclass.to_message() for raceclass in self.raceclasses)
+    def model_dump_protobuf(self) -> database_pb2.RaceClasses:
+        raceclasses = (
+            raceclass.model_dump_protobuf() for raceclass in self.raceclasses
+        )
         return database_pb2.RaceClasses(raceclasses=raceclasses)

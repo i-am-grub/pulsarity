@@ -48,10 +48,10 @@ class AttributeModel(ProtocolBufferModel):
     name: str
 
     @classmethod
-    def from_protobuf(cls, data: bytes):
+    def model_validate_protobuf(cls, data: bytes):
         message = database_pb2.Attribute.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self):
+    def model_dump_protobuf(self):
         message = database_pb2.Attribute(name=self.name)
         return message.SerializeToString()

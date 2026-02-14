@@ -33,7 +33,7 @@ async def webserver_login_valid(client: AsyncClient, user_creds: tuple[str, str]
     assert response.status_code == 200
 
     # Simulate reading JSON as the client
-    data = LoginResponse.from_protobuf(response.content)
+    data = LoginResponse.model_validate_protobuf(response.content)
 
     reset_required = data.password_reset_required
     assert reset_required is not None
@@ -155,14 +155,14 @@ async def test_get_pilot(authed_client: AsyncClient):
     response = await authed_client.get("/pilots/1", headers=header)
     assert response.status_code == 200
 
-    pilot = PilotModel.from_protobuf(response.content)
+    pilot = PilotModel.model_validate_protobuf(response.content)
     assert pilot.id == 1
     assert pilot.display_callsign == "foo"
 
     response = await authed_client.get("/pilots/2", headers=header)
     assert response.status_code == 200
 
-    pilot = PilotModel.from_protobuf(response.content)
+    pilot = PilotModel.model_validate_protobuf(response.content)
     assert pilot.id == 2
     assert pilot.display_callsign == "bar"
 
@@ -187,7 +187,7 @@ async def test_get_pilots(authed_client: AsyncClient):
     response = await authed_client.get("/pilots")
     assert response.status_code == 200
 
-    pilots = PilotsModel.from_protobuf(response.content).pilots
+    pilots = PilotsModel.model_validate_protobuf(response.content).pilots
     assert len(pilots) == 2
     assert pilots[0].display_callsign == "foo"
     assert pilots[1].display_callsign == "bar"
@@ -201,7 +201,7 @@ async def test_get_event(authed_client: AsyncClient, basic_event: RaceEvent):
     response = await authed_client.get("/events/1")
     assert response.status_code == 200
 
-    event = RaceEventModel.from_protobuf(response.content)
+    event = RaceEventModel.model_validate_protobuf(response.content)
     assert event.id == basic_event.id
     assert event.name == basic_event.name
 
@@ -224,7 +224,7 @@ async def test_get_events(authed_client: AsyncClient, basic_event: RaceEvent):
     response = await authed_client.get("/events")
     assert response.status_code == 200
 
-    events = RaceEventsModel.from_protobuf(response.content).events
+    events = RaceEventsModel.model_validate_protobuf(response.content).events
     assert len(events) == 1
     assert events[0].id == basic_event.id
     assert events[0].name == basic_event.name
@@ -238,7 +238,7 @@ async def test_get_raceclass(authed_client: AsyncClient, basic_raceclass: RaceCl
     response = await authed_client.get("/raceclasses/1")
     assert response.status_code == 200
 
-    raceclass = RaceClassModel.from_protobuf(response.content)
+    raceclass = RaceClassModel.model_validate_protobuf(response.content)
     assert raceclass.id == basic_raceclass.id
     assert raceclass.name == basic_raceclass.name
 
@@ -262,7 +262,7 @@ async def test_get_event_raceclasses(
     response = await authed_client.get("/events/1/raceclasses")
     assert response.status_code == 200
 
-    raceclasses = RaceClassesModel.from_protobuf(response.content).raceclasses
+    raceclasses = RaceClassesModel.model_validate_protobuf(response.content).raceclasses
     assert len(raceclasses) == 1
     assert raceclasses[0].id == basic_raceclass.id
     assert raceclasses[0].name == basic_raceclass.name
@@ -276,7 +276,7 @@ async def test_get_round(authed_client: AsyncClient, basic_round: Round):
     response = await authed_client.get("/rounds/1")
     assert response.status_code == 200
 
-    round_ = RoundModel.from_protobuf(response.content)
+    round_ = RoundModel.model_validate_protobuf(response.content)
     assert round_.id == basic_round.id
     assert round_.round_num == basic_round.round_num
 
@@ -298,7 +298,7 @@ async def test_get_raceclass_rounds(authed_client: AsyncClient, basic_round: Rou
     response = await authed_client.get("/raceclasses/1/rounds")
     assert response.status_code == 200
 
-    rounds = RoundsModel.from_protobuf(response.content).rounds
+    rounds = RoundsModel.model_validate_protobuf(response.content).rounds
     assert rounds[0].id == basic_round.id
     assert rounds[0].round_num == basic_round.round_num
 
@@ -311,7 +311,7 @@ async def test_get_heat(authed_client: AsyncClient, basic_heat: Heat):
     response = await authed_client.get("/heats/1")
     assert response.status_code == 200
 
-    heat = HeatModel.from_protobuf(response.content)
+    heat = HeatModel.model_validate_protobuf(response.content)
     assert heat.id == basic_heat.id
     assert heat.heat_num == basic_heat.heat_num
 
@@ -333,6 +333,6 @@ async def test_get_round_heats(authed_client: AsyncClient, basic_heat: Heat):
     response = await authed_client.get("/rounds/1/heats")
     assert response.status_code == 200
 
-    heats = HeatsModel.from_protobuf(response.content).heats
+    heats = HeatsModel.model_validate_protobuf(response.content).heats
     assert heats[0].id == basic_heat.id
     assert heats[0].heat_num == basic_heat.heat_num

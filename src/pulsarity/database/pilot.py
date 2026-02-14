@@ -122,12 +122,12 @@ class PilotModel(ProtocolBufferModel):
     attributes: list[_AttributeModel]
 
     @classmethod
-    def from_protobuf(cls, data: bytes):
+    def model_validate_protobuf(cls, data: bytes):
         message = database_pb2.Pilot.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self):
-        attrs = (attribute.to_message() for attribute in self.attributes)
+    def model_dump_protobuf(self):
+        attrs = (attribute.model_dump_protobuf() for attribute in self.attributes)
         return database_pb2.Pilot(
             id=self.id,
             display_callsign=self.display_callsign,
@@ -154,10 +154,10 @@ class PilotsModel(ProtocolBufferModel):
         return cls(pilots=_ADAPTER.validate_python(pilots, from_attributes=True))
 
     @classmethod
-    def from_protobuf(cls, data: bytes):
+    def model_validate_protobuf(cls, data: bytes):
         message = database_pb2.Pilots.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self):
-        pilots = (pilot.to_message() for pilot in self.pilots)
+    def model_dump_protobuf(self):
+        pilots = (pilot.model_dump_protobuf() for pilot in self.pilots)
         return database_pb2.Pilots(pilots=pilots)

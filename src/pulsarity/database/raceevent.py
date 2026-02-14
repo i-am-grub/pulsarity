@@ -5,10 +5,10 @@ ORM classes for event data
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Iterable, Self
+from typing import TYPE_CHECKING, Annotated, Iterable, Self
 
 from google.protobuf import timestamp_pb2  # type: ignore
-from pydantic import TypeAdapter
+from pydantic import BeforeValidator, TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
@@ -109,6 +109,12 @@ class RaceEvent(_PulsarityBase):
 _ATT_ADAPTER = TypeAdapter(list[_AttributeModel])
 
 
+def _to_datetime(obj: timestamp_pb2.Timestamp | datetime) -> datetime:
+    if isinstance(obj, timestamp_pb2.Timestamp):
+        return obj.ToDatetime()
+    return obj
+
+
 class RaceEventModel(ProtocolBufferModel):
     """
     External event model
@@ -116,23 +122,16 @@ class RaceEventModel(ProtocolBufferModel):
 
     id: int
     name: str
-    date: datetime
+    date: Annotated[datetime, BeforeValidator(_to_datetime)]
     attributes: list[_AttributeModel]
 
     @classmethod
-    def from_protobuf(cls, data: bytes) -> Self:
+    def model_validate_protobuf(cls, data: bytes) -> Self:
         message = database_pb2.RaceEvent.FromString(data)
-        message.date = message.date.ToDatetime()
-        model = cls(
-            id=message.id,
-            name=message.name,
-            date=message.date.ToDatetime(),
-            attributes=_ATT_ADAPTER.validate_python(message.attributes),
-        )
-        return cls.model_validate(model)
+        return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self) -> database_pb2.RaceEvent:
-        attrs = (attribute.to_message() for attribute in self.attributes)
+    def model_dump_protobuf(self) -> database_pb2.RaceEvent:
+        attrs = (attribute.model_dump_protobuf() for attribute in self.attributes)
         date = timestamp_pb2.Timestamp()
         date.FromDatetime(self.date)
         return database_pb2.RaceEvent(
@@ -159,10 +158,10 @@ class RaceEventsModel(ProtocolBufferModel):
         return cls(events=_ADAPTER.validate_python(events, from_attributes=True))
 
     @classmethod
-    def from_protobuf(cls, data: bytes) -> Self:
+    def model_validate_protobuf(cls, data: bytes) -> Self:
         message = database_pb2.RaceEvents.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self) -> database_pb2.RaceEvents:
-        events = (event.to_message() for event in self.events)
+    def model_dump_protobuf(self) -> database_pb2.RaceEvents:
+        events = (event.model_dump_protobuf() for event in self.events)
         return database_pb2.RaceEvents(events=events)

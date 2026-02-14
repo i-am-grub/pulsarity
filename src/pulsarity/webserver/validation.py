@@ -3,12 +3,12 @@ Validation Models for API
 """
 
 from abc import ABC, abstractmethod
-from typing import Self
+from typing import Annotated, Literal, Self, Union
 
 from google.protobuf.message import Message  # type: ignore
-from pydantic import BaseModel, Field
+from pydantic import UUID4, BaseModel, Field
 
-from pulsarity.protobuf import http_pb2
+from pulsarity.protobuf import http_pb2, websocket_pb2
 
 
 class PaginationParams(BaseModel):
@@ -35,13 +35,13 @@ class ProtocolBufferModel(BaseModel, ABC):
 
     @classmethod
     @abstractmethod
-    def from_protobuf(cls, data: bytes) -> Self:
+    def model_validate_protobuf(cls, data: bytes) -> Self:
         """
         Generates a validation model from protobuf data
         """
 
     @abstractmethod
-    def to_message(self) -> Message:
+    def model_dump_protobuf(self) -> Message:
         """
         Converts the validation model to a protobuf message
         """
@@ -55,11 +55,11 @@ class StatusResponse(ProtocolBufferModel):
     status: bool
 
     @classmethod
-    def from_protobuf(cls, data: bytes):
+    def model_validate_protobuf(cls, data: bytes):
         message = http_pb2.StatusResponse.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self):
+    def model_dump_protobuf(self):
         return http_pb2.StatusResponse(status=self.status)
 
 
@@ -72,11 +72,11 @@ class LoginRequest(ProtocolBufferModel):
     password: str
 
     @classmethod
-    def from_protobuf(cls, data: bytes):
+    def model_validate_protobuf(cls, data: bytes):
         message = http_pb2.LoginRequest.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self):
+    def model_dump_protobuf(self):
         return http_pb2.LoginRequest(username=self.username, password=self.password)
 
 
@@ -88,11 +88,11 @@ class LoginResponse(ProtocolBufferModel):
     password_reset_required: bool
 
     @classmethod
-    def from_protobuf(cls, data: bytes):
+    def model_validate_protobuf(cls, data: bytes):
         message = http_pb2.LoginResponse.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self):
+    def model_dump_protobuf(self):
         return http_pb2.LoginResponse(
             password_reset_required=self.password_reset_required
         )
@@ -107,11 +107,28 @@ class ResetPasswordRequest(ProtocolBufferModel):
     new_password: str
 
     @classmethod
-    def from_protobuf(cls, data: bytes):
+    def model_validate_protobuf(cls, data: bytes):
         message = http_pb2.ResetPasswordRequest.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self):
+    def model_dump_protobuf(self):
         return http_pb2.ResetPasswordRequest(
             old_password=self.old_password, new_password=self.new_password
         )
+
+
+class _WSEvent(BaseModel):
+    id: UUID4
+
+
+class PilotAddEvent(_WSEvent):
+    event_id: Literal[websocket_pb2.EVENT_PILOT_ADD]  # type: ignore
+
+
+class PilotAlterEvent(_WSEvent):
+    event_id: Literal[websocket_pb2.EVENT_PILOT_ALTER]  # type: ignore
+
+
+WebsocketEvent = Annotated[
+    Union[PilotAddEvent, PilotAlterEvent], Field(discriminator="event_id")
+]

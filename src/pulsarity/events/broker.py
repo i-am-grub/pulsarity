@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any, Self
 
 from pulsarity.events.enums import EvtPriority, _ApplicationEvt
+from pulsarity.protobuf import websocket_pb2
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
 
@@ -69,7 +70,7 @@ class EventBroker:
 
     __slots__ = ("_connections",)
 
-    _callbacks: dict[str, list[_EvtCallbackData]] = defaultdict(list)
+    _callbacks: dict[websocket_pb2, list[_EvtCallbackData]] = defaultdict(list)  # type: ignore
 
     def __init__(self) -> None:
         """
@@ -113,7 +114,7 @@ class EventBroker:
         :param uuid: Message uuid, defaults to None
         """
         self.publish(event, data, uuid_=uuid_)
-        callbacks = copy.copy(self._callbacks[event.id])
+        callbacks = copy.copy(self._callbacks[event.event_id])
         await self._callback_runner(callbacks, data)
 
     def trigger_background(
@@ -132,7 +133,7 @@ class EventBroker:
         :param uuid: Message uuid, defaults to None
         """
         self.publish(event, data, uuid_=uuid_)
-        callbacks = copy.copy(self._callbacks[event.id])
+        callbacks = copy.copy(self._callbacks[event.event_id])
         background.add_background_task(self._callback_runner, callbacks, data)
 
     async def _callback_runner(
@@ -183,7 +184,7 @@ class EventBroker:
             default_kwargs_ = {}
 
         evt_cb = _EvtCallbackData(priority, callback, default_kwargs_)
-        bisect.insort_right(cls._callbacks[event.id], evt_cb)
+        bisect.insort_right(cls._callbacks[event.event_id], evt_cb)
 
     @classmethod
     def unregister_event_callback(
@@ -197,7 +198,7 @@ class EventBroker:
         :param callback: The callback to remove
         :param event_id: The identifier of the event to register the callback against
         """
-        callbacks = cls._callbacks[event.id]
+        callbacks = cls._callbacks[event.event_id]
         for callback_ in callbacks:
             if callback is callback_.func:
                 callbacks.remove(callback_)

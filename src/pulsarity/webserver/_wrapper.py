@@ -53,7 +53,7 @@ class ProtobufResponse(Response):
         super().__init__(content, status_code, headers, media_type, background)
 
     def render(self, content: ProtocolBufferModel) -> bytes:
-        return content.to_message().SerializeToString()
+        return content.model_dump_protobuf().SerializeToString()
 
 
 def endpoint(
@@ -172,7 +172,7 @@ async def _process_request(
 
         try:
             data = await request.body()
-            kwargs["request"] = val_models.request.from_protobuf(data)
+            kwargs["request"] = val_models.request.model_validate_protobuf(data)
         except DecodeError as ex:
             raise HTTPException(status_code=400) from ex
         except ValidationError as ex:

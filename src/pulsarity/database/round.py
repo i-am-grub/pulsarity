@@ -104,12 +104,12 @@ class RoundModel(ProtocolBufferModel):
     attributes: list[_AttributeModel]
 
     @classmethod
-    def from_protobuf(cls, data: bytes) -> Self:
+    def model_validate_protobuf(cls, data: bytes) -> Self:
         message = database_pb2.Round.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self) -> database_pb2.Round:
-        attrs = (attribute.to_message() for attribute in self.attributes)
+    def model_dump_protobuf(self) -> database_pb2.Round:
+        attrs = (attribute.model_dump_protobuf() for attribute in self.attributes)
         return database_pb2.Round(
             id=self.id, round_num=self.round_num, attributes=attrs
         )
@@ -133,10 +133,10 @@ class RoundsModel(ProtocolBufferModel):
         return cls(rounds=_ADAPTER.validate_python(rounds, from_attributes=True))
 
     @classmethod
-    def from_protobuf(cls, data: bytes) -> Self:
+    def model_validate_protobuf(cls, data: bytes) -> Self:
         message = database_pb2.Rounds.FromString(data)
         return cls.model_validate(message, from_attributes=True)
 
-    def to_message(self) -> database_pb2.Rounds:
-        rounds = (round.to_message() for round in self.rounds)
+    def model_dump_protobuf(self) -> database_pb2.Rounds:
+        rounds = (round.model_dump_protobuf() for round in self.rounds)
         return database_pb2.Rounds(rounds=rounds)
