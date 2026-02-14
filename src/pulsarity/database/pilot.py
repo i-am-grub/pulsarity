@@ -4,10 +4,8 @@ ORM classes for Pilot data
 
 from __future__ import annotations
 
-from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 
-from pulsarity.database._base import AttributeModel as _AttributeModel
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 # pylint: disable=R0903,E1136
@@ -105,18 +103,3 @@ class Pilot(_PulsarityBase):
             return self.name
 
         return f"Pilot {self.id}"
-
-
-class _ExternalPilotModel(BaseModel):
-    """
-    External Pilot model for use in the REST API
-    """
-
-    id: int
-    display_callsign: str
-    display_name: str
-    attributes: list[_AttributeModel]
-
-
-PILOT_ADAPTER = TypeAdapter(_ExternalPilotModel)
-PILOT_LIST_ADAPTER = TypeAdapter(list[_ExternalPilotModel])

@@ -28,7 +28,8 @@ dependencies = [
     "pydantic==2.12.5",
     "cffi==2.0.0",
     "anyio==4.12.1",
-    "sortedcollections>=2.1.0",
+    "sortedcollections==2.1.0",
+    "protobuf==6.33.5",
 ]
 
 [project.urls]
@@ -65,16 +66,20 @@ docs = [
 ]
 
 [tool.mypy]
-exclude = ["tests"]
+exclude = ["tests", "src/pulsarity/_protobuf"]
+
+[tool.pylint]
+ignore = ["tests", "src/pulsarity/_protobuf"]
+ignored-modules = ["pulsarity._protobuf.*", "google.protobuf.*"]
+
+[tool.ruff.lint]
+exclude = [".mypy_cache", "env", "src/pulsarity/_protobuf"]
 
 [tool.pytest.ini_options]
 addopts = "--no-cov-on-fail --showlocals --strict-markers"
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
 testpaths = ["tests"]
-
-[tool.pylint]
-ignore = "tests"
 
 [tool.tox]
 requires = ["tox>=4", "tox-uv>=1.26"]

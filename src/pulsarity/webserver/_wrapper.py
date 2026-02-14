@@ -8,45 +8,43 @@ import logging
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from json.decoder import JSONDecodeError
-from typing import TypeVar
 
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from google.protobuf.message import DecodeError  # type: ignore
+from pydantic import BaseModel, ValidationError
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import Response
 
 from pulsarity import ctx
+from pulsarity._validation._base import ProtocolBufferModel
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.utils.asyncio import ensure_async
 from pulsarity.webserver._auth import requires
 
-_T = TypeVar("_T")
-
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class _ValModels:
-    request: type[BaseModel] | None
+    request: type[ProtocolBufferModel] | None
     query: type[BaseModel] | None
     path: type[BaseModel] | None
-    response: TypeAdapter | None
 
 
-class _AdaptedResponse(Response):
+class ProtobufResponse(Response):
     """
-    Class used for sending dumped Pydantic JSON data
+    Response sending protocol buffer data
     """
 
     # pylint: disable=R0913,R0917
 
     __slots__ = ("status_code", "background", "body")
 
-    media_type = "application/json"
+    media_type = "application/x-protobuf"
 
     def __init__(
         self,
-        content: bytes = b"",
+        content: ProtocolBufferModel,
         status_code=200,
         headers=None,
         media_type=None,
@@ -54,17 +52,16 @@ class _AdaptedResponse(Response):
     ):
         super().__init__(content, status_code, headers, media_type, background)
 
-    def render(self, content: bytes) -> bytes:
-        return content
+    def render(self, content: ProtocolBufferModel) -> bytes:
+        return content.model_dump_protobuf().SerializeToString()
 
 
 def endpoint(
     *permissions: UserPermission,
     requires_auth: bool = True,
-    request_model: type[BaseModel] | None = None,
+    request_model: type[ProtocolBufferModel] | None = None,
     query_model: type[BaseModel] | None = None,
     path_model: type[BaseModel] | None = None,
-    response_model: type[BaseModel] | TypeAdapter | None = None,
 ):
     """
     Decorator for validating request data, user permissions, and
@@ -75,15 +72,13 @@ def endpoint(
     :param request_model: The model to use to validate the request, defaults to None
     :param query_model: The adapter model to use to validate the query parameters, defaults to None
     :param path_model: The adapter model to use to validate the query parameters, defaults to None
-    :param response_model: The model to use to validate the response, defaults to None
     """
 
     def inner(
-        func: Callable[..., _T],
+        func: Callable[..., ProtocolBufferModel | Response],
     ) -> Callable[[Request], Coroutine[None, None, Response]]:
         # pylint: disable=R0912
 
-        adapter: TypeAdapter | None = None
         base_kwargs = {"request", "query", "path"}
         function_kwargs = set(inspect.signature(func).parameters.keys())
 
@@ -107,19 +102,7 @@ def endpoint(
         _validate_compatibility(func, query_model, function_kwargs, "query")
         _validate_compatibility(func, path_model, function_kwargs, "path")
 
-        if isinstance(response_model, TypeAdapter):
-            adapter = response_model
-        elif response_model is not None and issubclass(response_model, BaseModel):
-            adapter = TypeAdapter(response_model)
-        elif response_model is not None:
-            raise ValueError(
-                (
-                    f"{func.__name__} response model is not a subclass of "
-                    f"{BaseModel.__name__} or instance of {TypeAdapter.__name__}"
-                )
-            )
-
-        models = _ValModels(request_model, query_model, path_model, adapter)
+        models = _ValModels(request_model, query_model, path_model)
 
         if requires_auth:
 
@@ -173,7 +156,7 @@ def _validate_compatibility(
 
 
 async def _process_request(
-    func: Callable, request: Request, models: _ValModels
+    func: Callable, request: Request, val_models: _ValModels
 ) -> Response:
     """
     Processes the incoming request
@@ -182,50 +165,41 @@ async def _process_request(
     ctx.user_ctx.set(request.user)
     kwargs: dict[str, BaseModel] = {}
 
-    if models.request is not None:
+    if val_models.request is not None:
+        content_type = request.headers.get("content-type")
+        if content_type != "application/x-protobuf":
+            raise HTTPException(status_code=415)
+
         try:
             data = await request.body()
-            kwargs["request"] = models.request.model_validate_json(data)
-        except (JSONDecodeError, ValidationError) as ex:
+            kwargs["request"] = val_models.request.model_validate_protobuf(data)
+        except DecodeError as ex:
             raise HTTPException(status_code=400) from ex
+        except ValidationError as ex:
+            raise HTTPException(status_code=422) from ex
 
-    if models.query is not None:
+    if val_models.query is not None:
         try:
-            kwargs["query"] = models.query.model_validate(request.query_params)
-        except (JSONDecodeError, ValidationError) as ex:
+            kwargs["query"] = val_models.query.model_validate(request.query_params)
+        except JSONDecodeError as ex:
             raise HTTPException(status_code=400) from ex
+        except ValidationError as ex:
+            raise HTTPException(status_code=422) from ex
 
-    if models.path is not None:
+    if val_models.path is not None:
         try:
-            kwargs["path"] = models.path.model_validate(request.path_params)
-        except (JSONDecodeError, ValidationError) as ex:
+            kwargs["path"] = val_models.path.model_validate(request.path_params)
+        except JSONDecodeError as ex:
             raise HTTPException(status_code=400) from ex
+        except ValidationError as ex:
+            raise HTTPException(status_code=422) from ex
 
-    endpoint_result = await ensure_async(func, **kwargs)
+    try:
+        endpoint_result = await ensure_async(func, **kwargs)
+    except ValidationError as ex:
+        raise HTTPException(status_code=500) from ex
 
     if isinstance(endpoint_result, Response):
         return endpoint_result
 
-    if models.response is not None:
-        return _process_response_adapter(func, models.response, endpoint_result)
-
     return Response()
-
-
-def _process_response_adapter(
-    func: Callable, response_adapter: TypeAdapter, endpoint_result: _T
-) -> Response:
-    """
-    Serialize the endpoint result to a response
-    """
-    try:
-        model = response_adapter.validate_python(endpoint_result, from_attributes=True)
-    except ValidationError:
-        logger.exception(
-            "Returned object from {%s} does not match response adapter {%s}",
-            func.__name__,
-            response_adapter,
-        )
-        return Response(status_code=500)
-
-    return _AdaptedResponse(response_adapter.dump_json(model))

@@ -5,53 +5,47 @@ HTTP Rest API Routes
 import logging
 from uuid import UUID
 
+from starlette.background import BackgroundTask, BackgroundTasks
 from starlette.responses import Response
 from starlette.routing import Route
 from starsessions.session import regenerate_session_id
 
 from pulsarity import ctx
-from pulsarity.database.heat import HEAT_ADAPTER, HEAT_LIST_ADAPTER, Heat
-from pulsarity.database.permission import SystemDefaultPerms
-from pulsarity.database.pilot import PILOT_ADAPTER, PILOT_LIST_ADAPTER, Pilot
-from pulsarity.database.raceclass import (
-    RACECLASS_ADAPTER,
-    RACECLASS_LIST_ADAPTER,
-    RaceClass,
-)
-from pulsarity.database.raceevent import (
-    RACE_EVENT_ADAPTER,
-    RACE_EVENT_LIST_ADAPTER,
-    RaceEvent,
-)
-from pulsarity.database.round import ROUND_ADAPTER, ROUND_LIST_ADAPTER, Round
-from pulsarity.database.user import User
-from pulsarity.utils import background
-from pulsarity.webserver._wrapper import endpoint
-from pulsarity.webserver.validation import (
-    BaseResponse,
+from pulsarity._validation import database as db_validation
+from pulsarity._validation.http import (
     LoginRequest,
     LoginResponse,
     LookupParams,
     PaginationParams,
     ResetPasswordRequest,
+    StatusResponse,
 )
+from pulsarity.database.heat import Heat
+from pulsarity.database.permission import SystemDefaultPerms
+from pulsarity.database.pilot import Pilot
+from pulsarity.database.raceclass import RaceClass
+from pulsarity.database.raceevent import RaceEvent
+from pulsarity.database.round import Round
+from pulsarity.database.user import User
+from pulsarity.webserver._wrapper import ProtobufResponse, endpoint
 
 logger = logging.getLogger(__name__)
 
 
-@endpoint(requires_auth=False, response_model=BaseResponse)
-async def check_auth() -> BaseResponse:
+@endpoint(requires_auth=False)
+async def check_auth() -> Response:
     """
     Check if a user is authenticated
 
     :return: The user's authentication status
     """
     auth_user = ctx.user_ctx.get()
-    return BaseResponse(status=auth_user.is_authenticated)
+    response = StatusResponse(status=auth_user.is_authenticated)
+    return ProtobufResponse(response)
 
 
-@endpoint(requires_auth=False, request_model=LoginRequest, response_model=LoginResponse)
-async def login(request: LoginRequest) -> LoginResponse | Response:
+@endpoint(requires_auth=False, request_model=LoginRequest)
+async def login(request: LoginRequest) -> Response:
     """
     Pass the user credentials to log the user into the server
 
@@ -66,10 +60,14 @@ async def login(request: LoginRequest) -> LoginResponse | Response:
 
         logger.info("%s has been authenticated to the server", user.auth_id.hex)
 
-        background.add_background_task(user.update_user_login_time)
-        background.add_background_task(user.check_for_rehash, request.password)
-
-        return LoginResponse(status=True, password_reset_required=user.reset_required)
+        response = LoginResponse(password_reset_required=user.reset_required)
+        background = BackgroundTasks(
+            (
+                BackgroundTask(user.update_user_login_time),
+                BackgroundTask(user.check_for_rehash, request.password),
+            )
+        )
+        return ProtobufResponse(response, background=background)
 
     return Response(status_code=400)
 
@@ -103,9 +101,9 @@ async def reset_password(request: ResetPasswordRequest) -> Response:
 
         logger.info("Password reset for %s completed", auth_user.identity)
 
-        background.add_background_task(user.update_password_required, False)
+        background = BackgroundTask(user.update_password_required, False)
 
-        return Response(status_code=200)
+        return Response(status_code=200, background=background)
 
     return Response(status_code=400)
 
@@ -113,9 +111,8 @@ async def reset_password(request: ResetPasswordRequest) -> Response:
 @endpoint(
     SystemDefaultPerms.READ_PILOTS,
     path_model=LookupParams,
-    response_model=PILOT_ADAPTER,
 )
-async def get_pilot(path: LookupParams) -> Pilot | Response:
+async def get_pilot(path: LookupParams) -> Response:
     """
     Get the pilot by id
 
@@ -126,34 +123,28 @@ async def get_pilot(path: LookupParams) -> Pilot | Response:
     if pilot is None:
         return Response(status_code=204)
 
-    return pilot
+    model = db_validation.PilotModel.model_validate(pilot, from_attributes=True)
+    return ProtobufResponse(model)
 
 
-@endpoint(
-    SystemDefaultPerms.READ_PILOTS,
-    query_model=PaginationParams,
-    response_model=PILOT_LIST_ADAPTER,
-)
-async def get_pilots(query: PaginationParams) -> list[Pilot]:
+@endpoint(SystemDefaultPerms.READ_PILOTS, query_model=PaginationParams)
+async def get_pilots(query: PaginationParams) -> Response:
     """
     A route for getting all pilots currently stored in the
     database.
 
     :return: A JSON model of all pilots
     """
-    return (
+    pilots = (
         await Pilot.filter(id__gt=query.cursor)
         .limit(query.limit)
         .prefetch_related("attributes")
     )
+    return ProtobufResponse(db_validation.PilotsModel.from_iterable(pilots))
 
 
-@endpoint(
-    SystemDefaultPerms.READ_EVENTS,
-    path_model=LookupParams,
-    response_model=RACE_EVENT_ADAPTER,
-)
-async def get_event(path: LookupParams) -> RaceEvent | Response:
+@endpoint(SystemDefaultPerms.READ_EVENTS, path_model=LookupParams)
+async def get_event(path: LookupParams) -> Response:
     """
     Get the event by id
 
@@ -164,34 +155,28 @@ async def get_event(path: LookupParams) -> RaceEvent | Response:
     if event is None:
         return Response(status_code=204)
 
-    return event
+    model = db_validation.RaceEventModel.model_validate(event, from_attributes=True)
+    return ProtobufResponse(model)
 
 
-@endpoint(
-    SystemDefaultPerms.READ_EVENTS,
-    query_model=PaginationParams,
-    response_model=RACE_EVENT_LIST_ADAPTER,
-)
-async def get_events(query: PaginationParams) -> list[RaceEvent]:
+@endpoint(SystemDefaultPerms.READ_EVENTS, query_model=PaginationParams)
+async def get_events(query: PaginationParams) -> Response:
     """
     A route for getting all events currently stored in the
     database.
 
     :return: A JSON model of all events
     """
-    return (
+    events = (
         await RaceEvent.filter(id__gt=query.cursor)
         .limit(query.limit)
         .prefetch_related("attributes")
     )
+    return ProtobufResponse(db_validation.RaceEventsModel.from_iterable(events))
 
 
-@endpoint(
-    SystemDefaultPerms.READ_RACECLASS,
-    path_model=LookupParams,
-    response_model=RACECLASS_ADAPTER,
-)
-async def get_racelass(path: LookupParams) -> RaceClass | Response:
+@endpoint(SystemDefaultPerms.READ_RACECLASS, path_model=LookupParams)
+async def get_racelass(path: LookupParams) -> Response:
     """
     Get the raceclass by id
 
@@ -202,36 +187,35 @@ async def get_racelass(path: LookupParams) -> RaceClass | Response:
     if raceclass is None:
         return Response(status_code=204)
 
-    return raceclass
+    model = db_validation.RaceClassModel.model_validate(raceclass, from_attributes=True)
+    return ProtobufResponse(model)
 
 
 @endpoint(
     SystemDefaultPerms.READ_RACECLASS,
     path_model=LookupParams,
     query_model=PaginationParams,
-    response_model=RACECLASS_LIST_ADAPTER,
 )
 async def get_raceclasses_for_event(
     path: LookupParams, query: PaginationParams
-) -> list[RaceClass]:
+) -> Response:
     """
     A route for getting all raceclasses currently stored in the
     database.
 
     :return: A JSON model of all raceclasses
     """
-    return (
+    raceclasses = (
         await RaceClass.filter(event_id=path.id)
         .filter(id__gt=query.cursor)
         .limit(query.limit)
         .prefetch_related("attributes")
     )
+    return ProtobufResponse(db_validation.RaceClassesModel.from_iterable(raceclasses))
 
 
-@endpoint(
-    SystemDefaultPerms.READ_ROUND, path_model=LookupParams, response_model=ROUND_ADAPTER
-)
-async def get_round(path: LookupParams) -> Round | Response:
+@endpoint(SystemDefaultPerms.READ_ROUND, path_model=LookupParams)
+async def get_round(path: LookupParams) -> Response:
     """
     Get the round by id
     """
@@ -240,33 +224,30 @@ async def get_round(path: LookupParams) -> Round | Response:
     if round_ is None:
         return Response(status_code=204)
 
-    return round_
+    model = db_validation.RoundModel.model_validate(round_, from_attributes=True)
+    return ProtobufResponse(model)
 
 
 @endpoint(
-    SystemDefaultPerms.READ_ROUND,
-    path_model=LookupParams,
-    query_model=PaginationParams,
-    response_model=ROUND_LIST_ADAPTER,
+    SystemDefaultPerms.READ_ROUND, path_model=LookupParams, query_model=PaginationParams
 )
 async def get_rounds_for_raceclass(
     path: LookupParams, query: PaginationParams
-) -> list[Round]:
+) -> Response:
     """
     Gets all rounds for a specific racelass
     """
-    return (
+    rounds = (
         await Round.filter(raceclass_id=path.id)
         .filter(id__gt=query.cursor)
         .limit(query.limit)
         .prefetch_related("attributes")
     )
+    return ProtobufResponse(db_validation.RoundsModel.from_iterable(rounds))
 
 
-@endpoint(
-    SystemDefaultPerms.READ_HEAT, path_model=LookupParams, response_model=HEAT_ADAPTER
-)
-async def get_heat(path: LookupParams) -> Heat | Response:
+@endpoint(SystemDefaultPerms.READ_HEAT, path_model=LookupParams)
+async def get_heat(path: LookupParams) -> Response:
     """
     Get the heat by id
     """
@@ -275,27 +256,25 @@ async def get_heat(path: LookupParams) -> Heat | Response:
     if heat is None:
         return Response(status_code=204)
 
-    return heat
+    model = db_validation.HeatModel.model_validate(heat, from_attributes=True)
+    return ProtobufResponse(model)
 
 
 @endpoint(
-    SystemDefaultPerms.READ_HEAT,
-    path_model=LookupParams,
-    query_model=PaginationParams,
-    response_model=HEAT_LIST_ADAPTER,
+    SystemDefaultPerms.READ_HEAT, path_model=LookupParams, query_model=PaginationParams
 )
-async def get_heats_for_round(
-    path: LookupParams, query: PaginationParams
-) -> list[Heat]:
+async def get_heats_for_round(path: LookupParams, query: PaginationParams) -> Response:
     """
     Gets all heats for a specific round
     """
-    return (
+    heats = (
         await Heat.filter(round_id=path.id)
         .filter(id__gt=query.cursor)
         .limit(query.limit)
         .prefetch_related("attributes")
     )
+
+    return ProtobufResponse(db_validation.HeatsModel.from_iterable(heats))
 
 
 ROUTES = [

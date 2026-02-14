@@ -4,7 +4,6 @@ Abstract definition of database classes
 
 from typing import Self
 
-from pydantic import BaseModel
 from tortoise import fields
 from tortoise.models import Model
 
@@ -36,11 +35,3 @@ class PulsarityBase(Model):
         :return: The object from the database
         """
         return await cls.get_or_none(id=id_).prefetch_related("attributes")
-
-
-class AttributeModel(BaseModel):
-    """
-    External attributes model
-    """
-
-    name: str

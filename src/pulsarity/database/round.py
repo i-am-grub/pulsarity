@@ -7,11 +7,9 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
-from pulsarity.database._base import AttributeModel as _AttributeModel
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
@@ -90,17 +88,3 @@ class Round(_PulsarityBase):
             return 1
 
         return value + 1
-
-
-class _RoundModel(BaseModel):
-    """
-    External round model
-    """
-
-    id: int
-    round_num: int
-    attributes: list[_AttributeModel]
-
-
-ROUND_ADAPTER = TypeAdapter(_RoundModel)
-ROUND_LIST_ADAPTER = TypeAdapter(list[_RoundModel])

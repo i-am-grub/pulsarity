@@ -14,11 +14,16 @@ from collections.abc import AsyncGenerator, Callable
 from dataclasses import dataclass, field
 from typing import Any, Self
 
+from pydantic import BaseModel
+
+from pulsarity._protobuf import websocket_pb2
 from pulsarity.events.enums import EvtPriority, _ApplicationEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
 
 logger = logging.getLogger(__name__)
+
+_counter = itertools.count()
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,9 +34,8 @@ class _QueuedEvtData:
 
     evt: _ApplicationEvt
     uuid: uuid.UUID
-    data: dict
+    data: dict[str, Any]
 
-    _counter = itertools.count()
     _id: int = field(default_factory=functools.partial(next, _counter))
 
     def __lt__(self, other: Self):
@@ -51,7 +55,6 @@ class _EvtCallbackData:
     func: Callable
     default_data: dict[str, Any]
 
-    _counter = itertools.count()
     _id: int = field(default_factory=functools.partial(next, _counter))
 
     def __lt__(self, other: Self):
@@ -59,6 +62,19 @@ class _EvtCallbackData:
         Less than comparsion. Enables the use of builtin sorting algorithms
         """
         return (self.priority, self._id) < (other.priority, other._id)
+
+
+def _data_to_dict(data: BaseModel | dict[str, Any] | None = None) -> dict:
+    """
+    Generate a dictionary from input data
+    """
+    if isinstance(data, dict):
+        return data
+
+    if isinstance(data, BaseModel):
+        return data.model_dump()
+
+    return {}
 
 
 class EventBroker:
@@ -69,7 +85,7 @@ class EventBroker:
 
     __slots__ = ("_connections",)
 
-    _callbacks: dict[str, list[_EvtCallbackData]] = defaultdict(list)
+    _callbacks: dict[websocket_pb2, list[_EvtCallbackData]] = defaultdict(list)  # type: ignore
 
     def __init__(self) -> None:
         """
@@ -80,7 +96,7 @@ class EventBroker:
     def publish(
         self,
         event: _ApplicationEvt,
-        data: dict[str, Any],
+        data: BaseModel | dict[str, Any] | None = None,
         *,
         uuid_: uuid.UUID | None = None,
     ) -> None:
@@ -93,14 +109,15 @@ class EventBroker:
         """
         uid = uuid.uuid4() if uuid_ is None else uuid_
 
-        payload = _QueuedEvtData(event, uid, data)
+        data_ = _data_to_dict(data)
+        payload = _QueuedEvtData(event, uid, data_)
         for connection in self._connections:
             connection.put_nowait(payload)
 
     async def trigger(
         self,
         event: _ApplicationEvt,
-        data: dict[str, Any],
+        data: BaseModel | dict[str, Any] | None = None,
         *,
         uuid_: uuid.UUID | None = None,
     ) -> None:
@@ -112,14 +129,15 @@ class EventBroker:
         :param data: Event data
         :param uuid: Message uuid, defaults to None
         """
-        self.publish(event, data, uuid_=uuid_)
-        callbacks = copy.copy(self._callbacks[event.id])
-        await self._callback_runner(callbacks, data)
+        data_ = _data_to_dict(data)
+        self.publish(event, data_, uuid_=uuid_)
+        callbacks = copy.copy(self._callbacks[event.event_id])
+        await self._callback_runner(callbacks, data_)
 
     def trigger_background(
         self,
         event: _ApplicationEvt,
-        data: dict[str, Any],
+        data: BaseModel | dict[str, Any] | None = None,
         *,
         uuid_: uuid.UUID | None = None,
     ) -> None:
@@ -131,12 +149,15 @@ class EventBroker:
         :param data: Event data
         :param uuid: Message uuid, defaults to None
         """
-        self.publish(event, data, uuid_=uuid_)
-        callbacks = copy.copy(self._callbacks[event.id])
-        background.add_background_task(self._callback_runner, callbacks, data)
+        data_ = _data_to_dict(data)
+        self.publish(event, data_, uuid_=uuid_)
+        callbacks = copy.copy(self._callbacks[event.event_id])
+        background.add_background_task(self._callback_runner, callbacks, data_)
 
     async def _callback_runner(
-        self, callbacks: list[_EvtCallbackData], data: dict
+        self,
+        callbacks: list[_EvtCallbackData],
+        data: dict[str, Any],
     ) -> None:
         """
         Run all procided callbacks sequentially
@@ -166,7 +187,7 @@ class EventBroker:
         event: _ApplicationEvt,
         *,
         priority: EvtPriority = EvtPriority.LOWEST,
-        default_kwargs: dict[str, Any] | None = None,
+        default_kwargs: BaseModel | dict[str, Any] | None = None,
     ) -> None:
         """
         Register a callback to run when when an event is published
@@ -177,13 +198,15 @@ class EventBroker:
         :param default_kwargs: Default key word arguments to use and/or include
         when the event is triggered
         """
-        if default_kwargs is not None:
-            default_kwargs_ = default_kwargs
-        else:
+        if default_kwargs is None:
             default_kwargs_ = {}
+        elif isinstance(default_kwargs, BaseModel):
+            default_kwargs_ = default_kwargs.model_dump()
+        else:
+            default_kwargs_ = default_kwargs
 
         evt_cb = _EvtCallbackData(priority, callback, default_kwargs_)
-        bisect.insort_right(cls._callbacks[event.id], evt_cb)
+        bisect.insort_right(cls._callbacks[event.event_id], evt_cb)
 
     @classmethod
     def unregister_event_callback(
@@ -197,7 +220,7 @@ class EventBroker:
         :param callback: The callback to remove
         :param event_id: The identifier of the event to register the callback against
         """
-        callbacks = cls._callbacks[event.id]
+        callbacks = cls._callbacks[event.event_id]
         for callback_ in callbacks:
             if callback is callback_.func:
                 callbacks.remove(callback_)

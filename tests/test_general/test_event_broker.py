@@ -163,11 +163,11 @@ async def test_event_callback_unregister_pass():
 
     broker.register_event_callback(test_cb, EventSetupEvt.PILOT_ADD)
 
-    assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.id]) != 0
+    assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.event_id]) != 0
 
     broker.unregister_event_callback(test_cb, EventSetupEvt.PILOT_ADD)
 
-    assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.id]) == 0
+    assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.event_id]) == 0
 
 
 @pytest.mark.asyncio
@@ -181,7 +181,7 @@ async def test_event_callback_unregister_fail():
     async def test_cb(**_):
         pass
 
-    assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.id]) == 0
+    assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.event_id]) == 0
 
     with pytest.raises(RuntimeError):
         broker.unregister_event_callback(test_cb, EventSetupEvt.PILOT_ADD)

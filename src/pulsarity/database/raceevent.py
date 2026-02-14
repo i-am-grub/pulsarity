@@ -4,14 +4,11 @@ ORM classes for event data
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Self
 
-from pydantic import BaseModel, TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
-from pulsarity.database._base import AttributeModel as _AttributeModel
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
@@ -101,18 +98,3 @@ class RaceEvent(_PulsarityBase):
         Less than comparsion operator. Enables sorting by dates
         """
         return self.date < obj.date
-
-
-class _RaceEventModel(BaseModel):
-    """
-    External Event model
-    """
-
-    id: int
-    name: str
-    date: datetime
-    attributes: list[_AttributeModel]
-
-
-RACE_EVENT_ADAPTER = TypeAdapter(_RaceEventModel)
-RACE_EVENT_LIST_ADAPTER = TypeAdapter(list[_RaceEventModel])

@@ -3,17 +3,20 @@ Webserver Websocket Connections
 """
 
 import asyncio
-import inspect
 import logging
 from collections.abc import Awaitable, Callable
-from typing import ParamSpec, TypeVar
+from typing import Any, NamedTuple, ParamSpec, TypeVar
+from uuid import UUID
 
-from pydantic import UUID4, BaseModel, TypeAdapter, ValidationError
+from google.protobuf.message import DecodeError  # type: ignore
+from pydantic import TypeAdapter, ValidationError
 from starlette.authentication import requires
 from starlette.routing import WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from pulsarity import ctx
+from pulsarity._protobuf import websocket_pb2
+from pulsarity._validation import websocket as ws_validation
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt
 from pulsarity.utils import background
@@ -27,20 +30,16 @@ logger = logging.getLogger(__name__)
 ws_shutdown = asyncio.Event()
 ws_restart = asyncio.Event()
 
-_wse_routes: dict[str, tuple[UserPermission, Callable]] = {}
+_wse_routes: dict[websocket_pb2.EventID, tuple[UserPermission, Callable]] = {}  # type: ignore
 
 
-class WSEventData(BaseModel):
-    """
-    Class for validating websocket data
-    """
-
-    id: UUID4
-    event_id: str
-    data: dict
+WS_EVENT_ADAPTER = TypeAdapter(ws_validation.WebsocketEvent)  # type: ignore
 
 
-WS_EVENT_ADAPTER = TypeAdapter(WSEventData)
+class _ExternalEvent(NamedTuple):
+    uuid: UUID
+    event_id: websocket_pb2.EventID
+    data: dict[str, Any]
 
 
 def ws_event(event: _ApplicationEvt):
@@ -51,7 +50,7 @@ def ws_event(event: _ApplicationEvt):
     """
 
     def inner(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
-        _wse_routes[event.id] = (event.permission, func)
+        _wse_routes[event.event_id] = (event.permission, func)
 
         return func
 
@@ -61,7 +60,7 @@ def ws_event(event: _ApplicationEvt):
 @requires(SystemDefaultPerms.EVENT_WEBSOCKET)
 async def server_event_ws(websocket: WebSocket):
     """
-    The full duplex websocket connection for clients
+    The full duplex event websocket connection for clients
     """
     await websocket.accept()
 
@@ -87,15 +86,22 @@ async def _recieve_data() -> None:
     Handles recieved data over the websocket
     """
     websocket = ctx.websocket_ctx.get()
+
     while True:
         data = await websocket.receive_bytes()
 
         try:
-            model = WS_EVENT_ADAPTER.validate_json(data)
+            event = websocket_pb2.WebsocketEvent.FromString(data)
+        except DecodeError:
+            logger.debug("Error parsing websocket data: %s", data)
+            continue
+
+        try:
+            event_ = WS_EVENT_ADAPTER.validate_python(event, from_attributes=True)
         except ValidationError:
-            logger.debug("Error validating websocket data: %s", data)
+            logger.debug("Error validating websocket data: %s", event)
         else:
-            background.add_background_task(handle_ws_event, model)
+            background.add_background_task(handle_ws_event, event_)
 
 
 async def _write_data() -> None:
@@ -111,20 +117,21 @@ async def _write_data() -> None:
         if permissions is None:
             continue
 
-        if event.evt.id == SpecialEvt.PERMISSIONS_UPDATE.id:
+        if event.evt.event_id == SpecialEvt.PERMISSIONS_UPDATE.event_id:
             temp = await user.get_permissions()
-
             permissions.clear()
             permissions.update(temp)
 
         elif event.evt.permission in permissions:
-            evt_data = WSEventData(
-                id=event.uuid, event_id=event.evt.id, data=event.data
+            evt = _ExternalEvent(event.uuid, event.evt.event_id, event.data)
+            evt_: ws_validation.BaseEvent = WS_EVENT_ADAPTER.validate_python(
+                evt, from_attributes=True
             )
-            await websocket.send_bytes(WS_EVENT_ADAPTER.dump_json(evt_data))
+            data__ = evt_.model_dump_protobuf()
+            await websocket.send_bytes(data__)
 
 
-async def handle_ws_event(ws_data: WSEventData):
+async def handle_ws_event(event: ws_validation.WebsocketEvent):
     """
     Handle the event identified in the websocket data while enforcing
     the its permissions
@@ -133,33 +140,29 @@ async def handle_ws_event(ws_data: WSEventData):
     :param permissions: The permissions for the user
     """
 
-    if ws_data.event_id in _wse_routes:
-        permission, route = _wse_routes[ws_data.event_id]
+    if event.event_id in _wse_routes:
+        permission, route = _wse_routes[event.event_id]
 
         if permission in ctx.user_permsissions_ctx.get():
-            signature = inspect.signature(route)
-            if "ws_data" in signature.parameters:
-                await ensure_async(route, ws_data)
-            else:
-                await ensure_async(route)
+            await ensure_async(route, event)
 
     else:
         logger.debug("Route not available for websocket data")
 
 
 @ws_event(SpecialEvt.HEARTBEAT)
-async def heatbeat_echo(ws_data: WSEventData):
+async def heatbeat_echo(event: ws_validation.SystemHeartbeat):
     """
     Echo recieved heatbeat data
 
     :param ws_data: Recieved websocket event data
     """
     event_broker = ctx.event_broker_ctx.get()
-    event_broker.publish(SpecialEvt.HEARTBEAT, ws_data.data, uuid_=ws_data.id)
+    event_broker.publish(SpecialEvt.HEARTBEAT, uuid_=event.uuid)
 
 
 @ws_event(SpecialEvt.SHUTDOWN)
-async def shutdown_server():
+async def shutdown_server(_event: ws_validation.SystemShutdown):
     """
     Shutdown the webserver
     """
@@ -167,7 +170,7 @@ async def shutdown_server():
 
 
 @ws_event(SpecialEvt.RESTART)
-async def restart_server():
+async def restart_server(_event: ws_validation.SystemRestart):
     """
     Restart the webserver
     """
@@ -175,14 +178,14 @@ async def restart_server():
 
 
 @ws_event(RaceSequenceEvt.RACE_SCHEDULE)
-async def schedule_race():
+async def schedule_race(_event: ws_validation.ScheduleRace):
     """
     Schedule the start of a race.
     """
 
 
 @ws_event(RaceSequenceEvt.RACE_STOP)
-async def race_stop():
+async def race_stop(_event: ws_validation.RaceStop):
     """
     Stop the current race
     """
