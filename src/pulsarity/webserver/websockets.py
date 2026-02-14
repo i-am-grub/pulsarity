@@ -14,9 +14,9 @@ from starlette.routing import WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from pulsarity import ctx
+from pulsarity._protobuf import websocket_pb2
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt
-from pulsarity.protobuf import websocket_pb2
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
 from pulsarity.webserver import validation

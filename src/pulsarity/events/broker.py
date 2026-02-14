@@ -14,8 +14,8 @@ from collections.abc import AsyncGenerator, Callable
 from dataclasses import dataclass, field
 from typing import Any, Self
 
+from pulsarity._protobuf import websocket_pb2
 from pulsarity.events.enums import EvtPriority, _ApplicationEvt
-from pulsarity.protobuf import websocket_pb2
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
 

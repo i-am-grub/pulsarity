@@ -5,8 +5,8 @@ Enums for system events
 from dataclasses import dataclass
 from enum import Enum, IntEnum, auto
 
+from pulsarity._protobuf import websocket_pb2
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
-from pulsarity.protobuf import websocket_pb2
 
 
 class EvtPriority(IntEnum):

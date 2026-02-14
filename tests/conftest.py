@@ -10,6 +10,7 @@ from httpx import ASGITransport, AsyncClient
 from tortoise import Tortoise, connections
 
 from pulsarity import ctx
+from pulsarity._protobuf import http_pb2
 from pulsarity.database import (
     Heat,
     Pilot,
@@ -22,7 +23,6 @@ from pulsarity.database import (
 )
 from pulsarity.events.broker import EventBroker
 from pulsarity.interface.timer_manager import TimerInterfaceManager
-from pulsarity.protobuf import http_pb2
 from pulsarity.race.manager import RaceManager
 from pulsarity.race.processor import RaceProcessorManager
 from pulsarity.utils import background

@@ -8,7 +8,7 @@ from typing import Annotated, Literal, Self, Union
 from google.protobuf.message import Message  # type: ignore
 from pydantic import UUID4, BaseModel, Field
 
-from pulsarity.protobuf import http_pb2, websocket_pb2
+from pulsarity._protobuf import http_pb2, websocket_pb2
 
 
 class PaginationParams(BaseModel):

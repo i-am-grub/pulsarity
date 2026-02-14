@@ -9,9 +9,9 @@ from typing import Iterable, Self
 from pydantic import TypeAdapter
 from tortoise import fields
 
+from pulsarity._protobuf import database_pb2
 from pulsarity.database._base import AttributeModel as _AttributeModel
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
-from pulsarity.protobuf import database_pb2
 from pulsarity.webserver.validation import ProtocolBufferModel
 
 # pylint: disable=R0903,E1136

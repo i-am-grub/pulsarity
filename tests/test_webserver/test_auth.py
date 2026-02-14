@@ -5,8 +5,8 @@ Test authenticating to the server
 import pytest
 from httpx import AsyncClient
 
+from pulsarity._protobuf import http_pb2
 from pulsarity.database import Permission, Role, SystemDefaultPerms, User
-from pulsarity.protobuf import http_pb2
 
 
 @pytest.mark.asyncio

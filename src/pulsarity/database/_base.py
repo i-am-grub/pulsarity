@@ -7,7 +7,7 @@ from typing import Self
 from tortoise import fields
 from tortoise.models import Model
 
-from pulsarity.protobuf import database_pb2
+from pulsarity._protobuf import database_pb2
 from pulsarity.webserver.validation import ProtocolBufferModel
 
 

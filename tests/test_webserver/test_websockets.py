@@ -10,8 +10,8 @@ import pytest
 from httpx import AsyncClient
 from httpx_ws.transport import ASGIWebSocketTransport
 
+from pulsarity._protobuf import http_pb2
 from pulsarity.events.enums import SpecialEvt
-from pulsarity.protobuf import http_pb2
 from pulsarity.webserver import app
 from pulsarity.webserver.websockets import WS_EVENT_ADAPTER, WSEventData
 
