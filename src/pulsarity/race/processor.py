@@ -212,7 +212,7 @@ class LapsManager(ABC):
 
         start = 0 if holeshot else 1
         for num_laps, lap in enumerate(self._primary_laps.values(), start):
-            if num_laps == 0:
+            if not num_laps:
                 prev_time = lap.timedelta
                 continue
 
@@ -225,7 +225,7 @@ class LapsManager(ABC):
             else:
                 fastest_time = time_diff
 
-        if num_laps == 0:
+        if not num_laps:
             return None
 
         return fastest_time
@@ -278,7 +278,7 @@ class LapsManager(ABC):
 
         start = 0 if holeshot else 1
         for num_laps, lap in enumerate(self._primary_laps.values(), start):
-            if num_laps == 0:
+            if not num_laps:
                 prev_time = lap.timedelta
                 continue
 
@@ -298,7 +298,7 @@ class LapsManager(ABC):
             else:
                 fastest_consec_time = windowed_time
 
-        if num_laps == 0:
+        if not num_laps:
             return None
 
         laps = num_laps if num_laps < max_laps else max_laps
