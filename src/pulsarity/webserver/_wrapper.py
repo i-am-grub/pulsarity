@@ -16,10 +16,10 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 from pulsarity import ctx
+from pulsarity._validation._base import ProtocolBufferModel
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.utils.asyncio import ensure_async
 from pulsarity.webserver._auth import requires
-from pulsarity.webserver.validation import ProtocolBufferModel
 
 logger = logging.getLogger(__name__)
 

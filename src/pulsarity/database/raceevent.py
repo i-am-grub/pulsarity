@@ -4,18 +4,12 @@ ORM classes for event data
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Iterable, Self
+from typing import TYPE_CHECKING, Self
 
-from google.protobuf import timestamp_pb2  # type: ignore
-from pydantic import BeforeValidator, TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
-from pulsarity.database._base import AttributeModel as _AttributeModel
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
-from pulsarity.protobuf import database_pb2
-from pulsarity.webserver.validation import ProtocolBufferModel
 
 if TYPE_CHECKING:
     from pulsarity.database.raceclass import RaceClass
@@ -104,64 +98,3 @@ class RaceEvent(_PulsarityBase):
         Less than comparsion operator. Enables sorting by dates
         """
         return self.date < obj.date
-
-
-_ATT_ADAPTER = TypeAdapter(list[_AttributeModel])
-
-
-def _to_datetime(obj: timestamp_pb2.Timestamp | datetime) -> datetime:
-    if isinstance(obj, timestamp_pb2.Timestamp):
-        return obj.ToDatetime()
-    return obj
-
-
-class RaceEventModel(ProtocolBufferModel):
-    """
-    External event model
-    """
-
-    id: int
-    name: str
-    date: Annotated[datetime, BeforeValidator(_to_datetime)]
-    attributes: list[_AttributeModel]
-
-    @classmethod
-    def model_validate_protobuf(cls, data: bytes) -> Self:
-        message = database_pb2.RaceEvent.FromString(data)
-        return cls.model_validate(message, from_attributes=True)
-
-    def model_dump_protobuf(self) -> database_pb2.RaceEvent:
-        attrs = (attribute.model_dump_protobuf() for attribute in self.attributes)
-        date = timestamp_pb2.Timestamp()
-        date.FromDatetime(self.date)
-        return database_pb2.RaceEvent(
-            id=self.id, name=self.name, date=date, attributes=attrs
-        )
-
-
-_ADAPTER = TypeAdapter(list[RaceEventModel])
-
-
-class RaceEventsModel(ProtocolBufferModel):
-    """
-    External events model
-    """
-
-    events: list[RaceEventModel]
-
-    @classmethod
-    def from_iterable(cls, events: Iterable[RaceEvent]) -> Self:
-        """
-        Generates a validation model from a database iterable
-        """
-
-        return cls(events=_ADAPTER.validate_python(events, from_attributes=True))
-
-    @classmethod
-    def model_validate_protobuf(cls, data: bytes) -> Self:
-        message = database_pb2.RaceEvents.FromString(data)
-        return cls.model_validate(message, from_attributes=True)
-
-    def model_dump_protobuf(self) -> database_pb2.RaceEvents:
-        events = (event.model_dump_protobuf() for event in self.events)
-        return database_pb2.RaceEvents(events=events)

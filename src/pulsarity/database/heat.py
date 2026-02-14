@@ -5,15 +5,11 @@ ORM classes for heat data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Iterable, Self
+from typing import TYPE_CHECKING
 
-from pydantic import TypeAdapter
 from tortoise import fields
 
-from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import AttributeModel as _AttributeModel
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
-from pulsarity.webserver.validation import ProtocolBufferModel
 
 if TYPE_CHECKING:
     from pulsarity.database.round import Round
@@ -67,49 +63,3 @@ class Heat(_PulsarityBase):
         app = "event"
         table = "heat"
         unique_together = (("round", "heat_num"),)
-
-
-class HeatModel(ProtocolBufferModel):
-    """
-    External heat model
-    """
-
-    id: int
-    heat_num: int
-    attributes: list[_AttributeModel]
-
-    @classmethod
-    def model_validate_protobuf(cls, data: bytes):
-        message = database_pb2.Heat.FromString(data)
-        return cls.model_validate(message, from_attributes=True)
-
-    def model_dump_protobuf(self):
-        attrs = (attribute.model_dump_protobuf() for attribute in self.attributes)
-        return database_pb2.Heat(id=self.id, heat_num=self.heat_num, attributes=attrs)
-
-
-_ADAPTER = TypeAdapter(list[HeatModel])
-
-
-class HeatsModel(ProtocolBufferModel):
-    """
-    External heats model
-    """
-
-    heats: list[HeatModel]
-
-    @classmethod
-    def from_iterable(cls, heats: Iterable[Heat]) -> Self:
-        """
-        Generates a validation model from a database iterable
-        """
-        return cls(heats=_ADAPTER.validate_python(heats, from_attributes=True))
-
-    @classmethod
-    def model_validate_protobuf(cls, data: bytes) -> Self:
-        message = database_pb2.Heats.FromString(data)
-        return cls.model_validate(message, from_attributes=True)
-
-    def model_dump_protobuf(self) -> database_pb2.Heats:
-        heats = (heat.model_dump_protobuf() for heat in self.heats)
-        return database_pb2.Heats(heats=heats)

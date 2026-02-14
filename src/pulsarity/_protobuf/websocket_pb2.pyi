@@ -22,36 +22,36 @@ EVENT_STARTUP: EventID
 EVENT_UNSPECIFIED: EventID
 
 class PilotAddData(_message.Message):
-    __slots__ = ["id"]
-    ID_FIELD_NUMBER: _ClassVar[int]
-    id: int
-    def __init__(self, id: _Optional[int] = ...) -> None: ...
+    __slots__ = ["pilot_id"]
+    PILOT_ID_FIELD_NUMBER: _ClassVar[int]
+    pilot_id: int
+    def __init__(self, pilot_id: _Optional[int] = ...) -> None: ...
 
 class PilotAlterData(_message.Message):
-    __slots__ = ["id"]
-    ID_FIELD_NUMBER: _ClassVar[int]
-    id: int
-    def __init__(self, id: _Optional[int] = ...) -> None: ...
+    __slots__ = ["pilot_id"]
+    PILOT_ID_FIELD_NUMBER: _ClassVar[int]
+    pilot_id: int
+    def __init__(self, pilot_id: _Optional[int] = ...) -> None: ...
 
 class PilotDeleteData(_message.Message):
-    __slots__ = ["id"]
-    ID_FIELD_NUMBER: _ClassVar[int]
-    id: int
-    def __init__(self, id: _Optional[int] = ...) -> None: ...
+    __slots__ = ["pilot_id"]
+    PILOT_ID_FIELD_NUMBER: _ClassVar[int]
+    pilot_id: int
+    def __init__(self, pilot_id: _Optional[int] = ...) -> None: ...
 
 class WebsocketEvent(_message.Message):
-    __slots__ = ["event_id", "id", "pilot_add", "pilot_alter", "pilot_delete"]
+    __slots__ = ["event_id", "pilot_add", "pilot_alter", "pilot_delete", "uuid"]
     EVENT_ID_FIELD_NUMBER: _ClassVar[int]
-    ID_FIELD_NUMBER: _ClassVar[int]
     PILOT_ADD_FIELD_NUMBER: _ClassVar[int]
     PILOT_ALTER_FIELD_NUMBER: _ClassVar[int]
     PILOT_DELETE_FIELD_NUMBER: _ClassVar[int]
+    UUID_FIELD_NUMBER: _ClassVar[int]
     event_id: EventID
-    id: bytes
     pilot_add: PilotAddData
     pilot_alter: PilotAlterData
     pilot_delete: PilotDeleteData
-    def __init__(self, id: _Optional[bytes] = ..., event_id: _Optional[_Union[EventID, str]] = ..., pilot_add: _Optional[_Union[PilotAddData, _Mapping]] = ..., pilot_alter: _Optional[_Union[PilotAlterData, _Mapping]] = ..., pilot_delete: _Optional[_Union[PilotDeleteData, _Mapping]] = ...) -> None: ...
+    uuid: bytes
+    def __init__(self, uuid: _Optional[bytes] = ..., event_id: _Optional[_Union[EventID, str]] = ..., pilot_add: _Optional[_Union[PilotAddData, _Mapping]] = ..., pilot_alter: _Optional[_Union[PilotAlterData, _Mapping]] = ..., pilot_delete: _Optional[_Union[PilotDeleteData, _Mapping]] = ...) -> None: ...
 
 class EventID(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = []

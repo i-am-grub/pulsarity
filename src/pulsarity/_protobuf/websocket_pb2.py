@@ -13,21 +13,21 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fwebsocket.proto\x12\x13pulsarity.websocket\"\x1a\n\x0cPilotAddData\x12\n\n\x02id\x18\x01 \x01(\x05\"\x1c\n\x0ePilotAlterData\x12\n\n\x02id\x18\x01 \x01(\x05\"\x1d\n\x0fPilotDeleteData\x12\n\n\x02id\x18\x01 \x01(\x05\"\x8c\x02\n\x0eWebsocketEvent\x12\n\n\x02id\x18\x01 \x01(\x0c\x12.\n\x08\x65vent_id\x18\x02 \x01(\x0e\x32\x1c.pulsarity.websocket.EventID\x12\x36\n\tpilot_add\x18\x10 \x01(\x0b\x32!.pulsarity.websocket.PilotAddDataH\x00\x12:\n\x0bpilot_alter\x18\x11 \x01(\x0b\x32#.pulsarity.websocket.PilotAlterDataH\x00\x12<\n\x0cpilot_delete\x18\x12 \x01(\x0b\x32$.pulsarity.websocket.PilotDeleteDataH\x00\x42\x0c\n\nevent_data*\xef\x02\n\x07\x45ventID\x12\x15\n\x11\x45VENT_UNSPECIFIED\x10\x00\x12\x13\n\x0f\x45VENT_HEARTBEAT\x10\x01\x12\x1c\n\x18\x45VENT_PERMISSIONS_UPDATE\x10\x02\x12\x11\n\rEVENT_STARTUP\x10\x03\x12\x12\n\x0e\x45VENT_SHUTDOWN\x10\x04\x12\x11\n\rEVENT_RESTART\x10\x05\x12\x17\n\x13\x45VENT_RACE_SCHEDULE\x10 \x12\x14\n\x10\x45VENT_RACE_STAGE\x10!\x12\x14\n\x10\x45VENT_RACE_START\x10\"\x12\x15\n\x11\x45VENT_RACE_FINISH\x10#\x12\x13\n\x0f\x45VENT_RACE_STOP\x10$\x12\x14\n\x10\x45VENT_RACE_PAUSE\x10%\x12\x15\n\x11\x45VENT_RACE_RESUME\x10&\x12\x13\n\x0f\x45VENT_PILOT_ADD\x10@\x12\x15\n\x11\x45VENT_PILOT_ALTER\x10\x41\x12\x16\n\x12\x45VENT_PILOT_DELETE\x10\x42\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fwebsocket.proto\x12\x13pulsarity.websocket\" \n\x0cPilotAddData\x12\x10\n\x08pilot_id\x18\x01 \x01(\x05\"\"\n\x0ePilotAlterData\x12\x10\n\x08pilot_id\x18\x01 \x01(\x05\"#\n\x0fPilotDeleteData\x12\x10\n\x08pilot_id\x18\x01 \x01(\x05\"\x8e\x02\n\x0eWebsocketEvent\x12\x0c\n\x04uuid\x18\x01 \x01(\x0c\x12.\n\x08\x65vent_id\x18\x02 \x01(\x0e\x32\x1c.pulsarity.websocket.EventID\x12\x36\n\tpilot_add\x18\x10 \x01(\x0b\x32!.pulsarity.websocket.PilotAddDataH\x00\x12:\n\x0bpilot_alter\x18\x11 \x01(\x0b\x32#.pulsarity.websocket.PilotAlterDataH\x00\x12<\n\x0cpilot_delete\x18\x12 \x01(\x0b\x32$.pulsarity.websocket.PilotDeleteDataH\x00\x42\x0c\n\nevent_data*\xef\x02\n\x07\x45ventID\x12\x15\n\x11\x45VENT_UNSPECIFIED\x10\x00\x12\x13\n\x0f\x45VENT_HEARTBEAT\x10\x01\x12\x1c\n\x18\x45VENT_PERMISSIONS_UPDATE\x10\x02\x12\x11\n\rEVENT_STARTUP\x10\x03\x12\x12\n\x0e\x45VENT_SHUTDOWN\x10\x04\x12\x11\n\rEVENT_RESTART\x10\x05\x12\x17\n\x13\x45VENT_RACE_SCHEDULE\x10 \x12\x14\n\x10\x45VENT_RACE_STAGE\x10!\x12\x14\n\x10\x45VENT_RACE_START\x10\"\x12\x15\n\x11\x45VENT_RACE_FINISH\x10#\x12\x13\n\x0f\x45VENT_RACE_STOP\x10$\x12\x14\n\x10\x45VENT_RACE_PAUSE\x10%\x12\x15\n\x11\x45VENT_RACE_RESUME\x10&\x12\x13\n\x0f\x45VENT_PILOT_ADD\x10@\x12\x15\n\x11\x45VENT_PILOT_ALTER\x10\x41\x12\x16\n\x12\x45VENT_PILOT_DELETE\x10\x42\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'websocket_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _EVENTID._serialized_start=401
-  _EVENTID._serialized_end=768
+  _EVENTID._serialized_start=421
+  _EVENTID._serialized_end=788
   _PILOTADDDATA._serialized_start=40
-  _PILOTADDDATA._serialized_end=66
-  _PILOTALTERDATA._serialized_start=68
-  _PILOTALTERDATA._serialized_end=96
-  _PILOTDELETEDATA._serialized_start=98
-  _PILOTDELETEDATA._serialized_end=127
-  _WEBSOCKETEVENT._serialized_start=130
-  _WEBSOCKETEVENT._serialized_end=398
+  _PILOTADDDATA._serialized_end=72
+  _PILOTALTERDATA._serialized_start=74
+  _PILOTALTERDATA._serialized_end=108
+  _PILOTDELETEDATA._serialized_start=110
+  _PILOTDELETEDATA._serialized_end=145
+  _WEBSOCKETEVENT._serialized_start=148
+  _WEBSOCKETEVENT._serialized_end=418
 # @@protoc_insertion_point(module_scope)

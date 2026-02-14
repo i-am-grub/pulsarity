@@ -4,15 +4,9 @@ ORM classes for Pilot data
 
 from __future__ import annotations
 
-from typing import Iterable, Self
-
-from pydantic import TypeAdapter
 from tortoise import fields
 
-from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import AttributeModel as _AttributeModel
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
-from pulsarity.webserver.validation import ProtocolBufferModel
 
 # pylint: disable=R0903,E1136
 
@@ -109,55 +103,3 @@ class Pilot(_PulsarityBase):
             return self.name
 
         return f"Pilot {self.id}"
-
-
-class PilotModel(ProtocolBufferModel):
-    """
-    External Pilot model
-    """
-
-    id: int
-    display_callsign: str
-    display_name: str
-    attributes: list[_AttributeModel]
-
-    @classmethod
-    def model_validate_protobuf(cls, data: bytes):
-        message = database_pb2.Pilot.FromString(data)
-        return cls.model_validate(message, from_attributes=True)
-
-    def model_dump_protobuf(self):
-        attrs = (attribute.model_dump_protobuf() for attribute in self.attributes)
-        return database_pb2.Pilot(
-            id=self.id,
-            display_callsign=self.display_callsign,
-            display_name=self.display_callsign,
-            attributes=attrs,
-        )
-
-
-_ADAPTER = TypeAdapter(list[PilotModel])
-
-
-class PilotsModel(ProtocolBufferModel):
-    """
-    External Pilots model
-    """
-
-    pilots: list[PilotModel]
-
-    @classmethod
-    def from_iterable(cls, pilots: Iterable[Pilot]) -> Self:
-        """
-        Generates a validation model from a database iterable
-        """
-        return cls(pilots=_ADAPTER.validate_python(pilots, from_attributes=True))
-
-    @classmethod
-    def model_validate_protobuf(cls, data: bytes):
-        message = database_pb2.Pilots.FromString(data)
-        return cls.model_validate(message, from_attributes=True)
-
-    def model_dump_protobuf(self):
-        pilots = (pilot.model_dump_protobuf() for pilot in self.pilots)
-        return database_pb2.Pilots(pilots=pilots)

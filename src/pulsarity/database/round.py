@@ -5,16 +5,12 @@ ORM classes for round data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Iterable, Self
+from typing import TYPE_CHECKING
 
-from pydantic import TypeAdapter
 from tortoise import fields
 from tortoise.functions import Max
 
-from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import AttributeModel as _AttributeModel
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
-from pulsarity.webserver.validation import ProtocolBufferModel
 
 if TYPE_CHECKING:
     from pulsarity.database.heat import Heat
@@ -92,51 +88,3 @@ class Round(_PulsarityBase):
             return 1
 
         return value + 1
-
-
-class RoundModel(ProtocolBufferModel):
-    """
-    External round model
-    """
-
-    id: int
-    round_num: int
-    attributes: list[_AttributeModel]
-
-    @classmethod
-    def model_validate_protobuf(cls, data: bytes) -> Self:
-        message = database_pb2.Round.FromString(data)
-        return cls.model_validate(message, from_attributes=True)
-
-    def model_dump_protobuf(self) -> database_pb2.Round:
-        attrs = (attribute.model_dump_protobuf() for attribute in self.attributes)
-        return database_pb2.Round(
-            id=self.id, round_num=self.round_num, attributes=attrs
-        )
-
-
-_ADAPTER = TypeAdapter(list[RoundModel])
-
-
-class RoundsModel(ProtocolBufferModel):
-    """
-    External rounds model
-    """
-
-    rounds: list[RoundModel]
-
-    @classmethod
-    def from_iterable(cls, rounds: Iterable[Round]) -> Self:
-        """
-        Generates a validation model from a database iterable
-        """
-        return cls(rounds=_ADAPTER.validate_python(rounds, from_attributes=True))
-
-    @classmethod
-    def model_validate_protobuf(cls, data: bytes) -> Self:
-        message = database_pb2.Rounds.FromString(data)
-        return cls.model_validate(message, from_attributes=True)
-
-    def model_dump_protobuf(self) -> database_pb2.Rounds:
-        rounds = (round.model_dump_protobuf() for round in self.rounds)
-        return database_pb2.Rounds(rounds=rounds)

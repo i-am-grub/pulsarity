@@ -11,19 +11,8 @@ from starlette.routing import Route
 from starsessions.session import regenerate_session_id
 
 from pulsarity import ctx
-from pulsarity.database.heat import Heat, HeatModel, HeatsModel
-from pulsarity.database.permission import SystemDefaultPerms
-from pulsarity.database.pilot import Pilot, PilotModel, PilotsModel
-from pulsarity.database.raceclass import RaceClass, RaceClassesModel, RaceClassModel
-from pulsarity.database.raceevent import (
-    RaceEvent,
-    RaceEventModel,
-    RaceEventsModel,
-)
-from pulsarity.database.round import Round, RoundModel, RoundsModel
-from pulsarity.database.user import User
-from pulsarity.webserver._wrapper import ProtobufResponse, endpoint
-from pulsarity.webserver.validation import (
+from pulsarity._validation import database as db_validation
+from pulsarity._validation.http import (
     LoginRequest,
     LoginResponse,
     LookupParams,
@@ -31,6 +20,14 @@ from pulsarity.webserver.validation import (
     ResetPasswordRequest,
     StatusResponse,
 )
+from pulsarity.database.heat import Heat
+from pulsarity.database.permission import SystemDefaultPerms
+from pulsarity.database.pilot import Pilot
+from pulsarity.database.raceclass import RaceClass
+from pulsarity.database.raceevent import RaceEvent
+from pulsarity.database.round import Round
+from pulsarity.database.user import User
+from pulsarity.webserver._wrapper import ProtobufResponse, endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +123,7 @@ async def get_pilot(path: LookupParams) -> Response:
     if pilot is None:
         return Response(status_code=204)
 
-    model = PilotModel.model_validate(pilot, from_attributes=True)
+    model = db_validation.PilotModel.model_validate(pilot, from_attributes=True)
     return ProtobufResponse(model)
 
 
@@ -143,7 +140,7 @@ async def get_pilots(query: PaginationParams) -> Response:
         .limit(query.limit)
         .prefetch_related("attributes")
     )
-    return ProtobufResponse(PilotsModel.from_iterable(pilots))
+    return ProtobufResponse(db_validation.PilotsModel.from_iterable(pilots))
 
 
 @endpoint(SystemDefaultPerms.READ_EVENTS, path_model=LookupParams)
@@ -158,7 +155,7 @@ async def get_event(path: LookupParams) -> Response:
     if event is None:
         return Response(status_code=204)
 
-    model = RaceEventModel.model_validate(event, from_attributes=True)
+    model = db_validation.RaceEventModel.model_validate(event, from_attributes=True)
     return ProtobufResponse(model)
 
 
@@ -175,7 +172,7 @@ async def get_events(query: PaginationParams) -> Response:
         .limit(query.limit)
         .prefetch_related("attributes")
     )
-    return ProtobufResponse(RaceEventsModel.from_iterable(events))
+    return ProtobufResponse(db_validation.RaceEventsModel.from_iterable(events))
 
 
 @endpoint(SystemDefaultPerms.READ_RACECLASS, path_model=LookupParams)
@@ -190,7 +187,7 @@ async def get_racelass(path: LookupParams) -> Response:
     if raceclass is None:
         return Response(status_code=204)
 
-    model = RaceClassModel.model_validate(raceclass, from_attributes=True)
+    model = db_validation.RaceClassModel.model_validate(raceclass, from_attributes=True)
     return ProtobufResponse(model)
 
 
@@ -214,7 +211,7 @@ async def get_raceclasses_for_event(
         .limit(query.limit)
         .prefetch_related("attributes")
     )
-    return ProtobufResponse(RaceClassesModel.from_iterable(raceclasses))
+    return ProtobufResponse(db_validation.RaceClassesModel.from_iterable(raceclasses))
 
 
 @endpoint(SystemDefaultPerms.READ_ROUND, path_model=LookupParams)
@@ -227,7 +224,7 @@ async def get_round(path: LookupParams) -> Response:
     if round_ is None:
         return Response(status_code=204)
 
-    model = RoundModel.model_validate(round_, from_attributes=True)
+    model = db_validation.RoundModel.model_validate(round_, from_attributes=True)
     return ProtobufResponse(model)
 
 
@@ -246,7 +243,7 @@ async def get_rounds_for_raceclass(
         .limit(query.limit)
         .prefetch_related("attributes")
     )
-    return ProtobufResponse(RoundsModel.from_iterable(rounds))
+    return ProtobufResponse(db_validation.RoundsModel.from_iterable(rounds))
 
 
 @endpoint(SystemDefaultPerms.READ_HEAT, path_model=LookupParams)
@@ -259,7 +256,7 @@ async def get_heat(path: LookupParams) -> Response:
     if heat is None:
         return Response(status_code=204)
 
-    model = HeatModel.model_validate(heat, from_attributes=True)
+    model = db_validation.HeatModel.model_validate(heat, from_attributes=True)
     return ProtobufResponse(model)
 
 
@@ -277,7 +274,7 @@ async def get_heats_for_round(path: LookupParams, query: PaginationParams) -> Re
         .prefetch_related("attributes")
     )
 
-    return ProtobufResponse(HeatsModel.from_iterable(heats))
+    return ProtobufResponse(db_validation.HeatsModel.from_iterable(heats))
 
 
 ROUTES = [

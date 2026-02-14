@@ -66,14 +66,14 @@ docs = [
 ]
 
 [tool.mypy]
-exclude = ["tests", "src/pulsarity/protobuf"]
+exclude = ["tests", "src/pulsarity/_protobuf"]
 
 [tool.pylint]
-ignore = ["tests", "src/pulsarity/protobuf"]
-ignored-modules = ["pulsarity.protobuf.*", "google.protobuf.*"]
+ignore = ["tests", "src/pulsarity/_protobuf"]
+ignored-modules = ["pulsarity._protobuf.*", "google.protobuf.*"]
 
 [tool.ruff.lint]
-exclude = [".mypy_cache", "env", "src/pulsarity/protobuf"]
+exclude = [".mypy_cache", "env", "src/pulsarity/_protobuf"]
 
 [tool.pytest.ini_options]
 addopts = "--no-cov-on-fail --showlocals --strict-markers"

@@ -5,7 +5,8 @@ Webserver Websocket Connections
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import ParamSpec, TypeVar
+from typing import Any, NamedTuple, ParamSpec, TypeVar
+from uuid import UUID
 
 from google.protobuf.message import DecodeError  # type: ignore
 from pydantic import TypeAdapter, ValidationError
@@ -15,11 +16,11 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from pulsarity import ctx
 from pulsarity._protobuf import websocket_pb2
+from pulsarity._validation import websocket as ws_validation
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
-from pulsarity.webserver import validation
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -32,7 +33,13 @@ ws_restart = asyncio.Event()
 _wse_routes: dict[websocket_pb2.EventID, tuple[UserPermission, Callable]] = {}  # type: ignore
 
 
-WS_EVENT_ADAPTER = TypeAdapter(validation.WebsocketEvent)  # type: ignore
+WS_EVENT_ADAPTER = TypeAdapter(ws_validation.WebsocketEvent)  # type: ignore
+
+
+class _ExternalEvent(NamedTuple):
+    uuid: UUID
+    event_id: websocket_pb2.EventID
+    data: dict[str, Any]
 
 
 def ws_event(event: _ApplicationEvt):
@@ -116,13 +123,15 @@ async def _write_data() -> None:
             permissions.update(temp)
 
         elif event.evt.permission in permissions:
-            evt_message = websocket_pb2.WebsocketEvent()
-            evt_message.id = event.uuid.bytes
-            evt_message.event_id = event.evt.event_id
-            await websocket.send_bytes(evt_message.SerializeToString())
+            evt = _ExternalEvent(event.uuid, event.evt.event_id, event.data)
+            evt_: ws_validation.BaseEvent = WS_EVENT_ADAPTER.validate_python(
+                evt, from_attributes=True
+            )
+            data__ = evt_.model_dump_protobuf()
+            await websocket.send_bytes(data__)
 
 
-async def handle_ws_event(event: validation.WebsocketEvent):
+async def handle_ws_event(event: ws_validation.WebsocketEvent):
     """
     Handle the event identified in the websocket data while enforcing
     the its permissions
@@ -142,18 +151,18 @@ async def handle_ws_event(event: validation.WebsocketEvent):
 
 
 @ws_event(SpecialEvt.HEARTBEAT)
-async def heatbeat_echo(event: validation.WebsocketEvent):
+async def heatbeat_echo(event: ws_validation.SystemHeartbeat):
     """
     Echo recieved heatbeat data
 
     :param ws_data: Recieved websocket event data
     """
     event_broker = ctx.event_broker_ctx.get()
-    event_broker.publish(SpecialEvt.HEARTBEAT, ws_data.data, uuid_=ws_data.id)
+    event_broker.publish(SpecialEvt.HEARTBEAT, uuid_=event.uuid)
 
 
 @ws_event(SpecialEvt.SHUTDOWN)
-async def shutdown_server(event: validation.WebsocketEvent):
+async def shutdown_server(event: ws_validation.SystemShutdown):
     """
     Shutdown the webserver
     """
@@ -161,7 +170,7 @@ async def shutdown_server(event: validation.WebsocketEvent):
 
 
 @ws_event(SpecialEvt.RESTART)
-async def restart_server(event: validation.WebsocketEvent):
+async def restart_server(event: ws_validation.SystemRestart):
     """
     Restart the webserver
     """
@@ -169,14 +178,14 @@ async def restart_server(event: validation.WebsocketEvent):
 
 
 @ws_event(RaceSequenceEvt.RACE_SCHEDULE)
-async def schedule_race(event: validation.WebsocketEvent):
+async def schedule_race(event: ws_validation.ScheduleRace):
     """
     Schedule the start of a race.
     """
 
 
 @ws_event(RaceSequenceEvt.RACE_STOP)
-async def race_stop(event: validation.WebsocketEvent):
+async def race_stop(event: ws_validation.RaceStop):
     """
     Stop the current race
     """

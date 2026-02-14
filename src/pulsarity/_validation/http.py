@@ -1,14 +1,7 @@
-"""
-Validation Models for API
-"""
+from pydantic import BaseModel, Field
 
-from abc import ABC, abstractmethod
-from typing import Annotated, Literal, Self, Union
-
-from google.protobuf.message import Message  # type: ignore
-from pydantic import UUID4, BaseModel, Field
-
-from pulsarity._protobuf import http_pb2, websocket_pb2
+from pulsarity._protobuf import http_pb2
+from pulsarity._validation._base import ProtocolBufferModel
 
 
 class PaginationParams(BaseModel):
@@ -26,25 +19,6 @@ class LookupParams(BaseModel):
     """
 
     id: int = Field(gt=0)
-
-
-class ProtocolBufferModel(BaseModel, ABC):
-    """
-    Model defining Protocol Buffer compatibility
-    """
-
-    @classmethod
-    @abstractmethod
-    def model_validate_protobuf(cls, data: bytes) -> Self:
-        """
-        Generates a validation model from protobuf data
-        """
-
-    @abstractmethod
-    def model_dump_protobuf(self) -> Message:
-        """
-        Converts the validation model to a protobuf message
-        """
 
 
 class StatusResponse(ProtocolBufferModel):
@@ -115,20 +89,3 @@ class ResetPasswordRequest(ProtocolBufferModel):
         return http_pb2.ResetPasswordRequest(
             old_password=self.old_password, new_password=self.new_password
         )
-
-
-class _WSEvent(BaseModel):
-    id: UUID4
-
-
-class PilotAddEvent(_WSEvent):
-    event_id: Literal[websocket_pb2.EVENT_PILOT_ADD]  # type: ignore
-
-
-class PilotAlterEvent(_WSEvent):
-    event_id: Literal[websocket_pb2.EVENT_PILOT_ALTER]  # type: ignore
-
-
-WebsocketEvent = Annotated[
-    Union[PilotAddEvent, PilotAlterEvent], Field(discriminator="event_id")
-]
