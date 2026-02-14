@@ -6,8 +6,8 @@ import functools
 import inspect
 import logging
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass
 from json.decoder import JSONDecodeError
+from typing import NamedTuple
 
 from google.protobuf.message import DecodeError  # type: ignore
 from pydantic import BaseModel, ValidationError
@@ -24,8 +24,7 @@ from pulsarity.webserver._auth import requires
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True, slots=True)
-class _ValModels:
+class _ValModels(NamedTuple):
     request: type[ProtocolBufferModel] | None
     query: type[BaseModel] | None
     path: type[BaseModel] | None

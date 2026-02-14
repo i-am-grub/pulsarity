@@ -182,6 +182,8 @@ class PulsarityAuthBackend(AuthenticationBackend):
 
     # pylint: disable=R0903
 
+    __slots__ = ()
+
     async def authenticate(self, conn):
         """
         Checks session info to verify if the user is authenticated or not
