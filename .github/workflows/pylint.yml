@@ -26,4 +26,4 @@ jobs:
       run: uv sync --group dev
     
     - name: Analysing the code with pylint
-      run: uv run pylint $(git ls-files 'src/pulsarity') --ignore-paths="src/pulsarity/client,src/pulsarity/_protobuf" --ignored-modules="pulsarity._protobuf.*"
+      run: uv run pylint $(git ls-files 'src/pulsarity') --ignore-paths="src/pulsarity/client,src/pulsarity/_protobuf" --ignored-modules="pulsarity._protobuf.*,google.protobuf.*"
