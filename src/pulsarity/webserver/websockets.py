@@ -30,7 +30,9 @@ logger = logging.getLogger(__name__)
 ws_shutdown = asyncio.Event()
 ws_restart = asyncio.Event()
 
-WS_EVENT_ADAPTER = TypeAdapter(ws_validation.WebsocketEvent)  # type: ignore
+WS_EVENT_ADAPTER: TypeAdapter[ws_validation.BaseEvent] = TypeAdapter(
+    ws_validation.WebsocketEvent
+)
 
 
 class _Route(NamedTuple):
@@ -49,10 +51,13 @@ class _ExternalEvent(NamedTuple):
 
 def ws_event(event: _ApplicationEvt):
     """
-    Decorator to route recieved websocket event data
+    Decorator for registerting routes based on recieved websocket event data
 
     :param event: The event to base the routing on
     """
+    assert event.event_id not in _wse_routes, (
+        "Multiple routes can not be register for a individual application event"
+    )
 
     def inner(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         _wse_routes[event.event_id] = _Route(event.permission, func)
@@ -128,17 +133,15 @@ async def _send_event_data() -> None:
 
         elif event.evt.permission in permissions:
             evt = _ExternalEvent(event.uuid, event.evt.event_id, event.data)
-            evt_: ws_validation.BaseEvent = WS_EVENT_ADAPTER.validate_python(
-                evt, from_attributes=True
-            )
+            evt_ = WS_EVENT_ADAPTER.validate_python(evt, from_attributes=True)
             data = evt_.model_dump_protobuf()
             await websocket.send_bytes(data)
 
 
 async def handle_ws_event(event: ws_validation.WebsocketEvent):
     """
-    Handle the event identified in the websocket data while enforcing
-    the its permissions
+    Routes the event data to the proper websocket action while
+    ensuring the user has the proper permissions
 
     :param event: The websocket event
     """
