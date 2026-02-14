@@ -7,7 +7,7 @@ import asyncio
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from tortoise import Tortoise, connections
+from tortoise import Tortoise
 
 from pulsarity import ctx
 from pulsarity._protobuf import http_pb2
@@ -91,7 +91,7 @@ async def database_init():
 
     yield
 
-    await connections.close_all()
+    await Tortoise.close_connections()
 
 
 @pytest_asyncio.fixture(name="client")

@@ -22,7 +22,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddleware
-from tortoise import Tortoise, connections
+from tortoise import Tortoise
 
 from pulsarity import ctx, defaults
 from pulsarity.database import setup_default_objects
@@ -282,6 +282,7 @@ async def lifespan(_app: Starlette):
     loop_token = ctx.loop_ctx.set(state["loop"])
     event_token = ctx.event_broker_ctx.set(state["event_broker"])
     race_manager_token = ctx.race_manager_ctx.set(state["race_manager"])
+    timer_manager_token = ctx.timer_manager_ctx.set(state["timer_manager"])
 
     await server_starup_workflow()
 
@@ -296,6 +297,7 @@ async def lifespan(_app: Starlette):
     ctx.loop_ctx.reset(loop_token)
     ctx.event_broker_ctx.reset(event_token)
     ctx.race_manager_ctx.reset(race_manager_token)
+    ctx.timer_manager_ctx.reset(timer_manager_token)
 
     logger.info("Pulsarity shutdown completed...")
 
@@ -352,6 +354,6 @@ async def database_shutdown() -> None:
     """
     Shutdown the database
     """
-    await connections.close_all()
+    await Tortoise.close_connections()
 
     logger.debug("Database shutdown")
