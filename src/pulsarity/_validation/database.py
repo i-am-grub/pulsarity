@@ -1,3 +1,7 @@
+"""
+Validation classes for database data
+"""
+
 from datetime import datetime
 from typing import Annotated, Iterable, Self
 

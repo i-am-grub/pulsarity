@@ -1,3 +1,7 @@
+"""
+Validation classes for Websocket events
+"""
+
 from typing import Annotated, Literal, Union
 
 from pydantic import UUID4, BaseModel, ConfigDict, Field
@@ -27,30 +31,58 @@ class BaseEvent(BaseModel):
 
 
 class SystemHeartbeat(BaseEvent):
+    """
+    Validation class for the system heartbeat event
+    """
+
     event_id: Literal[websocket_pb2.EVENT_HEARTBEAT]  # type: ignore
 
 
 class SystemShutdown(BaseEvent):
+    """
+    Validation class for the system shutdown event
+    """
+
     event_id: Literal[websocket_pb2.EVENT_SHUTDOWN]  # type: ignore
 
 
 class SystemRestart(BaseEvent):
+    """
+    Validation class for the system restart event
+    """
+
     event_id: Literal[websocket_pb2.EVENT_RESTART]  # type: ignore
 
 
 class ScheduleRace(BaseEvent):
+    """
+    Validation class for the race schedule event
+    """
+
     event_id: Literal[websocket_pb2.EVENT_RACE_SCHEDULE]  # type: ignore
 
 
 class RaceStop(BaseEvent):
+    """
+    Validation class for the race stop event
+    """
+
     event_id: Literal[websocket_pb2.EVENT_RACE_STOP]  # type: ignore
 
 
 class PilotAddData(BaseModel):
+    """
+    Data for the pilot add event
+    """
+
     pilot_id: int
 
 
 class PilotAddEvent(BaseEvent):
+    """
+    Validation class for the pilot add event
+    """
+
     event_id: Literal[websocket_pb2.EVENT_PILOT_ADD]  # type: ignore
     pilot_add: PilotAddData
 
@@ -63,10 +95,18 @@ class PilotAddEvent(BaseEvent):
 
 
 class PilotAlterData(BaseModel):
+    """
+    Data for the pilot alter event
+    """
+
     pilot_id: int
 
 
 class PilotAlterEvent(BaseEvent):
+    """
+    Validation class for the pilot alter event
+    """
+
     event_id: Literal[websocket_pb2.EVENT_PILOT_ALTER]  # type: ignore
     pilot_alter: PilotAlterData
 
@@ -79,10 +119,18 @@ class PilotAlterEvent(BaseEvent):
 
 
 class PilotDeleteData(BaseModel):
+    """
+    Data for the pilot delete event
+    """
+
     pilot_id: int
 
 
 class PilotDeleteEvent(BaseEvent):
+    """
+    Validation class for the pilot delete event
+    """
+
     event_id: Literal[websocket_pb2.EVENT_PILOT_DELETE]  # type: ignore
     pilot_delete: PilotDeleteData
 

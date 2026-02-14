@@ -162,7 +162,7 @@ async def heatbeat_echo(event: ws_validation.SystemHeartbeat):
 
 
 @ws_event(SpecialEvt.SHUTDOWN)
-async def shutdown_server(event: ws_validation.SystemShutdown):
+async def shutdown_server(_event: ws_validation.SystemShutdown):
     """
     Shutdown the webserver
     """
@@ -170,7 +170,7 @@ async def shutdown_server(event: ws_validation.SystemShutdown):
 
 
 @ws_event(SpecialEvt.RESTART)
-async def restart_server(event: ws_validation.SystemRestart):
+async def restart_server(_event: ws_validation.SystemRestart):
     """
     Restart the webserver
     """
@@ -178,14 +178,14 @@ async def restart_server(event: ws_validation.SystemRestart):
 
 
 @ws_event(RaceSequenceEvt.RACE_SCHEDULE)
-async def schedule_race(event: ws_validation.ScheduleRace):
+async def schedule_race(_event: ws_validation.ScheduleRace):
     """
     Schedule the start of a race.
     """
 
 
 @ws_event(RaceSequenceEvt.RACE_STOP)
-async def race_stop(event: ws_validation.RaceStop):
+async def race_stop(_event: ws_validation.RaceStop):
     """
     Stop the current race
     """

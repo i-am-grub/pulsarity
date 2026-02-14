@@ -1,3 +1,7 @@
+"""
+Validation helpers
+"""
+
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Self
@@ -8,6 +12,9 @@ from pydantic import BaseModel
 
 
 def to_datetime(obj: timestamp_pb2.Timestamp | datetime) -> datetime:
+    """
+    Converts a protocol buffer timestamp to datetime
+    """
     if isinstance(obj, timestamp_pb2.Timestamp):
         return obj.ToDatetime()
     return obj

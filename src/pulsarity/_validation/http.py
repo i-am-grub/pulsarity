@@ -1,3 +1,7 @@
+"""
+Validation classes for HTTP requests
+"""
+
 from pydantic import BaseModel, Field
 
 from pulsarity._protobuf import http_pb2
