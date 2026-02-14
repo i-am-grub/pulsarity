@@ -219,10 +219,7 @@ class LapsManager(ABC):
             time_diff = lap.timedelta - prev_time
             prev_time = lap.timedelta
 
-            if num_laps > 1:
-                if time_diff < fastest_time:
-                    fastest_time = time_diff
-            else:
+            if time_diff < fastest_time:
                 fastest_time = time_diff
 
         if not num_laps:
