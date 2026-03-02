@@ -341,6 +341,8 @@ async def database_startup() -> None:
                     "default_connection": "event_db",
                 },
             },
+            "use_tz": False,
+            "timezone": "UTC",
         }
     )
 

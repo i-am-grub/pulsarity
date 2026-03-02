@@ -14,7 +14,7 @@ from pulsarity.race.processor import (
 )
 
 
-class TestManager(LapsManager):
+class _TestManager(LapsManager):
     def get_score(self): ...
 
     def add_lap_cb(self, *_) -> None: ...
@@ -28,7 +28,7 @@ class BadProcessor(RaceProcessor):
     """
 
 
-class TestProcessor(RaceProcessor):
+class _TestProcessor(RaceProcessor):
     """
     Processor to test good implementation
     """
@@ -66,9 +66,9 @@ def test_register_processor_duplicate_error():
     Test for registration of a bad processor
     """
 
-    RaceProcessorManager.register(TestProcessor)
+    RaceProcessorManager.register(_TestProcessor)
     with pytest.raises(RuntimeError):
-        RaceProcessorManager.register(TestProcessor)
+        RaceProcessorManager.register(_TestProcessor)
 
 
 def test_get_processor():
@@ -78,10 +78,10 @@ def test_get_processor():
     processor = RaceProcessorManager.get_processor("foo")
     assert processor is None
 
-    RaceProcessorManager.register(TestProcessor)
+    RaceProcessorManager.register(_TestProcessor)
     processor = RaceProcessorManager.get_processor("foo")
     assert processor is not None
-    assert processor is TestProcessor
+    assert processor is _TestProcessor
 
 
 def test_all_metrics():
@@ -89,7 +89,7 @@ def test_all_metrics():
     Tests some of the basic functionality of the laps manager
     """
     keys = count()
-    manager = TestManager()
+    manager = _TestManager()
 
     lap = FullLapData(1.0, 0, "foo", 0)
     manager.add_lap(next(keys), lap)
@@ -116,7 +116,7 @@ def test_all_metrics_holeshot():
     Tests some of the basic functionality of the laps manager
     """
     keys = count()
-    manager = TestManager()
+    manager = _TestManager()
 
     lap = FullLapData(1.0, 0, "foo", 0)
     manager.add_lap(next(keys), lap)
@@ -143,7 +143,7 @@ def test_laps_manager_fastest():
     Tests some of the basic functionality of the laps manager
     """
     keys = count()
-    manager = TestManager()
+    manager = _TestManager()
 
     assert manager.get_fastest_time() is None
 
@@ -173,7 +173,7 @@ def test_laps_manager_fastest_holeshot():
     Tests some of the basic functionality of the laps manager
     """
     keys = count()
-    manager = TestManager()
+    manager = _TestManager()
 
     assert manager.get_fastest_time(True) is None
 
@@ -203,7 +203,7 @@ def test_laps_manager_consecutive():
     Tests some of the basic functionality of the laps manager
     """
     keys = count()
-    manager = TestManager()
+    manager = _TestManager()
 
     num_laps = 0
     total_time = 0.0
@@ -271,7 +271,7 @@ def test_laps_manager_consecutive_holeshot():
     Tests some of the basic functionality of the laps manager
     """
     keys = count()
-    manager = TestManager()
+    manager = _TestManager()
 
     num_laps = -1
     total_time = 0.0

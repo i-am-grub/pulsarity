@@ -83,6 +83,8 @@ async def database_init():
                     "default_connection": "event",
                 },
             },
+            "use_tz": False,
+            "timezone": "UTC",
         }
     )
     await Tortoise.generate_schemas()
