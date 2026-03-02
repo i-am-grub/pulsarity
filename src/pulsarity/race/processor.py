@@ -237,7 +237,7 @@ class LapsManager(ABC):
 
         Uses `get_combined_metrics` to generate the metrics
         due to most of its logic is allocated to efficiently
-        calculating fastest consecutive time.
+        calculate fastest consecutive time.
 
         :param holeshot: Holeshot active, defaults to False
         :param max_laps: The max consecutive laps, defaults to 3
@@ -338,13 +338,11 @@ class LapsManager(ABC):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, LapsManager):
             return False
-
         return self.get_score() == other.get_score()
 
     def __ne__(self, other: object) -> bool:
         if not isinstance(other, LapsManager):
             return True
-
         return self.get_score() != other.get_score()
 
     def __lt__(self, other: Self) -> bool:

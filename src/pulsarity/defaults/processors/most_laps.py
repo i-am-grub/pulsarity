@@ -32,7 +32,7 @@ class _MostLapsManager(LapsManager):
     Lap data manager for a single slot
     """
 
-    __slots__ = ("_primary_laps", "_split_laps", "_lap_data", "_score")
+    __slots__ = ("_primary_laps", "_split_laps", "_all_laps", "_score")
 
     def __init__(self):
         super().__init__()
@@ -51,7 +51,7 @@ class _MostLapsManager(LapsManager):
         - Index of the timer who recorded the last split lap that proceeds
         the last recorded primary lap
         - The timestamp of the last recorded lap
-        (inverted to make the smaller timestamp ranked higher)
+        (inverted to make smaller timestamps ranked higher)
 
         :return: The tuple containing the score
         """
@@ -127,22 +127,22 @@ class MostLapsProcessor(RaceProcessor):
 
     def _get_cache(self) -> dict[int, SlotResult[_ResultExtras]]:
         if not self._cache:
-            slot_data = [(value, key) for key, value in self._lap_data.items()]
+            slot_data = [(value, slot_id) for slot_id, value in self._lap_data.items()]
             slot_data.sort(reverse=True)
 
-            pos, adv = 0, 1
+            pos, step = 0, 1
             last_manager: _MostLapsManager | None = None
-            for manager, key in slot_data:
+            for manager, slot_id in slot_data:
                 if manager == last_manager:
-                    adv += 1
+                    step += 1
                 else:
-                    pos += adv
-                    adv = 1
+                    pos += step
+                    step = 1
 
                 result = SlotResult(
-                    pos, key, _ResultExtras(total_laps=manager.get_num_laps())
+                    pos, slot_id, _ResultExtras(total_laps=manager.get_num_laps())
                 )
-                self._cache.update({key: result})
+                self._cache.update({slot_id: result})
                 last_manager = manager
 
         return self._cache
@@ -151,7 +151,7 @@ class MostLapsProcessor(RaceProcessor):
         return tuple(self._get_cache().values())
 
     def get_slot_result(self, slot_num: int) -> SlotResult[_ResultExtras] | None:
-        return self._cache.get(slot_num, None)
+        return self._get_cache().get(slot_num, None)
 
     def get_laps(self) -> Iterable[FullLapData]:
         for slot in self._lap_data.values():

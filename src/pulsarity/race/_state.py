@@ -4,16 +4,51 @@ Race management
 
 import asyncio
 import logging
+from enum import Flag, auto
 from random import random
+from typing import NamedTuple
 
 from pulsarity import ctx
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.events import RaceSequenceEvt
-from pulsarity.race.enums import RaceStatus
 
 logger = logging.getLogger(__name__)
 
-_RaceEventRecord = tuple[RaceStatus, float]
+
+class RaceStatus(Flag):
+    """
+    Current status of system.
+    """
+
+    READY = auto()
+    """Ready to start a new race, no race running"""
+    SCHEDULED = auto()
+    """The race is scheduled to occur"""
+    STAGING = auto()
+    """System is staging; Race begins imminently"""
+    RACING = auto()
+    """Racing is underway"""
+    OVERTIME = auto()
+    """The duration of the race has been exceeded; Racing is still underway"""
+    PAUSED = auto()
+    """Racing is paused"""
+    STOPPED = auto()
+    """System no longer listening for lap crossings; Race results must be saved or discarded"""
+    UNDERWAY = RACING | OVERTIME
+    """Shortcut for `RACING` or `OVERTIME`"""
+    FINISHED = OVERTIME | STOPPED
+    """Shortcut for `OVERTIME` or `STOPPED`"""
+    SUSPENDED = READY | SCHEDULED | STAGING | PAUSED | STOPPED
+    """Shortcut for a race not being actively underway"""
+    PRERACE = READY | SCHEDULED | STAGING
+    """Shortcut for pre-race statuses"""
+    PREPERATION = SCHEDULED | STAGING
+    """Shortcut for race preperation statuses"""
+
+
+class _RaceEventRecord(NamedTuple):
+    status: RaceStatus
+    timestamp: float
 
 
 class RaceStateManager:
@@ -22,10 +57,10 @@ class RaceStateManager:
     machine.
     """
 
-    __slots__ = ("_race_record", "_program_handle", "_status", "_format")
+    __slots__ = ("_race_records", "_program_handle", "_status", "_format")
 
     def __init__(self) -> None:
-        self._race_record: list[_RaceEventRecord] = []
+        self._race_records: list[_RaceEventRecord] = []
         """The sequence of the race"""
         self._program_handle: asyncio.TimerHandle | None = None
         """The handle for managine the race sequence"""
@@ -44,20 +79,19 @@ class RaceStateManager:
         """
         The current time of the race
 
-        :return: The race time or not
+        :return: The race time
         """
+        if self.status in RaceStatus.PRERACE:
+            return 0.0
+
+        assert self._race_records, "Unexpected empty records"
 
         race_duration: float = 0.0
         race_period_start: float = 0.0
         last_status: RaceStatus | None = None
 
-        if self.status in RaceStatus.PRERACE:
-            return 0.0
-
-        assert self._race_record, "Unexpected empty records"
-
         timestamp: float | None = None
-        for status, timestamp in self._race_record:
+        for status, timestamp in self._race_records:
             if status == RaceStatus.RACING:
                 race_period_start = timestamp
 
@@ -76,7 +110,7 @@ class RaceStateManager:
             last_status = status
 
         assert timestamp is not None, (
-            f"Unexpected state encountered: {self._race_record}"
+            f"Unexpected state encountered: {self._race_records}"
         )
 
         if last_status == RaceStatus.PAUSED:
@@ -91,10 +125,9 @@ class RaceStateManager:
         :raises RuntimeError: When race is not active
         :return: The start timestamp
         """
-        for status, timestamp in self._race_record:
-            if status == RaceStatus.RACING:
-                return timestamp
-
+        for record in self._race_records:
+            if record.status == RaceStatus.RACING:
+                return record.timestamp
         raise RuntimeError("Race not underway")
 
     def get_race_finish_time(self) -> float:
@@ -104,10 +137,9 @@ class RaceStateManager:
         :raises RuntimeError: When race is not active
         :return: The finish timestamp
         """
-        for status, timestamp in self._race_record:
-            if status in RaceStatus.FINISHED:
-                return timestamp
-
+        for record in self._race_records:
+            if record.status in RaceStatus.FINISHED:
+                return record.timestamp
         raise RuntimeError("Race not finished")
 
     def get_race_stop_time(self) -> float:
@@ -117,10 +149,9 @@ class RaceStateManager:
         :raises RuntimeError: When race is not active
         :return: The stop timestamp
         """
-        for status, timestamp in self._race_record:
-            if status == RaceStatus.STOPPED:
-                return timestamp
-
+        for record in self._race_records:
+            if record.status == RaceStatus.STOPPED:
+                return record.timestamp
         raise RuntimeError("Race not stopped")
 
     def _set_status(self, status: RaceStatus) -> None:
@@ -131,7 +162,7 @@ class RaceStateManager:
         :param status: The status to set the the manager to
         """
         self._status = status
-        self._race_record.append((status, ctx.loop_ctx.get().time()))
+        self._race_records.append(_RaceEventRecord(status, ctx.loop_ctx.get().time()))
 
     def schedule_race(self, format_: RaceFormat, assigned_start: float) -> None:
         """
@@ -172,36 +203,32 @@ class RaceStateManager:
 
         if self.status in RaceStatus.PREPERATION:
             self._status = RaceStatus.READY
-            self._race_record.clear()
+            self._race_records.clear()
             logger.info("Stopped race before start. Race manager reset")
 
         elif self.status == RaceStatus.RACING:
-            data: dict = {}
-            event_broker.trigger_background(RaceSequenceEvt.RACE_FINISH, data)
-            event_broker.trigger_background(RaceSequenceEvt.RACE_STOP, data)
+            event_broker.trigger_background(RaceSequenceEvt.RACE_FINISH)
+            event_broker.trigger_background(RaceSequenceEvt.RACE_STOP)
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
 
         elif self.status == RaceStatus.OVERTIME:
-            data = {}
-            event_broker.trigger_background(RaceSequenceEvt.RACE_STOP, data)
+            event_broker.trigger_background(RaceSequenceEvt.RACE_STOP)
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
 
         elif self.status == RaceStatus.PAUSED:
-            for status, _ in reversed(self._race_record):
-                if status in RaceStatus.UNDERWAY:
+            for record in reversed(self._race_records):
+                if record.status in RaceStatus.UNDERWAY:
                     break
             else:
                 raise RuntimeError("Underway status not found in paused race records")
 
-            data = {}
-
-            if status == RaceStatus.RACING:
-                event_broker.trigger_background(RaceSequenceEvt.RACE_FINISH, data)
-                event_broker.trigger_background(RaceSequenceEvt.RACE_STOP, data)
+            if record.status == RaceStatus.RACING:
+                event_broker.trigger_background(RaceSequenceEvt.RACE_FINISH)
+                event_broker.trigger_background(RaceSequenceEvt.RACE_STOP)
             else:
-                event_broker.trigger_background(RaceSequenceEvt.RACE_STOP, data)
+                event_broker.trigger_background(RaceSequenceEvt.RACE_STOP)
 
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
@@ -213,8 +240,7 @@ class RaceStateManager:
         event_broker = ctx.event_broker_ctx.get()
 
         if self.status in RaceStatus.UNDERWAY:
-            data: dict = {}
-            event_broker.trigger_background(RaceSequenceEvt.RACE_PAUSE, data)
+            event_broker.trigger_background(RaceSequenceEvt.RACE_PAUSE)
             self._set_status(RaceStatus.PAUSED)
             logger.info("Race paused")
 
@@ -235,8 +261,8 @@ class RaceStateManager:
 
         assert self._format is not None, "Can not resume race with an unset schedule"
 
-        for status, _ in reversed(self._race_record):
-            if status in RaceStatus.UNDERWAY:
+        for record in reversed(self._race_records):
+            if record.status in RaceStatus.UNDERWAY:
                 break
         else:
             raise RuntimeError("Underway status not found in paused race records")
@@ -260,8 +286,7 @@ class RaceStateManager:
             )
             self._set_status(RaceStatus.OVERTIME)
 
-        data: dict = {}
-        event_broker.trigger_background(RaceSequenceEvt.RACE_RESUME, data)
+        event_broker.trigger_background(RaceSequenceEvt.RACE_RESUME)
         logger.info("Race resumed")
 
     def _stage(self, start_time: float) -> None:
@@ -274,8 +299,7 @@ class RaceStateManager:
         """
         event_broker = ctx.event_broker_ctx.get()
 
-        data: dict = {}
-        event_broker.trigger_background(RaceSequenceEvt.RACE_STAGE, data)
+        event_broker.trigger_background(RaceSequenceEvt.RACE_STAGE)
         self._set_status(RaceStatus.STAGING)
         logger.info("Race scheduled for %d", start_time)
 
@@ -292,8 +316,7 @@ class RaceStateManager:
 
         assert self._format is not None, "Can not start race with an unset schedule"
 
-        data: dict = {}
-        event_broker.trigger_background(RaceSequenceEvt.RACE_START, data)
+        event_broker.trigger_background(RaceSequenceEvt.RACE_START)
         self._set_status(RaceStatus.RACING)
         logger.info("Race started")
 
@@ -315,8 +338,7 @@ class RaceStateManager:
         event_broker = ctx.event_broker_ctx.get()
         assert self._format is not None, "Can not finish race with an unset schedule"
 
-        data: dict = {}
-        event_broker.trigger_background(RaceSequenceEvt.RACE_FINISH, data)
+        event_broker.trigger_background(RaceSequenceEvt.RACE_FINISH)
 
         if self._format.overtime_sec > 0:
             self._program_handle = ctx.loop_ctx.get().call_later(
@@ -338,8 +360,7 @@ class RaceStateManager:
         """
         event_broker = ctx.event_broker_ctx.get()
 
-        data: dict = {}
-        event_broker.trigger_background(RaceSequenceEvt.RACE_STOP, data)
+        event_broker.trigger_background(RaceSequenceEvt.RACE_STOP)
         self._set_status(RaceStatus.STOPPED)
         self._program_handle = None
         logger.info("Race stopped")
@@ -351,7 +372,7 @@ class RaceStateManager:
         if self.status == RaceStatus.STOPPED:
             assert self._program_handle is None
             self._format = None
-            self._race_record.clear()
+            self._race_records.clear()
             self._status = RaceStatus.READY
             logger.info("Race manager reset")
         else:

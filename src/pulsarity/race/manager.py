@@ -12,8 +12,7 @@ from pulsarity.database.lap import Lap
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.database.signal import SignalHistory
 from pulsarity.interface.timer_manager import FullLapData, FullSignalData
-from pulsarity.race._state import RaceStateManager
-from pulsarity.race.enums import RaceStatus
+from pulsarity.race._state import RaceStateManager, RaceStatus
 from pulsarity.race.processor import RaceProcessor, RaceProcessorManager
 
 

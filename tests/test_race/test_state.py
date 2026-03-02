@@ -9,8 +9,7 @@ import pytest
 import pytest_asyncio
 
 from pulsarity.database import RaceFormat
-from pulsarity.race._state import RaceStateManager
-from pulsarity.race.enums import RaceStatus
+from pulsarity.race._state import RaceStateManager, RaceStatus
 from pulsarity.utils import background
 
 # pylint: disable=W0212
