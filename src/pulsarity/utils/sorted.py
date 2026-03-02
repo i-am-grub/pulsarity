@@ -17,6 +17,7 @@ class SortedKeysView(KeysView[U]):
     """
 
     def __init__(self, mapping: ValueSortedDict):
+        super().__init__(mapping)
         self._mapping = mapping
 
     def __getitem__(self, index):
@@ -28,7 +29,10 @@ class SortedValuesView(ValuesView[U]):
     Sorted values view of `ValueSortedDict`
     """
 
+    # pylint: disable=R0903
+
     def __init__(self, mapping: ValueSortedDict):
+        super().__init__(mapping)
         self._mapping = mapping
 
     def __getitem__(self, index):
@@ -46,6 +50,7 @@ class SortedItemsView(ItemsView[U, V]):
     """
 
     def __init__(self, mapping: ValueSortedDict):
+        super().__init__(mapping)
         self._mapping = mapping
 
     def __getitem__(self, index):
@@ -90,9 +95,15 @@ class ValueSortedDict(UserDict[U, V]):
         return SortedItemsView(self)
 
     def first_value(self) -> V:
+        """
+        Gets the first value in the sorted mapping
+        """
         return self[self.list[0]]
 
     def last_value(self) -> V:
+        """
+        Gets the last value in the sorted mapping
+        """
         return self[self.list[-1]]
 
     def popitem(self):
