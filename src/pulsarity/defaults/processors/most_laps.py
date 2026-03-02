@@ -7,8 +7,6 @@ from collections.abc import Iterable, Sequence
 from itertools import count
 from typing import TypedDict
 
-from sortedcollections import ValueSortedDict  # type:ignore
-
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import FullLapData
 from pulsarity.race.processor import (
@@ -17,6 +15,7 @@ from pulsarity.race.processor import (
     SlotResult,
     register_processor,
 )
+from pulsarity.utils.sorted import ValueSortedDict
 
 
 class _ResultExtras(TypedDict):
@@ -93,7 +92,7 @@ class MostLapsProcessor(RaceProcessor):
     def __init__(self, race_format: RaceFormat) -> None:
         self._format = race_format
         self._lap_data: dict[int, _MostLapsManager] = defaultdict(_MostLapsManager)
-        self._cache: dict[int, SlotResult[_ResultExtras]] = ValueSortedDict()
+        self._cache: ValueSortedDict[int, SlotResult[_ResultExtras]] = ValueSortedDict()
         self._count = count()
 
     @classmethod
@@ -125,7 +124,7 @@ class MostLapsProcessor(RaceProcessor):
 
         return False
 
-    def _get_cache(self) -> dict[int, SlotResult[_ResultExtras]]:
+    def _get_cache(self) -> ValueSortedDict[int, SlotResult[_ResultExtras]]:
         if not self._cache:
             slot_data = [(value, slot_id) for slot_id, value in self._lap_data.items()]
             slot_data.sort(reverse=True)
@@ -142,7 +141,7 @@ class MostLapsProcessor(RaceProcessor):
                 result = SlotResult(
                     pos, slot_id, _ResultExtras(total_laps=manager.get_num_laps())
                 )
-                self._cache.update({slot_id: result})
+                self._cache[slot_id] = result
                 last_manager = manager
 
         return self._cache

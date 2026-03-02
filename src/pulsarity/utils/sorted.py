@@ -106,7 +106,8 @@ class ValueSortedDict(UserDict[U, V]):
         """
         return self[self.list[-1]]
 
-    def popitem(self):
-        pair = super().popitem()
-        self.list.remove(pair[0])
-        return pair
+    def update(self, **kwargs):
+        raise NotImplementedError()
+
+    def copy(self):
+        raise NotImplementedError()
