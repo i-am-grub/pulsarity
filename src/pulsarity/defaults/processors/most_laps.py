@@ -15,7 +15,7 @@ from pulsarity.race.processor import (
     SlotResult,
     register_processor,
 )
-from pulsarity.utils.sorted import ValueSortedDict
+from pulsarity.utils.collections import ValueSortedDict
 
 
 class _ResultExtras(TypedDict):

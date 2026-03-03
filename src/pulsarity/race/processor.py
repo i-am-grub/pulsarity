@@ -11,7 +11,7 @@ from typing import Callable, Generic, NamedTuple, Self, TypedDict, TypeVar
 
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import FullLapData, TimerMode
-from pulsarity.utils.sorted import ValueSortedDict
+from pulsarity.utils.collections import ValueSortedDict
 
 # pylint: disable=R1730
 
