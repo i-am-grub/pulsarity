@@ -94,7 +94,7 @@ class ValueSortedDict(UserDict[U, V]):
         self.list.remove(key)
 
     def clear(self):
-        super().clear()
+        self.data.clear()
         self.list.clear()
 
     def keys(self) -> _SortedKeysView[U]:
