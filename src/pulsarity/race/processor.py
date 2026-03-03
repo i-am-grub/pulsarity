@@ -9,10 +9,9 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Callable, Generic, NamedTuple, Self, TypedDict, TypeVar
 
-from sortedcollections import ValueSortedDict  # type: ignore
-
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import FullLapData, TimerMode
+from pulsarity.utils.collections import ValueSortedDict
 
 # pylint: disable=R1730
 
@@ -92,8 +91,8 @@ class LapsManager(ABC):
     """
 
     def __init__(self) -> None:
-        self._primary_laps: dict[int, FullLapData] = ValueSortedDict()
-        self._split_laps: dict[int, FullLapData] = ValueSortedDict()
+        self._primary_laps: ValueSortedDict[int, FullLapData] = ValueSortedDict()
+        self._split_laps: ValueSortedDict[int, FullLapData] = ValueSortedDict()
         self._all_laps: ChainMap[int, FullLapData] = ChainMap(
             self._primary_laps, self._split_laps
         )
@@ -145,7 +144,7 @@ class LapsManager(ABC):
         :return: The lap data
         """
         if self._primary_laps:
-            return self._primary_laps.values()[-1]  # type:ignore
+            return self._primary_laps.peek_value(-1)
         return None
 
     def get_num_laps(self, holeshot: bool = False) -> int:
@@ -169,11 +168,11 @@ class LapsManager(ABC):
         :return: The total time
         """
         if self._primary_laps:
-            last_lap: FullLapData = self._primary_laps.values()[-1]  # type:ignore
+            last_lap = self._primary_laps.peek_value(-1)
             last_time = last_lap.timedelta
 
             if holeshot:
-                first_lap: FullLapData = self._primary_laps.values()[0]  # type:ignore
+                first_lap = self._primary_laps.peek_value(0)
                 return last_time - first_lap.timedelta
 
             return last_time
@@ -189,12 +188,12 @@ class LapsManager(ABC):
         """
         if self._primary_laps:
             num_laps = len(self._primary_laps)
-            last_lap: FullLapData = self._primary_laps.values()[-1]  # type:ignore
+            last_lap = self._primary_laps.peek_value(-1)
             last_time = last_lap.timedelta
 
             if holeshot:
                 num_laps -= 1
-                first_lap: FullLapData = self._primary_laps.values()[0]  # type:ignore
+                first_lap = self._primary_laps.peek_value(0)
                 return (last_time - first_lap.timedelta) / num_laps
 
             return last_time / num_laps
