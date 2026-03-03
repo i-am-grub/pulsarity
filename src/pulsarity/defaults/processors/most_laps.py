@@ -64,12 +64,11 @@ class _MostLapsManager(LapsManager):
 
         if self._primary_laps:
             primary_laps = len(self._primary_laps)
-            last_lap = self.get_last_primary_lap()
-            assert last_lap is not None
+            last_lap = self._primary_laps.peek_value(-1)
             last_timestamp = last_lap.timedelta
 
         if self._split_laps:
-            last_split: FullLapData = self._split_laps.values()[-1]  # type:ignore
+            last_split = self._split_laps.peek_value(-1)
 
             if last_split.timedelta > last_timestamp:
                 last_index = last_split.timer_index
