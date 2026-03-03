@@ -125,12 +125,12 @@ class MostLapsProcessor(RaceProcessor):
 
     def _get_cache(self) -> ValueSortedDict[int, SlotResult[_ResultExtras]]:
         if not self._cache:
-            slot_data = [(value, slot_id) for slot_id, value in self._lap_data.items()]
-            slot_data.sort(reverse=True)
-
             pos, step = 0, 1
             last_manager: _MostLapsManager | None = None
-            for manager, slot_id in slot_data:
+
+            for slot_id, manager in sorted(
+                self._lap_data.items(), key=lambda pair: pair[1], reverse=True
+            ):
                 if manager == last_manager:
                     step += 1
                 else:
