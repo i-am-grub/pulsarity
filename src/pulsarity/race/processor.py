@@ -144,7 +144,7 @@ class LapsManager(ABC):
         :return: The lap data
         """
         if self._primary_laps:
-            return self._primary_laps.last_value()
+            return self._primary_laps.peek_value(-1)
         return None
 
     def get_num_laps(self, holeshot: bool = False) -> int:
@@ -168,11 +168,11 @@ class LapsManager(ABC):
         :return: The total time
         """
         if self._primary_laps:
-            last_lap = self._primary_laps.last_value()
+            last_lap = self._primary_laps.peek_value(-1)
             last_time = last_lap.timedelta
 
             if holeshot:
-                first_lap = self._primary_laps.first_value()
+                first_lap = self._primary_laps.peek_value(0)
                 return last_time - first_lap.timedelta
 
             return last_time
@@ -188,12 +188,12 @@ class LapsManager(ABC):
         """
         if self._primary_laps:
             num_laps = len(self._primary_laps)
-            last_lap = self._primary_laps.last_value()
+            last_lap = self._primary_laps.peek_value(-1)
             last_time = last_lap.timedelta
 
             if holeshot:
                 num_laps -= 1
-                first_lap = self._primary_laps.first_value()
+                first_lap = self._primary_laps.peek_value(0)
                 return (last_time - first_lap.timedelta) / num_laps
 
             return last_time / num_laps

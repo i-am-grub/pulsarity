@@ -4,14 +4,14 @@ Custom sorted collections
 
 import bisect
 from collections import UserDict
-from collections.abc import ItemsView, KeysView, ValuesView
-from typing import TypeVar
+from collections.abc import ItemsView, Iterable, KeysView, ValuesView
+from typing import Iterator, TypeVar
 
 U = TypeVar("U")
 V = TypeVar("V")
 
 
-class SortedKeysView(KeysView[U]):
+class _SortedKeysView(KeysView[U]):
     """
     Sorted keys view of `ValueSortedDict`
     """
@@ -24,7 +24,7 @@ class SortedKeysView(KeysView[U]):
         return self._mapping.list[index]
 
 
-class SortedValuesView(ValuesView[U]):
+class _SortedValuesView(ValuesView[U]):
     """
     Sorted values view of `ValueSortedDict`
     """
@@ -44,7 +44,7 @@ class SortedValuesView(ValuesView[U]):
         return self._mapping[key]
 
 
-class SortedItemsView(ItemsView[U, V]):
+class _SortedItemsView(ItemsView[U, V]):
     """
     Sorted values view of `ValueSortedDict`
     """
@@ -67,15 +67,27 @@ class ValueSortedDict(UserDict[U, V]):
     Dictionary with sorted values
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, iterable: Iterator | None = None):
         self.list = []
+        if isinstance(iterable, Iterable):
+            super().__init__(iterable)
+            self.list = sorted(self.data.keys(), key=self._by_value_key)  # type: ignore
+        else:
+            super().__init__()
+
+    def _by_value_key(self, key: U) -> V:
+        return self[key]
 
     def __setitem__(self, key, item):
         if key in self:
             self.list.remove(key)
+
         super().__setitem__(key, item)
-        bisect.insort_right(self.list, key, key=lambda x: self[x])
+
+        if not self.list or self[key] >= self[self.list[-1]]:
+            self.list.append(key)
+        else:
+            bisect.insort_right(self.list, key, key=self._by_value_key)
 
     def __delitem__(self, key):
         super().__delitem__(key)
@@ -85,29 +97,42 @@ class ValueSortedDict(UserDict[U, V]):
         super().clear()
         self.list.clear()
 
-    def keys(self) -> SortedKeysView[U]:
-        return SortedKeysView(self)
+    def keys(self) -> _SortedKeysView[U]:
+        return _SortedKeysView(self)
 
-    def values(self) -> SortedValuesView[V]:
-        return SortedValuesView(self)
+    def values(self) -> _SortedValuesView[V]:
+        return _SortedValuesView(self)
 
-    def items(self) -> SortedItemsView[U, V]:
-        return SortedItemsView(self)
+    def items(self) -> _SortedItemsView[U, V]:
+        return _SortedItemsView(self)
 
-    def first_value(self) -> V:
+    def peek_value(self, index: int = -1) -> V:
         """
-        Gets the first value in the sorted mapping
-        """
-        return self[self.list[0]]
+        Peeks the value at an index in the sorted mapping
 
-    def last_value(self) -> V:
+        :param index: Index to peek the value at, defaults to -1
+        :return: The value
         """
-        Gets the last value in the sorted mapping
-        """
-        return self[self.list[-1]]
+        return self[self.list[index]]
 
-    def update(self, **kwargs):
-        raise NotImplementedError()
+    def popitem(self):
+        key = self.list.pop()
+        return key, self.data.pop(key)
+
+    def update(self, kwargs):
+        # pylint: disable=W0221
+        super().update(kwargs)
+        self.list = sorted(self.data.keys(), key=self._by_value_key)
 
     def copy(self):
-        raise NotImplementedError()
+        return self.__class__(self.items())
+
+    def __iter__(self):
+        return self.list.__iter__()
+
+    def __reversed__(self):
+        return self.list.__reversed__()
+
+    def __repr__(self):
+        vals = [f"{key}: {self[key]}" for key in self.list]
+        return f"{{{', '.join(vals)}}}"
