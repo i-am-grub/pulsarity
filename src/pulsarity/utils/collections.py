@@ -141,3 +141,8 @@ class ValueSortedDict(UserDict[U, V]):
     def __repr__(self):
         vals = [f"{key}: {self.data[key]}" for key in self.list]
         return f"{{{', '.join(vals)}}}"
+
+    def __ior__(self, other):  # type: ignore
+        super().__ior__(other)
+        self.list = sorted(self.data.keys(), key=self._by_value_key)
+        return self
