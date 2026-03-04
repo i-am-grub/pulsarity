@@ -5,9 +5,8 @@ Race processor
 import inspect
 from abc import ABC, abstractmethod
 from collections import ChainMap, deque
-from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Callable, Generic, NamedTuple, Self, TypedDict, TypeVar
+from typing import Callable, Generic, Iterable, NamedTuple, Self, Sequence, TypeVar
 
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import FullLapData, TimerMode
@@ -16,11 +15,7 @@ from pulsarity.utils.collections import ValueSortedDict
 # pylint: disable=R1730
 
 
-class _BaseTypedDict(TypedDict):
-    pass
-
-
-T = TypeVar("T", bound=_BaseTypedDict)
+T = TypeVar("T")
 
 
 class ConsecutiveMetric(NamedTuple):
@@ -37,11 +32,12 @@ class CombinedMetrics(NamedTuple):
     All race metrics
     """
 
-    laps: int
+    total_laps: int
     total_time: float
     average_lap_time: float
     fastest_time: float
-    fastest_consec: ConsecutiveMetric
+    fastest_consec_base: int
+    fastest_consec_time: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,13 +45,16 @@ class SlotResult(Generic[T]):
     """
     Basic class for representing race data.
 
-    Supported types for generic include dataclasses (preferred),
-    dicts, lists, and tuples
+    Supported types for generic include dataclasses (preferred)
+    and dicts
     """
 
     position: int
-    slot_num: int
-    data: T
+    """result position"""
+    slots: Sequence[int]
+    """contributing slots"""
+    data: T | None = None
+    """additional data"""
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, SlotResult):
@@ -78,6 +77,20 @@ class SlotResult(Generic[T]):
 
     def __ge__(self, other: Self) -> bool:
         return self.position >= other.position
+
+
+@dataclass(frozen=True, slots=True)
+class SoloResultData:
+    """
+    Basic class for representing solo pilot race data.
+    """
+
+    total_laps: int
+    total_time: float
+    average_lap_time: float
+    fastest_time: float
+    fastest_consec_base: int
+    fastest_consec_time: float
 
 
 class LapsManager(ABC):
@@ -245,10 +258,12 @@ class LapsManager(ABC):
         metrics = self.get_combined_metrics(holeshot, max_laps)
         if metrics is None:
             return None
-        return metrics.fastest_consec
+        return ConsecutiveMetric(
+            metrics.fastest_consec_base, metrics.fastest_consec_time
+        )
 
     def get_combined_metrics(
-        self, holeshot: bool = False, max_laps: int = 3
+        self, holeshot: bool = False, consec_laps: int = 3
     ) -> CombinedMetrics | None:
         """
         Generate multiple metrics at once.
@@ -265,7 +280,7 @@ class LapsManager(ABC):
         :param max_laps: The max consecutive laps, defaults to 3
         :return: The generated metrics
         """
-        store: deque[float] = deque(maxlen=max_laps + 1)
+        store: deque[float] = deque(maxlen=consec_laps + 1)
         fastest_time = float("inf")
         fastest_consec_time = float("inf")
 
@@ -289,7 +304,7 @@ class LapsManager(ABC):
             if time_diff < fastest_time:
                 fastest_time = time_diff
 
-            if len(store) > max_laps:
+            if len(store) > consec_laps:
                 windowed_time -= store.popleft()
                 if windowed_time < fastest_consec_time:
                     fastest_consec_time = windowed_time
@@ -299,10 +314,14 @@ class LapsManager(ABC):
         if not num_laps:
             return None
 
-        laps = num_laps if num_laps < max_laps else max_laps
-        consec = ConsecutiveMetric(laps, fastest_consec_time)
+        consec_laps_ = num_laps if num_laps < consec_laps else consec_laps
         return CombinedMetrics(
-            num_laps, total_time, total_time / num_laps, fastest_time, consec
+            num_laps,
+            total_time,
+            total_time / num_laps,
+            fastest_time,
+            consec_laps_,
+            fastest_consec_time,
         )
 
     @abstractmethod
@@ -357,7 +376,7 @@ class LapsManager(ABC):
         return self.get_score() >= other.get_score()
 
 
-class RaceProcessor(ABC):
+class RaceProcessor(ABC, Generic[T]):
     """
     Abstract base class for processing race data.
     Can be used to enforce custom rulesets
@@ -408,7 +427,7 @@ class RaceProcessor(ABC):
         """
 
     @abstractmethod
-    def get_race_results(self) -> Sequence[SlotResult]:
+    def get_race_results(self) -> Sequence[SlotResult[T]]:
         """
         Get the results of the race
 
@@ -416,7 +435,7 @@ class RaceProcessor(ABC):
         """
 
     @abstractmethod
-    def get_slot_result(self, slot_num: int) -> SlotResult | None:
+    def get_slot_result(self, slot_num: int) -> SlotResult[T] | None:
         """
         Get the race results for a slot
 

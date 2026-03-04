@@ -3,9 +3,8 @@ Most laps implementation
 """
 
 from collections import defaultdict
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from itertools import count
-from typing import TypedDict
 
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import FullLapData
@@ -13,17 +12,9 @@ from pulsarity.race.processor import (
     LapsManager,
     RaceProcessor,
     SlotResult,
+    SoloResultData,
     register_processor,
 )
-from pulsarity.utils.collections import ValueSortedDict
-
-
-class _ResultExtras(TypedDict):
-    """
-    Temporary result extra definition
-    """
-
-    total_laps: int
 
 
 class _MostLapsManager(LapsManager):
@@ -60,7 +51,7 @@ class _MostLapsManager(LapsManager):
 
         primary_laps = 0
         last_index = 0
-        last_timestamp = 0.0
+        last_timestamp = float("inf")
 
         if self._primary_laps:
             primary_laps = len(self._primary_laps)
@@ -80,7 +71,7 @@ class _MostLapsManager(LapsManager):
 
 
 @register_processor
-class MostLapsProcessor(RaceProcessor):
+class MostLapsProcessor(RaceProcessor[SoloResultData]):
     """
     Processor to enforce the most laps ruleset
     """
@@ -91,14 +82,14 @@ class MostLapsProcessor(RaceProcessor):
     def __init__(self, race_format: RaceFormat) -> None:
         self._format = race_format
         self._lap_data: dict[int, _MostLapsManager] = defaultdict(_MostLapsManager)
-        self._cache: ValueSortedDict[int, SlotResult[_ResultExtras]] = ValueSortedDict()
+        self._cache: dict[int, SlotResult[SoloResultData]] = {}
         self._count = count()
 
     @classmethod
-    def get_uid(cls) -> str:
+    def get_uid(cls):
         return cls._uid
 
-    def add_lap_record(self, slot: int, record: FullLapData) -> int | None:
+    def add_lap_record(self, slot, record):
         if (
             self._format.overtime_sec == 0
             and record.timedelta >= self._format.race_time_sec
@@ -110,11 +101,11 @@ class MostLapsProcessor(RaceProcessor):
         self._cache.clear()
         return id_
 
-    def remove_lap_record(self, slot: int, key: int) -> None:
+    def remove_lap_record(self, slot, key) -> None:
         self._lap_data[slot].remove_lap(key)
         self._cache.clear()
 
-    def is_slot_done(self, slot_num: int) -> bool:
+    def is_slot_done(self, slot_num):
         slot_data = self._lap_data[slot_num]
 
         last_lap = slot_data.get_last_primary_lap()
@@ -123,32 +114,36 @@ class MostLapsProcessor(RaceProcessor):
 
         return False
 
-    def _get_cache(self) -> ValueSortedDict[int, SlotResult[_ResultExtras]]:
+    def _get_cache(self) -> dict[int, SlotResult[SoloResultData]]:
         if not self._cache:
             pos, step = 0, 1
-            last_manager: _MostLapsManager | None = None
+            prev_manager: _MostLapsManager | None = None
 
             for slot_id, manager in sorted(
                 self._lap_data.items(), key=lambda pair: pair[1], reverse=True
             ):
-                if manager == last_manager:
+                if manager == prev_manager:
                     step += 1
                 else:
                     pos += step
                     step = 1
 
-                result = SlotResult(
-                    pos, slot_id, _ResultExtras(total_laps=manager.get_num_laps())
-                )
-                self._cache[slot_id] = result
-                last_manager = manager
+                metrics = manager.get_combined_metrics()
+                if metrics is not None:
+                    result = SlotResult(pos, (slot_id,), SoloResultData(*metrics))
+                    self._cache[slot_id] = result
+                else:
+                    result = SlotResult(pos, (slot_id,))
+                    self._cache[slot_id] = result
+
+                prev_manager = manager
 
         return self._cache
 
-    def get_race_results(self) -> Sequence[SlotResult[_ResultExtras]]:
+    def get_race_results(self):
         return tuple(self._get_cache().values())
 
-    def get_slot_result(self, slot_num: int) -> SlotResult[_ResultExtras] | None:
+    def get_slot_result(self, slot_num: int):
         return self._get_cache().get(slot_num, None)
 
     def get_laps(self) -> Iterable[FullLapData]:

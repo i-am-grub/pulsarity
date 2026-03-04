@@ -104,11 +104,18 @@ def test_all_metrics():
     manager.add_lap(next(keys), lap)
 
     metrics = manager.get_combined_metrics()
-    assert metrics.laps == manager.get_num_laps()
+    assert metrics.total_laps == manager.get_num_laps()
     assert metrics.total_time == manager.get_total_time()
     assert metrics.average_lap_time == manager.get_average_lap_time()
     assert metrics.fastest_time == manager.get_fastest_time()
-    assert metrics.fastest_consec == manager.get_fastest_consecutive_metric()
+    assert (
+        metrics.fastest_consec_base
+        == manager.get_fastest_consecutive_metric().consec_base
+    )
+    assert (
+        metrics.fastest_consec_time
+        == manager.get_fastest_consecutive_metric().consec_time
+    )
 
 
 def test_all_metrics_holeshot():
@@ -131,11 +138,18 @@ def test_all_metrics_holeshot():
     manager.add_lap(next(keys), lap)
 
     metrics = manager.get_combined_metrics(True)
-    assert metrics.laps == manager.get_num_laps(True)
+    assert metrics.total_laps == manager.get_num_laps(True)
     assert metrics.total_time == manager.get_total_time(True)
     assert metrics.average_lap_time == manager.get_average_lap_time(True)
     assert metrics.fastest_time == manager.get_fastest_time(True)
-    assert metrics.fastest_consec == manager.get_fastest_consecutive_metric(True)
+    assert (
+        metrics.fastest_consec_base
+        == manager.get_fastest_consecutive_metric(True).consec_base
+    )
+    assert (
+        metrics.fastest_consec_time
+        == manager.get_fastest_consecutive_metric(True).consec_time
+    )
 
 
 def test_laps_manager_fastest():
@@ -373,9 +387,9 @@ def test_most_laps_processor():
 
     # Check race results
     results = processor.get_race_results()
-    assert results[0].slot_num == 0
+    assert results[0].slots[0] == 0
     assert results[0].position == 1
-    assert results[1].slot_num == 1
+    assert results[1].slots[0] == 1
     assert results[1].position == 2
 
     # Add additional lap to change results
@@ -386,9 +400,9 @@ def test_most_laps_processor():
 
     # Verify results changed as expected
     results = processor.get_race_results()
-    assert results[0].slot_num == 1
+    assert results[0].slots[0] == 1
     assert results[0].position == 1
-    assert results[1].slot_num == 0
+    assert results[1].slots[0] == 0
     assert results[1].position == 2
 
     # Verify total number of laps in processor
@@ -409,9 +423,9 @@ def test_most_laps_processor():
 
     # Verify results changed as expected
     results = processor.get_race_results()
-    assert results[0].slot_num == 0
+    assert results[0].slots[0] == 0
     assert results[0].position == 1
-    assert results[1].slot_num == 1
+    assert results[1].slots[0] == 1
     assert results[1].position == 2
 
     # Test adding lap out of timed order (last lap was at 4.5)
@@ -424,7 +438,7 @@ def test_most_laps_processor():
 
     # Verify results changed as expected
     results = processor.get_race_results()
-    assert results[0].slot_num == 1
+    assert results[0].slots[0] == 1
     assert results[0].position == 1
-    assert results[1].slot_num == 0
+    assert results[1].slots[0] == 0
     assert results[1].position == 2
