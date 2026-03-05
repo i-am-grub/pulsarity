@@ -9,6 +9,7 @@ from itertools import count
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import FullLapData
 from pulsarity.race.processor import (
+    CombinedMetrics,
     LapsManager,
     RaceProcessor,
     SlotResult,
@@ -22,17 +23,34 @@ class _MostLapsManager(LapsManager):
     Lap data manager for a single slot
     """
 
-    __slots__ = ("_primary_laps", "_split_laps", "_all_laps", "_score")
+    __slots__ = ("_primary_laps", "_split_laps", "_all_laps", "_score", "_metrics")
 
     def __init__(self):
         super().__init__()
         self._score = None
+        self._metrics = None
 
     def add_lap_cb(self, *_) -> None:
         self._score = None
+        self._metrics = None
 
     def remove_lap_cb(self, *_) -> None:
         self._score = None
+        self._metrics = None
+
+    def get_metrics(
+        self, holeshot: bool = False, consec_laps: int = 3
+    ) -> CombinedMetrics | None:
+        """
+        Gets the combined metrics
+
+        :param holeshot: Holeshot active, defaults to False
+        :param consec_laps: The max consecutive laps, defaults to 3
+        :return: The generated metrics
+        """
+        if self._metrics is None:
+            self._metrics = self.get_combined_metrics(holeshot, consec_laps)
+        return self._metrics
 
     def get_score(self) -> tuple:
         """
@@ -128,14 +146,12 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
                     pos += step
                     step = 1
 
-                metrics = manager.get_combined_metrics()
-                if metrics is not None:
+                if manager and (metrics := manager.get_metrics()) is not None:
                     result = SlotResult(pos, (slot_id,), SoloResultData(*metrics))
-                    self._cache[slot_id] = result
                 else:
                     result = SlotResult(pos, (slot_id,))
-                    self._cache[slot_id] = result
 
+                self._cache[slot_id] = result
                 prev_manager = manager
 
         return self._cache
