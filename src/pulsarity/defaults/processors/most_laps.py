@@ -11,6 +11,7 @@ from pulsarity.interface.timer_manager import FullLapData
 from pulsarity.race.processor import (
     CombinedMetrics,
     LapsManager,
+    ProcessorField,
     RaceProcessor,
     SlotResult,
     SoloResultData,
@@ -95,17 +96,21 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
     """
 
     __slots__ = ("_format", "_lap_data", "_cache", "_count")
-    _uid = "most_laps"
+
+    class Meta:
+        """Processor metadata"""
+
+        uid = "most_laps"
+        fields = {
+            "holeshot": ProcessorField("holeshot", bool, False),
+            "consecutive": ProcessorField("consecutive laps", int, 3),
+        }
 
     def __init__(self, race_format: RaceFormat) -> None:
         self._format = race_format
         self._lap_data: dict[int, _MostLapsManager] = defaultdict(_MostLapsManager)
         self._cache: dict[int, SlotResult[SoloResultData]] = {}
         self._count = count()
-
-    @classmethod
-    def get_uid(cls):
-        return cls._uid
 
     def add_lap_record(self, slot, record):
         if (

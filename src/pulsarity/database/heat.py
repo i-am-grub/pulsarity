@@ -5,10 +5,11 @@ ORM classes for heat data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic
 
 from tortoise import fields
 
+from pulsarity.database._base import ATTR_TYPE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 # pylint: disable=R0903,E1136
 
 
-class HeatAttribute(_PulsarityBase):
+class HeatAttribute(_PulsarityBase, Generic[ATTR_TYPE]):
     """
     Unique and stored individually stored values for each heat.
     """
@@ -27,13 +28,14 @@ class HeatAttribute(_PulsarityBase):
     heat: fields.ForeignKeyRelation[Heat] = fields.ForeignKeyField(
         "event.Heat", related_name="attributes"
     )
+    value = fields.JSONField[ATTR_TYPE]()
 
     class Meta:
         """Tortoise ORM metadata"""
 
         app = "event"
         table = "heat_attr"
-        unique_together = (("id", "name"),)
+        unique_together = (("heat", "name"),)
 
 
 class Heat(_PulsarityBase):

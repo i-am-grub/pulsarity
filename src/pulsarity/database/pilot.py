@@ -4,14 +4,17 @@ ORM classes for Pilot data
 
 from __future__ import annotations
 
+from typing import Generic
+
 from tortoise import fields
 
+from pulsarity.database._base import ATTR_TYPE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 # pylint: disable=R0903,E1136
 
 
-class PilotAttribute(_PulsarityBase):
+class PilotAttribute(_PulsarityBase, Generic[ATTR_TYPE]):
     """
     Unique and stored individually stored values for each pilot.
     """
@@ -20,13 +23,14 @@ class PilotAttribute(_PulsarityBase):
     pilot: fields.ForeignKeyRelation[Pilot] = fields.ForeignKeyField(
         "event.Pilot", related_name="attributes"
     )
+    value = fields.JSONField[ATTR_TYPE]()
 
     class Meta:
         """Tortoise ORM metadata"""
 
         app = "event"
         table = "pilot_attr"
-        unique_together = (("id", "name"),)
+        unique_together = (("pilot", "name"),)
 
 
 class Pilot(_PulsarityBase):

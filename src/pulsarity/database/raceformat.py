@@ -2,9 +2,31 @@
 ORM classes for Format data
 """
 
+from typing import Generic
+
 from tortoise import fields
 
+from pulsarity.database._base import ATTR_TYPE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
+
+
+class ProcessorFields(_PulsarityBase, Generic[ATTR_TYPE]):
+    """
+    Unique fields for a race processor.
+    """
+
+    raceformat: fields.ForeignKeyRelation[RaceFormat] = fields.ForeignKeyField(
+        "event.RaceFormat", related_name="fields"
+    )
+    name = fields.CharField(max_length=80)
+    value = fields.JSONField[ATTR_TYPE]()
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "processor_field"
+        unique_together = (("raceformat", "name"),)
 
 
 class RaceFormat(_PulsarityBase):
@@ -28,9 +50,11 @@ class RaceFormat(_PulsarityBase):
     """Overtime duration in seconds, -1 for unlimited, unused if unlimited_time is True"""
     processor_id = fields.CharField(max_length=32)
     """The identifer for the format's processor"""
+    fields: fields.ReverseRelation[ProcessorFields]
+    """The fields assigned to the format's processor"""
 
     class Meta:
         """Tortoise ORM metadata"""
 
         app = "event"
-        table = "format"
+        table = "raceformat"
