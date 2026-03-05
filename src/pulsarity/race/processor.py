@@ -110,8 +110,8 @@ class LapsManager(ABC):
             self._primary_laps, self._split_laps
         )
 
-    def __bool__(self) -> bool:
-        return bool(self._primary_laps.__len__())
+    def __len__(self) -> int:
+        return self._primary_laps.__len__()
 
     def add_lap(self, key: int, lap: FullLapData) -> None:
         """
