@@ -111,7 +111,7 @@ class LapsManager(ABC):
         )
 
     def __bool__(self) -> bool:
-        return bool(self._primary_laps)
+        return bool(self._primary_laps.__len__())
 
     def add_lap(self, key: int, lap: FullLapData) -> None:
         """
