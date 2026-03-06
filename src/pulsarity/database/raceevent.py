@@ -9,16 +9,14 @@ from typing import TYPE_CHECKING, Generic, Self
 from tortoise import fields
 from tortoise.functions import Max
 
-from pulsarity.database._base import ATTR_TYPE
+from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
     from pulsarity.database.raceclass import RaceClass
 
-# pylint: disable=R0903,E1136
 
-
-class RaceEventAttribute(_PulsarityBase, Generic[ATTR_TYPE]):
+class RaceEventAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     """
     Unique and stored individually stored values for each event.
     """
@@ -27,7 +25,7 @@ class RaceEventAttribute(_PulsarityBase, Generic[ATTR_TYPE]):
     event: fields.ForeignKeyRelation[RaceEvent] = fields.ForeignKeyField(
         "event.RaceEvent", related_name="attributes"
     )
-    value = fields.JSONField[ATTR_TYPE]()
+    value = fields.JSONField[ATTRIBUTE]()
 
     class Meta:
         """Tortoise ORM metadata"""

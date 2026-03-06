@@ -6,20 +6,20 @@ from typing import Generic
 
 from tortoise import fields
 
-from pulsarity.database._base import ATTR_TYPE
+from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 
-class ProcessorFields(_PulsarityBase, Generic[ATTR_TYPE]):
+class ProcessorFields(_PulsarityBase, Generic[ATTRIBUTE]):
     """
     Unique fields for a race processor.
     """
 
     raceformat: fields.ForeignKeyRelation[RaceFormat] = fields.ForeignKeyField(
-        "event.RaceFormat", related_name="fields"
+        "event.RaceFormat", related_name="processor_fields"
     )
     name = fields.CharField(max_length=80)
-    value = fields.JSONField[ATTR_TYPE]()
+    value = fields.JSONField[ATTRIBUTE]()
 
     class Meta:
         """Tortoise ORM metadata"""
@@ -33,8 +33,6 @@ class RaceFormat(_PulsarityBase):
     """
     The properties that govern how a race is conducted
     """
-
-    # pylint: disable=R0903
 
     name: fields.Field[str] = fields.CharField(max_length=80)
     """User-facing name"""
@@ -50,7 +48,7 @@ class RaceFormat(_PulsarityBase):
     """Overtime duration in seconds, -1 for unlimited, unused if unlimited_time is True"""
     processor_id = fields.CharField(max_length=32)
     """The identifer for the format's processor"""
-    fields: fields.ReverseRelation[ProcessorFields]
+    processor_fields: fields.ReverseRelation[ProcessorFields]
     """The fields assigned to the format's processor"""
 
     class Meta:

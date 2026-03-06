@@ -9,17 +9,15 @@ from typing import TYPE_CHECKING, Generic
 
 from tortoise import fields
 
-from pulsarity.database._base import ATTR_TYPE
+from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
     from pulsarity.database.round import Round
     from pulsarity.database.slot import Slot
 
-# pylint: disable=R0903,E1136
 
-
-class HeatAttribute(_PulsarityBase, Generic[ATTR_TYPE]):
+class HeatAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     """
     Unique and stored individually stored values for each heat.
     """
@@ -28,7 +26,7 @@ class HeatAttribute(_PulsarityBase, Generic[ATTR_TYPE]):
     heat: fields.ForeignKeyRelation[Heat] = fields.ForeignKeyField(
         "event.Heat", related_name="attributes"
     )
-    value = fields.JSONField[ATTR_TYPE]()
+    value = fields.JSONField[ATTRIBUTE]()
 
     class Meta:
         """Tortoise ORM metadata"""

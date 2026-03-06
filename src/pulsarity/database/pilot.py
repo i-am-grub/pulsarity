@@ -8,13 +8,11 @@ from typing import Generic
 
 from tortoise import fields
 
-from pulsarity.database._base import ATTR_TYPE
+from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
-# pylint: disable=R0903,E1136
 
-
-class PilotAttribute(_PulsarityBase, Generic[ATTR_TYPE]):
+class PilotAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     """
     Unique and stored individually stored values for each pilot.
     """
@@ -23,7 +21,7 @@ class PilotAttribute(_PulsarityBase, Generic[ATTR_TYPE]):
     pilot: fields.ForeignKeyRelation[Pilot] = fields.ForeignKeyField(
         "event.Pilot", related_name="attributes"
     )
-    value = fields.JSONField[ATTR_TYPE]()
+    value = fields.JSONField[ATTRIBUTE]()
 
     class Meta:
         """Tortoise ORM metadata"""

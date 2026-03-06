@@ -10,8 +10,6 @@ import pytest
 from pulsarity.events import EventBroker, EventSetupEvt, RaceSequenceEvt
 from pulsarity.utils import background
 
-# pylint: disable=W0212
-
 
 async def broker_subscriber(broker: EventBroker, check_values: list):
     """

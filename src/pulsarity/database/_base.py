@@ -7,8 +7,8 @@ from typing import Self, TypeVar
 from tortoise import fields
 from tortoise.models import Model
 
-ATTR_TYPE = TypeVar(
-    "ATTR_TYPE", bound=bool | str | int | float | list | tuple | dict | None
+ATTRIBUTE = TypeVar(
+    "ATTRIBUTE", bound=bool | str | int | float | list | tuple | dict | None
 )
 
 
