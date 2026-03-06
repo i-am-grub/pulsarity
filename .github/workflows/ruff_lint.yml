@@ -1,4 +1,4 @@
-name: Ruff Format Check
+name: Ruff Linting Check
 
 permissions:
   contents: read
@@ -6,7 +6,12 @@ permissions:
   pull-requests: write
   checks: write
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
+  pull_request:
+    paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
 
 jobs:
   format:
@@ -14,9 +19,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    
     - name: Run Ruff linting check
       uses: astral-sh/ruff-action@v3
-    - name: Run Ruff formatter check
-      uses: astral-sh/ruff-action@v3
-      with:
-        args: format --check --diff

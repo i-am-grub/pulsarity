@@ -178,3 +178,6 @@ logs
 # uv
 .python-version
 uv.lock
+
+# ruff
+.ruff_cache

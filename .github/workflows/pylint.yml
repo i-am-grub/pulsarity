@@ -6,7 +6,12 @@ permissions:
   pull-requests: write
   checks: write
 
-on: [push]
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
+  pull_request:
+    paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
 
 jobs:
   build:

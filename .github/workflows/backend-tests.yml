@@ -9,9 +9,9 @@ permissions:
 on:
   push:
     branches: [master]
-    paths-ignore: ['docs/**', '*.md', '*.rst']
+    paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
   pull_request:
-    paths-ignore: [ 'docs/**', '*.md', '*.rst' ]
+    paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
 
 jobs:
   test:

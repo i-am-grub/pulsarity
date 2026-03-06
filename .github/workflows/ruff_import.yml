@@ -1,0 +1,26 @@
+name: Ruff Import Sorting Check
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write
+  checks: write
+
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
+  pull_request:
+    paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run Ruff import check
+      uses: astral-sh/ruff-action@v3
+      with:
+        args: check --select I

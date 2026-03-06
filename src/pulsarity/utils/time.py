@@ -3,7 +3,7 @@ Custom time utilities
 """
 
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import cache
 
 
