@@ -71,7 +71,11 @@ ignore = ["tests", "src/pulsarity/_protobuf"]
 ignored-modules = ["pulsarity._protobuf.*", "google.protobuf.*"]
 
 [tool.ruff.lint]
-exclude = [".mypy_cache", "env", "src/pulsarity/_protobuf"]
+exclude = [".mypy_cache", "env", "src/pulsarity/_protobuf/*"]
+
+[tool.ruff.format]
+docstring-code-format = true
+exclude = ["src/pulsarity/_protobuf/*"]
 
 [tool.pytest.ini_options]
 addopts = "--no-cov-on-fail --showlocals --strict-markers"

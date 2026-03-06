@@ -1,0 +1,22 @@
+name: Ruff Format Check
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write
+  checks: write
+
+on: [push, pull_request]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Run Ruff linting check
+      uses: astral-sh/ruff-action@v3
+    - name: Run Ruff formatter check
+      uses: astral-sh/ruff-action@v3
+      with:
+        args: format --check --diff
