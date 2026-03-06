@@ -12,7 +12,7 @@ from pulsarity import __version__ as release
 project = "Pulsarity"
 copyright = "2024, Bryce Gruber"
 author = "Bryce Gruber"
-version = ".".join(release.split(".")[:-1])
+version = ".".join(release.split(".")[:3])
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
