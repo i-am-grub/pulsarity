@@ -2,11 +2,11 @@
 ORM classes for Format data
 """
 
-from typing import Generic, NamedTuple
+from typing import Generic
 
 from tortoise import fields
 
-from pulsarity.database._base import ATTRIBUTE, JsonParsable
+from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 
@@ -27,19 +27,6 @@ class ProcessorFields(_PulsarityBase, Generic[ATTRIBUTE]):
         app = "event"
         table = "processor_field"
         unique_together = (("raceformat", "name"),)
-
-
-class SafeRaceFormat(NamedTuple):
-    """
-    Immutable for holding race format data
-    """
-
-    stage_time_sec: int
-    random_stage_delay: int
-    unlimited_time: bool
-    race_time_sec: int
-    overtime_sec: int
-    processor_fields: dict[str, JsonParsable]
 
 
 class RaceFormat(_PulsarityBase):
@@ -69,21 +56,3 @@ class RaceFormat(_PulsarityBase):
 
         app = "event"
         table = "raceformat"
-
-    def to_safe_format(self) -> SafeRaceFormat:
-        """
-        Converts the database format to a immutable one
-
-        .. note ::
-            This requires the processor fields to be preloaded
-            from the database.
-        """
-        fields_ = {field.name: field.value for field in self.processor_fields}
-        return SafeRaceFormat(
-            self.stage_time_sec,
-            self.random_stage_delay,
-            self.unlimited_time,
-            self.race_time_sec,
-            self.overtime_sec,
-            fields_,
-        )

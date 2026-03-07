@@ -11,10 +11,12 @@ U = TypeVar("U")
 V = TypeVar("V")
 
 
-class _SortedKeysView(KeysView[U]):
+class SortedKeysView(KeysView[U]):
     """
     Sorted keys view of `ValueSortedDict`
     """
+
+    __slots__ = ("_mapping",)
 
     def __init__(self, mapping: ValueSortedDict):
         super().__init__(mapping)
@@ -24,10 +26,12 @@ class _SortedKeysView(KeysView[U]):
         return self._mapping.list[index]
 
 
-class _SortedValuesView(ValuesView[U]):
+class SortedValuesView(ValuesView[U]):
     """
     Sorted values view of `ValueSortedDict`
     """
+
+    __slots__ = ("_mapping",)
 
     def __init__(self, mapping: ValueSortedDict):
         super().__init__(mapping)
@@ -42,10 +46,12 @@ class _SortedValuesView(ValuesView[U]):
         return self._mapping.data[key]
 
 
-class _SortedItemsView(ItemsView[U, V]):
+class SortedItemsView(ItemsView[U, V]):
     """
     Sorted values view of `ValueSortedDict`
     """
+
+    __slots__ = ("_mapping",)
 
     def __init__(self, mapping: ValueSortedDict):
         super().__init__(mapping)
@@ -64,6 +70,8 @@ class ValueSortedDict(UserDict[U, V]):
     """
     Dictionary with sorted values
     """
+
+    __slots__ = ("data", "list")
 
     def __init__(self, iterable: Iterable[tuple[U, V]] | None = None):
         self.list = []
@@ -97,14 +105,14 @@ class ValueSortedDict(UserDict[U, V]):
         self.data.clear()
         self.list.clear()
 
-    def keys(self) -> _SortedKeysView[U]:
-        return _SortedKeysView(self)
+    def keys(self) -> SortedKeysView[U]:
+        return SortedKeysView(self)
 
-    def values(self) -> _SortedValuesView[V]:
-        return _SortedValuesView(self)
+    def values(self) -> SortedValuesView[V]:
+        return SortedValuesView(self)
 
-    def items(self) -> _SortedItemsView[U, V]:
-        return _SortedItemsView(self)
+    def items(self) -> SortedItemsView[U, V]:
+        return SortedItemsView(self)
 
     def peek_value(self, index: int = -1) -> V:
         """

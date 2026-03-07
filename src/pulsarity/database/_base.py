@@ -7,7 +7,7 @@ from typing import Self, TypeVar
 from tortoise import fields
 from tortoise.models import Model
 
-JsonParsable = bool | str | int | float | list | tuple | dict | None
+JsonParsable = bool | str | int | float | None
 ATTRIBUTE = TypeVar("ATTRIBUTE", bound=JsonParsable)
 
 

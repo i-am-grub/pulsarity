@@ -9,8 +9,8 @@ from random import random
 from typing import NamedTuple
 
 from pulsarity import ctx
-from pulsarity.database.raceformat import SafeRaceFormat
 from pulsarity.events import RaceSequenceEvt
+from pulsarity.race.processor import SafeRaceFormat
 
 logger = logging.getLogger(__name__)
 

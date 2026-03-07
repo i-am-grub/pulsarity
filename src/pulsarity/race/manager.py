@@ -13,7 +13,7 @@ from pulsarity.database.raceformat import RaceFormat
 from pulsarity.database.signal import SignalHistory
 from pulsarity.interface.timer_manager import FullLapData, FullSignalData
 from pulsarity.race._state import RaceStateManager, RaceStatus
-from pulsarity.race.processor import RaceProcessor, RaceProcessorManager
+from pulsarity.race.processor import RaceProcessor, RaceProcessorManager, SafeRaceFormat
 
 
 class _SignalRecord(NamedTuple):
@@ -88,16 +88,7 @@ class RaceManager:
         Currently equivalent to monotonic time
         """
         processor = RaceProcessorManager.get_processor(format_.processor_id)
-
-        if processor is None:
-            raise ValueError("Processor with matching uid not found")
-
-        safe_format = format_.to_safe_format()
-
-        fields = {name: field.default for name, field in processor.Meta.fields.items()}
-        fields.update(safe_format.processor_fields)
-        safe_format.processor_fields.update(fields)
-
+        safe_format = SafeRaceFormat.from_format(format_)
         self._processor = processor(safe_format)
         self._state.schedule_race(safe_format, assigned_start=assigned_start)
 
@@ -194,7 +185,7 @@ class RaceManager:
                     timer_index=lap.timer_index,
                     timer_identifier=lap.timer_identifier,
                 )
-                for lap in self._processor.get_laps()
+                for lap in self._processor.get_laps_iterable()
             )
             await Lap.bulk_create(laps, batch_size=25)
         else:
@@ -202,12 +193,12 @@ class RaceManager:
 
     async def _save_signal_data(self) -> None:
         """
-        Saves the lap data to the database
+        Saves the signal history to the database
         """
 
         def get_slot_data():
-            for slot, _data in self._signal_data.items():
-                for (idx, ident), data in _data.items():
+            for slot, data_ in self._signal_data.items():
+                for (idx, ident), data in data_.items():
                     data.sort()
                     yield SignalHistory(
                         slot_id=slot,

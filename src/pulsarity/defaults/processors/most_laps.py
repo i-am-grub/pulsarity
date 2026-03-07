@@ -5,28 +5,18 @@ Most laps implementation
 from collections import defaultdict
 from collections.abc import Iterable
 from itertools import count
-from typing import NamedTuple
 
-from pulsarity.database.raceformat import SafeRaceFormat
 from pulsarity.interface.timer_manager import FullLapData
 from pulsarity.race.processor import (
     CombinedMetrics,
     LapsManager,
     ProcessorField,
     RaceProcessor,
+    SafeRaceFormat,
     SlotResult,
     SoloResultData,
     register_processor,
 )
-
-
-class _MostLapsFields(NamedTuple):
-    """
-    Hold processor specific fields
-    """
-
-    holeshot: bool
-    consecutive: int
 
 
 class _MostLapsManager(LapsManager):
@@ -111,14 +101,13 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
         """Processor metadata"""
 
         uid = "most_laps"
-        fields = {
-            "holeshot": ProcessorField("holeshot", bool, False),
-            "consecutive": ProcessorField("consecutive laps", int, 3),
-        }
+        fields = (
+            ProcessorField("holeshot", "holeshot", bool, False),
+            ProcessorField("consecutive", "consecutive laps", int, 3),
+        )
 
     def __init__(self, race_format: SafeRaceFormat) -> None:
         self._format = race_format
-        self._fields = _MostLapsFields(**self._format.processor_fields)  # type: ignore
         self._lap_data: dict[int, _MostLapsManager] = defaultdict(_MostLapsManager)
         self._cache: dict[int, SlotResult[SoloResultData]] = {}
         self._count = count()
@@ -164,7 +153,8 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
 
                 if manager:
                     metrics = manager.get_metrics(
-                        self._fields.holeshot, self._fields.consecutive
+                        self._format.fields["holeshot"],  # type: ignore
+                        self._format.fields["consecutive"],  # type: ignore
                     )
                     assert metrics is not None
                     result = SlotResult(pos, (slot_id,), SoloResultData(*metrics))
@@ -182,6 +172,6 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
     def get_slot_result(self, slot_num: int):
         return self._get_cache().get(slot_num, None)
 
-    def get_laps(self) -> Iterable[FullLapData]:
+    def get_laps_iterable(self) -> Iterable[FullLapData]:
         for slot in self._lap_data.values():
-            yield from slot.get_all_laps()
+            yield from slot.get_all_laps_iterable()
