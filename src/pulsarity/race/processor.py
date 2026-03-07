@@ -17,7 +17,7 @@ from typing import (
     TypeVar,
 )
 
-from pulsarity.database.raceformat import RaceFormat
+from pulsarity.database.raceformat import SafeRaceFormat
 from pulsarity.interface.timer_manager import FullLapData, TimerMode
 from pulsarity.utils.collections import ValueSortedDict
 
@@ -413,7 +413,7 @@ class RaceProcessor(ABC, Generic[T]):
         """custom fields for processor"""
 
     @abstractmethod
-    def __init__(self, race_format: RaceFormat) -> None:
+    def __init__(self, race_format: SafeRaceFormat) -> None:
         """
         Class initializer
 

@@ -5,8 +5,9 @@ Most laps implementation
 from collections import defaultdict
 from collections.abc import Iterable
 from itertools import count
+from typing import NamedTuple
 
-from pulsarity.database.raceformat import RaceFormat
+from pulsarity.database.raceformat import SafeRaceFormat
 from pulsarity.interface.timer_manager import FullLapData
 from pulsarity.race.processor import (
     CombinedMetrics,
@@ -17,6 +18,15 @@ from pulsarity.race.processor import (
     SoloResultData,
     register_processor,
 )
+
+
+class _MostLapsFields(NamedTuple):
+    """
+    Hold processor specific fields
+    """
+
+    holeshot: bool
+    consecutive: int
 
 
 class _MostLapsManager(LapsManager):
@@ -95,7 +105,7 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
     Processor to enforce the most laps ruleset
     """
 
-    __slots__ = ("_format", "_lap_data", "_cache", "_count")
+    __slots__ = ("_format", "_fields", "_lap_data", "_cache", "_count")
 
     class Meta:
         """Processor metadata"""
@@ -106,8 +116,9 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
             "consecutive": ProcessorField("consecutive laps", int, 3),
         }
 
-    def __init__(self, race_format: RaceFormat) -> None:
+    def __init__(self, race_format: SafeRaceFormat) -> None:
         self._format = race_format
+        self._fields = _MostLapsFields(**self._format.processor_fields)  # type: ignore
         self._lap_data: dict[int, _MostLapsManager] = defaultdict(_MostLapsManager)
         self._cache: dict[int, SlotResult[SoloResultData]] = {}
         self._count = count()
@@ -151,7 +162,11 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
                     pos += step
                     step = 1
 
-                if manager and (metrics := manager.get_metrics()) is not None:
+                if manager:
+                    metrics = manager.get_metrics(
+                        self._fields.holeshot, self._fields.consecutive
+                    )
+                    assert metrics is not None
                     result = SlotResult(pos, (slot_id,), SoloResultData(*metrics))
                 else:
                     result = SlotResult(pos, (slot_id,))

@@ -7,9 +7,8 @@ from typing import Self, TypeVar
 from tortoise import fields
 from tortoise.models import Model
 
-ATTRIBUTE = TypeVar(
-    "ATTRIBUTE", bound=bool | str | int | float | list | tuple | dict | None
-)
+JsonParsable = bool | str | int | float | list | tuple | dict | None
+ATTRIBUTE = TypeVar("ATTRIBUTE", bound=JsonParsable)
 
 
 class PulsarityBase(Model):

@@ -92,8 +92,14 @@ class RaceManager:
         if processor is None:
             raise ValueError("Processor with matching uid not found")
 
-        self._processor = processor(format_)
-        self._state.schedule_race(format_, assigned_start=assigned_start)
+        safe_format = format_.to_safe_format()
+
+        fields = {name: field.default for name, field in processor.Meta.fields.items()}
+        fields.update(safe_format.processor_fields)
+        safe_format.processor_fields.update(fields)
+
+        self._processor = processor(safe_format)
+        self._state.schedule_race(safe_format, assigned_start=assigned_start)
 
     def stop_race(self) -> None:
         """
