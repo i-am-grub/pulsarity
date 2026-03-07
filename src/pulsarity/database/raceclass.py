@@ -5,11 +5,12 @@ ORM classes for race class data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic
 
 from tortoise import fields
 from tortoise.functions import Max
 
+from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
@@ -17,10 +18,8 @@ if TYPE_CHECKING:
     from pulsarity.database.raceformat import RaceFormat
     from pulsarity.database.round import Round
 
-# pylint: disable=R0903,E1136
 
-
-class RaceClassAttribute(_PulsarityBase):
+class RaceClassAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     """
     Unique and stored individually stored values for each race class.
     """
@@ -29,13 +28,14 @@ class RaceClassAttribute(_PulsarityBase):
     raceclass: fields.ForeignKeyRelation[RaceClass] = fields.ForeignKeyField(
         "event.RaceClass", related_name="attributes"
     )
+    value = fields.JSONField[ATTRIBUTE]()
 
     class Meta:
         """Tortoise ORM metadata"""
 
         app = "event"
         table = "raceclass_attr"
-        unique_together = (("id", "name"),)
+        unique_together = (("raceclass", "name"),)
 
 
 class RaceClass(_PulsarityBase):

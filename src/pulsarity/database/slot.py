@@ -4,10 +4,11 @@ ORM classes for slot data
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic
 
 from tortoise import fields
 
+from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 from pulsarity.database.pilot import Pilot
 
@@ -17,10 +18,7 @@ if TYPE_CHECKING:
     from pulsarity.database.signal import SignalHistory
 
 
-# pylint: disable=R0903,E1136, E1101
-
-
-class SlotAttribute(_PulsarityBase):
+class SlotAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     """
     Unique and stored individually stored values for each round.
     """
@@ -29,13 +27,14 @@ class SlotAttribute(_PulsarityBase):
     slot: fields.ForeignKeyRelation[Slot] = fields.ForeignKeyField(
         "event.Slot", related_name="attributes"
     )
+    value = fields.JSONField[ATTRIBUTE]()
 
     class Meta:
         """Tortoise ORM metadata"""
 
         app = "event"
         table = "slot_attr"
-        unique_together = (("id", "name"),)
+        unique_together = (("slot", "name"),)
 
 
 class Slot(_PulsarityBase):

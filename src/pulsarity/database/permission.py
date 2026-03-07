@@ -20,8 +20,6 @@ class Permission(_PulsarityBase):
     Role for the application
     """
 
-    # pylint: disable=R0903
-
     value = fields.CharField(max_length=64, unique=True)
     """Name of role"""
     persistent = fields.BooleanField(default=False)

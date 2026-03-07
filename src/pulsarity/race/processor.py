@@ -3,19 +3,61 @@ Race processor
 """
 
 import inspect
+import logging
 from abc import ABC, abstractmethod
 from collections import ChainMap, deque
 from dataclasses import dataclass
-from typing import Callable, Generic, Iterable, NamedTuple, Self, Sequence, TypeVar
+from typing import (
+    Callable,
+    Generic,
+    Iterable,
+    NamedTuple,
+    Self,
+    Sequence,
+    TypeVar,
+)
 
+from pulsarity.database._base import JsonParsable
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import FullLapData, TimerMode
 from pulsarity.utils.collections import ValueSortedDict
 
 # pylint: disable=R1730
 
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+
+class SafeRaceFormat(NamedTuple):
+    """
+    Immutable for holding race format data
+    """
+
+    stage_time_sec: int
+    random_stage_delay: int
+    unlimited_time: bool
+    race_time_sec: int
+    overtime_sec: int
+    fields: dict[str, JsonParsable]
+
+    @classmethod
+    def from_format(cls, format_: RaceFormat) -> Self:
+        """
+        Builds an immutable from the a database race format instance and
+        the processor fields default values.
+        """
+        processor = RaceProcessorManager.get_processor(format_.processor_id)
+        fields = {field.name: field.default for field in processor.Meta.fields}
+        fields.update({field.name: field.value for field in format_.processor_fields})
+        return cls(
+            format_.stage_time_sec,
+            format_.random_stage_delay,
+            format_.unlimited_time,
+            format_.race_time_sec,
+            format_.overtime_sec,
+            fields,
+        )
 
 
 class ConsecutiveMetric(NamedTuple):
@@ -98,10 +140,12 @@ class LapsManager(ABC):
     Helper class to assist with storing lap data in `RaceProcessor`s
 
     This class automatically sorts lap data based on the `TimerMode` and
-    implements convience comparsion methods to enable sorting. The
-    structure of this class is largely based on using python tuple comparsions
-    to allow for scoring across multiple variables in an order of importance
+    implements convience comparsion methods to enable sorting based on the
+    returned value by the `get_score` method (defined by the child inheriting
+    from this class).
     """
+
+    __slots__ = ("_primary_laps", "_split_laps", "_all_laps")
 
     def __init__(self) -> None:
         self._primary_laps: ValueSortedDict[int, FullLapData] = ValueSortedDict()
@@ -111,6 +155,10 @@ class LapsManager(ABC):
         )
 
     def __len__(self) -> int:
+        """
+        The number of **primary** laps registered to the manager. This
+        also enables the `__bool__` evaluation.
+        """
         return self._primary_laps.__len__()
 
     def add_lap(self, key: int, lap: FullLapData) -> None:
@@ -145,13 +193,23 @@ class LapsManager(ABC):
 
         self.remove_lap_cb(key, lap)
 
-    def get_all_laps(self) -> Iterable[FullLapData]:
+    def get_all_laps(self) -> Sequence[FullLapData]:
         """
-        Get the lap data
+        Gets all lap data. When planning to only iterate over
+        the data, consider using `get_all_laps_iterable` for
+        computational efficency instead.
 
-        :return: The lap data
+        :return: A sequence of lap data
         """
-        return self._all_laps.values()
+        return tuple(self._all_laps.values())
+
+    def get_all_laps_iterable(self) -> Iterable[FullLapData]:
+        """
+        Gets an iterable that provides all lap data.
+
+        :return: The lap data iterable
+        """
+        yield from self._all_laps.values()
 
     def get_last_primary_lap(self) -> FullLapData | None:
         """
@@ -379,25 +437,37 @@ class LapsManager(ABC):
         return self.get_score() >= other.get_score()
 
 
+class ProcessorField(NamedTuple, Generic[T]):
+    """
+    Custom field for processor
+    """
+
+    name: str
+    display_name: str
+    type_: type[T]
+    default: T
+
+
 class RaceProcessor(ABC, Generic[T]):
     """
     Abstract base class for processing race data.
     Can be used to enforce custom rulesets
     """
 
+    class Meta:
+        """Processor metadata"""
+
+        uid: str
+        """processor unique identifier"""
+        fields: Iterable[ProcessorField]
+        """custom fields for processor"""
+
     @abstractmethod
-    def __init__(self, race_format: RaceFormat) -> None:
+    def __init__(self, race_format: SafeRaceFormat) -> None:
         """
         Class initializer
 
         :param race_format: The active race format
-        """
-
-    @classmethod
-    @abstractmethod
-    def get_uid(cls) -> str:
-        """
-        Get the processor unique identifier
         """
 
     @abstractmethod
@@ -447,7 +517,7 @@ class RaceProcessor(ABC, Generic[T]):
         """
 
     @abstractmethod
-    def get_laps(self) -> Iterable[FullLapData]:
+    def get_laps_iterable(self) -> Iterable[FullLapData]:
         """
         Gets all of the laps stored by the race processor
 
@@ -477,7 +547,7 @@ class RaceProcessorManager:
         if issubclass(processor_class, RaceProcessor) and not inspect.isabstract(
             processor_class
         ):
-            uid = processor_class.get_uid()
+            uid = processor_class.Meta.uid
             if uid in cls._registered_processors:
                 raise RuntimeError(
                     "Interface type with matching identifier already registered"
@@ -492,14 +562,21 @@ class RaceProcessorManager:
         )
 
     @classmethod
-    def get_processor(cls, processor_uid: str) -> type[RaceProcessor] | None:
+    def get_processor(cls, processor_uid: str) -> type[RaceProcessor]:
         """
         Gets the processor for the provided uid
 
         :param ruleset_uid: The uid of the processor
         :return:
         """
-        return cls._registered_processors.get(processor_uid)
+        try:
+            return cls._registered_processors[processor_uid]
+        except KeyError:
+            logger.exception(
+                "Processor for format is not registered in the system. Key id: %s",
+                processor_uid,
+            )
+            raise
 
     @classmethod
     def clear_registered(cls) -> None:

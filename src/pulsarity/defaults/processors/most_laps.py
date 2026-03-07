@@ -6,12 +6,13 @@ from collections import defaultdict
 from collections.abc import Iterable
 from itertools import count
 
-from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import FullLapData
 from pulsarity.race.processor import (
     CombinedMetrics,
     LapsManager,
+    ProcessorField,
     RaceProcessor,
+    SafeRaceFormat,
     SlotResult,
     SoloResultData,
     register_processor,
@@ -23,7 +24,7 @@ class _MostLapsManager(LapsManager):
     Lap data manager for a single slot
     """
 
-    __slots__ = ("_primary_laps", "_split_laps", "_all_laps", "_score", "_metrics")
+    __slots__ = ("_score", "_metrics")
 
     def __init__(self):
         super().__init__()
@@ -95,17 +96,21 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
     """
 
     __slots__ = ("_format", "_lap_data", "_cache", "_count")
-    _uid = "most_laps"
 
-    def __init__(self, race_format: RaceFormat) -> None:
+    class Meta:
+        """Processor metadata"""
+
+        uid = "most_laps"
+        fields = (
+            ProcessorField("holeshot", "holeshot", bool, False),
+            ProcessorField("consecutive", "consecutive laps", int, 3),
+        )
+
+    def __init__(self, race_format: SafeRaceFormat) -> None:
         self._format = race_format
         self._lap_data: dict[int, _MostLapsManager] = defaultdict(_MostLapsManager)
         self._cache: dict[int, SlotResult[SoloResultData]] = {}
         self._count = count()
-
-    @classmethod
-    def get_uid(cls):
-        return cls._uid
 
     def add_lap_record(self, slot, record):
         if (
@@ -125,7 +130,6 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
 
     def is_slot_done(self, slot_num):
         slot_data = self._lap_data[slot_num]
-
         last_lap = slot_data.get_last_primary_lap()
         if last_lap is not None:
             return last_lap.timedelta > self._format.race_time_sec
@@ -133,6 +137,11 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
         return False
 
     def _get_cache(self) -> dict[int, SlotResult[SoloResultData]]:
+        """
+        Reads from the cache; if it doesn't exist, build it first.
+        Makes use of the `_MostLapsManager`'s ability to be sorted
+        against itself by each instance's current score.
+        """
         if not self._cache:
             pos, step = 0, 1
             prev_manager: _MostLapsManager | None = None
@@ -146,8 +155,12 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
                     pos += step
                     step = 1
 
-                if manager and (metrics := manager.get_metrics()) is not None:
-                    result = SlotResult(pos, (slot_id,), SoloResultData(*metrics))
+                if manager:
+                    metrics = manager.get_metrics(
+                        self._format.fields["holeshot"],  # type: ignore
+                        self._format.fields["consecutive"],  # type: ignore
+                    )
+                    result = SlotResult(pos, (slot_id,), SoloResultData(*metrics))  # type: ignore
                 else:
                     result = SlotResult(pos, (slot_id,))
 
@@ -162,6 +175,6 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
     def get_slot_result(self, slot_num: int):
         return self._get_cache().get(slot_num, None)
 
-    def get_laps(self) -> Iterable[FullLapData]:
+    def get_laps_iterable(self) -> Iterable[FullLapData]:
         for slot in self._lap_data.values():
-            yield from slot.get_all_laps()
+            yield from slot.get_all_laps_iterable()

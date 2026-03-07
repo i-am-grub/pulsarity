@@ -30,8 +30,6 @@ class PulsarityCredentials:
     Reimplementation of starlette's `AuthCredentials`
     """
 
-    # pylint: disable=R0903
-
     __slots__ = ("scopes",)
 
     def __init__(self, scopes: Sequence[str] | None = None):
@@ -179,8 +177,6 @@ class PulsarityAuthBackend(AuthenticationBackend):
     """
     Authentication middleware
     """
-
-    # pylint: disable=R0903
 
     __slots__ = ()
 

@@ -4,34 +4,34 @@ ORM classes for event data
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic
 
 from tortoise import fields
 
+from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
     from pulsarity.database.slot import Slot
 
-# pylint: disable=R0903,E1136
 
-
-class LapAttribute(_PulsarityBase):
+class LapAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     """
     Unique and stored individually stored values for each event.
     """
 
     name = fields.CharField(max_length=80)
-    event: fields.ForeignKeyRelation[Lap] = fields.ForeignKeyField(
+    lap: fields.ForeignKeyRelation[Lap] = fields.ForeignKeyField(
         "event.Lap", related_name="attributes"
     )
+    value = fields.JSONField[ATTRIBUTE]()
 
     class Meta:
         """Tortoise ORM metadata"""
 
         app = "event"
         table = "lap_attr"
-        unique_together = (("id", "name"),)
+        unique_together = (("lap", "name"),)
 
 
 class Lap(_PulsarityBase):

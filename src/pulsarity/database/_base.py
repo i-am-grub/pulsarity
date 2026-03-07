@@ -2,10 +2,13 @@
 Abstract definition of database classes
 """
 
-from typing import Self
+from typing import Self, TypeVar
 
 from tortoise import fields
 from tortoise.models import Model
+
+JsonParsable = bool | str | int | float | None
+ATTRIBUTE = TypeVar("ATTRIBUTE", bound=JsonParsable)
 
 
 class PulsarityBase(Model):

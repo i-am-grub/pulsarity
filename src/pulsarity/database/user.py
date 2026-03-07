@@ -49,8 +49,6 @@ class User(_PulsarityBase):
     User for the application
     """
 
-    # pylint: disable=W0212,R0903
-
     auth_id = fields.UUIDField(default=uuid4)
     """The UUID associated with the user"""
     username = fields.CharField(max_length=32, unique=True)

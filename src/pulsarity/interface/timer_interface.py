@@ -74,8 +74,6 @@ class NodeInterface(Protocol):
     be integrated.
     """
 
-    # pylint: disable=R0903
-
     index: int
     """Index of the node"""
     settings: Sequence[TimerSetting]
@@ -88,8 +86,6 @@ class TimerInterface(Protocol):
     Protocol for defining how timers should be integrated
     into the server.
     """
-
-    # pylint: disable=R0903
 
     identifier: str
     """Internal identifier"""

@@ -9,8 +9,8 @@ from random import random
 from typing import NamedTuple
 
 from pulsarity import ctx
-from pulsarity.database.raceformat import RaceFormat
 from pulsarity.events import RaceSequenceEvt
+from pulsarity.race.processor import SafeRaceFormat
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class RaceStateManager:
         """The handle for managine the race sequence"""
         self._status: RaceStatus = RaceStatus.READY
         """Internal status of the race"""
-        self._format: RaceFormat | None = None
+        self._format: SafeRaceFormat | None = None
         """The current race format"""
 
     @property
@@ -164,7 +164,7 @@ class RaceStateManager:
         self._status = status
         self._race_records.append(_RaceEventRecord(status, ctx.loop_ctx.get().time()))
 
-    def schedule_race(self, format_: RaceFormat, assigned_start: float) -> None:
+    def schedule_race(self, format_: SafeRaceFormat, assigned_start: float) -> None:
         """
         Schedule the sequence of events for the race
 
