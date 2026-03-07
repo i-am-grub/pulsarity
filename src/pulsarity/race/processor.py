@@ -145,6 +145,8 @@ class LapsManager(ABC):
     from this class).
     """
 
+    __slots__ = ("_primary_laps", "_split_laps", "_all_laps")
+
     def __init__(self) -> None:
         self._primary_laps: ValueSortedDict[int, FullLapData] = ValueSortedDict()
         self._split_laps: ValueSortedDict[int, FullLapData] = ValueSortedDict()

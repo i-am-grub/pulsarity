@@ -16,8 +16,6 @@ class SortedKeysView(KeysView[U]):
     Sorted keys view of `ValueSortedDict`
     """
 
-    __slots__ = ("_mapping",)
-
     def __init__(self, mapping: ValueSortedDict):
         super().__init__(mapping)
         self._mapping = mapping
@@ -30,8 +28,6 @@ class SortedValuesView(ValuesView[U]):
     """
     Sorted values view of `ValueSortedDict`
     """
-
-    __slots__ = ("_mapping",)
 
     def __init__(self, mapping: ValueSortedDict):
         super().__init__(mapping)
@@ -50,8 +46,6 @@ class SortedItemsView(ItemsView[U, V]):
     """
     Sorted values view of `ValueSortedDict`
     """
-
-    __slots__ = ("_mapping",)
 
     def __init__(self, mapping: ValueSortedDict):
         super().__init__(mapping)

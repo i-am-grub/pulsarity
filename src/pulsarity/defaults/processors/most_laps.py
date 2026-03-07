@@ -24,7 +24,7 @@ class _MostLapsManager(LapsManager):
     Lap data manager for a single slot
     """
 
-    __slots__ = ("_primary_laps", "_split_laps", "_all_laps", "_score", "_metrics")
+    __slots__ = ("_score", "_metrics")
 
     def __init__(self):
         super().__init__()
@@ -95,7 +95,7 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
     Processor to enforce the most laps ruleset
     """
 
-    __slots__ = ("_format", "_fields", "_lap_data", "_cache", "_count")
+    __slots__ = ("_format", "_lap_data", "_cache", "_count")
 
     class Meta:
         """Processor metadata"""
