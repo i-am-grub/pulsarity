@@ -557,6 +557,8 @@ class RaceProcessorManager:
 
             return processor_class
 
+        raise TypeError(f"{inspect.isabstract(processor_class)}")
+
         raise TypeError(
             f"Attempted to register an invalid race processor: {processor_class.__name__}"
         )
@@ -571,7 +573,7 @@ class RaceProcessorManager:
         """
         try:
             return cls._registered_processors[processor_uid]
-        except IndexError:
+        except KeyError:
             logger.exception(
                 "Processor for format is not registered in the system. Key id: %s",
                 processor_uid,

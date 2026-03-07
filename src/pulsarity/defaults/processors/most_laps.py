@@ -130,7 +130,6 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
 
     def is_slot_done(self, slot_num):
         slot_data = self._lap_data[slot_num]
-
         last_lap = slot_data.get_last_primary_lap()
         if last_lap is not None:
             return last_lap.timedelta > self._format.race_time_sec
@@ -138,6 +137,11 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
         return False
 
     def _get_cache(self) -> dict[int, SlotResult[SoloResultData]]:
+        """
+        Reads from the cache; if it doesn't exist, build it first.
+        Makes use of the `_MostLapsManager`'s ability to be sorted
+        against itself by each instance's current score.
+        """
         if not self._cache:
             pos, step = 0, 1
             prev_manager: _MostLapsManager | None = None
@@ -156,8 +160,7 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
                         self._format.fields["holeshot"],  # type: ignore
                         self._format.fields["consecutive"],  # type: ignore
                     )
-                    assert metrics is not None
-                    result = SlotResult(pos, (slot_id,), SoloResultData(*metrics))
+                    result = SlotResult(pos, (slot_id,), SoloResultData(*metrics))  # type: ignore
                 else:
                     result = SlotResult(pos, (slot_id,))
 
