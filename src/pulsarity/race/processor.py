@@ -557,8 +557,6 @@ class RaceProcessorManager:
 
             return processor_class
 
-        raise TypeError(f"{inspect.isabstract(processor_class)}")
-
         raise TypeError(
             f"Attempted to register an invalid race processor: {processor_class.__name__}"
         )
