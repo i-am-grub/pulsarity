@@ -20,8 +20,6 @@ class Role(_PulsarityBase):
     Role for the application
     """
 
-    # pylint: disable=W0212,R0903
-
     name = fields.CharField(max_length=64, unique=True)
     """Name of role"""
     users: fields.ManyToManyRelation[User]

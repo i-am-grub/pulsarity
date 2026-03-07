@@ -55,8 +55,6 @@ class ContextMiddleware:
     Middleware for propagating context into the application
     """
 
-    # pylint: disable=R0903
-
     __slots__ = ("app",)
 
     def __init__(self, app) -> None:

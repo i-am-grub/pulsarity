@@ -16,7 +16,6 @@ from pulsarity.database._base import PulsarityBase as _PulsarityBase
 if TYPE_CHECKING:
     from pulsarity.database.slot import Slot
 
-# pylint: disable=R0903,E1136, E1101
 
 _T = TypeVar("_T")
 _SignalHistoryRecord = tuple[float, float]
@@ -32,7 +31,7 @@ class _EncodedBinaryField(BinaryField, fields.Field[_T]):  # type: ignore
     Note that filter or queryset-update operations are not supported.
     """
 
-    # pylint: disable=R0903,C0103
+    # pylint: disable=C0103
 
     def __init__(
         self,

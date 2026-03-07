@@ -6,9 +6,18 @@ import inspect
 from abc import ABC, abstractmethod
 from collections import ChainMap, deque
 from dataclasses import dataclass
-from typing import Callable, Generic, Iterable, NamedTuple, Self, Sequence, TypeVar
+from typing import (
+    Callable,
+    Generic,
+    Iterable,
+    Mapping,
+    NamedTuple,
+    Self,
+    Sequence,
+    TypeVar,
+)
 
-from pulsarity.database.raceformat import RaceFormat
+from pulsarity.database.raceformat import SafeRaceFormat
 from pulsarity.interface.timer_manager import FullLapData, TimerMode
 from pulsarity.utils.collections import ValueSortedDict
 
@@ -379,25 +388,36 @@ class LapsManager(ABC):
         return self.get_score() >= other.get_score()
 
 
+class ProcessorField(NamedTuple, Generic[T]):
+    """
+    Custom field for processor
+    """
+
+    display_name: str
+    type_: type[T]
+    default: T
+
+
 class RaceProcessor(ABC, Generic[T]):
     """
     Abstract base class for processing race data.
     Can be used to enforce custom rulesets
     """
 
+    class Meta:
+        """Processor metadata"""
+
+        uid: str
+        """processor unique identifier"""
+        fields: Mapping[str, ProcessorField]
+        """custom fields for processor"""
+
     @abstractmethod
-    def __init__(self, race_format: RaceFormat) -> None:
+    def __init__(self, race_format: SafeRaceFormat) -> None:
         """
         Class initializer
 
         :param race_format: The active race format
-        """
-
-    @classmethod
-    @abstractmethod
-    def get_uid(cls) -> str:
-        """
-        Get the processor unique identifier
         """
 
     @abstractmethod
@@ -477,7 +497,7 @@ class RaceProcessorManager:
         if issubclass(processor_class, RaceProcessor) and not inspect.isabstract(
             processor_class
         ):
-            uid = processor_class.get_uid()
+            uid = processor_class.Meta.uid
             if uid in cls._registered_processors:
                 raise RuntimeError(
                     "Interface type with matching identifier already registered"

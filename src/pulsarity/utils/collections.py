@@ -29,8 +29,6 @@ class _SortedValuesView(ValuesView[U]):
     Sorted values view of `ValueSortedDict`
     """
 
-    # pylint: disable=R0903
-
     def __init__(self, mapping: ValueSortedDict):
         super().__init__(mapping)
         self._mapping = mapping

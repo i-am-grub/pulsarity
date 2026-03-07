@@ -8,7 +8,7 @@ from pulsarity.database.permission import Permission, SystemDefaultPerms
 from pulsarity.database.pilot import Pilot, PilotAttribute
 from pulsarity.database.raceclass import RaceClass, RaceClassAttribute
 from pulsarity.database.raceevent import RaceEvent, RaceEventAttribute
-from pulsarity.database.raceformat import RaceFormat
+from pulsarity.database.raceformat import ProcessorFields, RaceFormat
 from pulsarity.database.role import Role
 from pulsarity.database.round import Round, RoundAttribute
 from pulsarity.database.signal import SignalHistory
@@ -21,6 +21,7 @@ __all__ = [
     "Permission",
     "Pilot",
     "PilotAttribute",
+    "ProcessorFields",
     "RaceFormat",
     "SystemDefaultPerms",
     "RaceEvent",
