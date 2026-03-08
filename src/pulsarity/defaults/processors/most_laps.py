@@ -136,6 +136,14 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
 
         return False
 
+    def all_slots_finished(self):
+        """
+        Note: This serves as a temporary implementation until slot data
+        is passed to the processor - a different source for the slot
+        keys is needed
+        """
+        return all(self.is_slot_done(slot) for slot in self._lap_data.keys())
+
     def _get_cache(self) -> dict[int, SlotResult[SoloResultData]]:
         """
         Reads from the cache; if it doesn't exist, build it first.

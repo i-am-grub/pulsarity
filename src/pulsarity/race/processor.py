@@ -500,6 +500,14 @@ class RaceProcessor(ABC, Generic[T]):
         """
 
     @abstractmethod
+    def all_slots_finished(self) -> bool:
+        """
+        Check if all the slots have finished
+
+        :return: Finished status
+        """
+
+    @abstractmethod
     def get_race_results(self) -> Sequence[SlotResult[T]]:
         """
         Get the results of the race
