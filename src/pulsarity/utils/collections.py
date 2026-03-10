@@ -3,7 +3,6 @@ Custom collections
 """
 
 import bisect
-from collections import UserDict
 from collections.abc import ItemsView, Iterable, KeysView, ValuesView
 from typing import TypeVar
 
@@ -36,10 +35,10 @@ class SortedValuesView(ValuesView[U]):
     def __getitem__(self, index):
         if isinstance(index, slice):
             keys = self._mapping.list[index]
-            return [self._mapping.data[key] for key in keys]
+            return [self._mapping[key] for key in keys]
 
         key = self._mapping.list[index]
-        return self._mapping.data[key]
+        return self._mapping[key]
 
 
 class SortedItemsView(ItemsView[U, V]):
@@ -54,59 +53,70 @@ class SortedItemsView(ItemsView[U, V]):
     def __getitem__(self, index):
         if isinstance(index, slice):
             keys = self._mapping.list[index]
-            return [(key, self._mapping.data[key]) for key in keys]
+            return [(key, self._mapping[key]) for key in keys]
 
         key = self._mapping.list[index]
-        return key, self._mapping.data[key]
+        return key, self._mapping[key]
 
 
-class ValueSortedDict(UserDict[U, V]):
+class ValueSortedDict(dict[U, V]):
     """
     Dictionary with sorted values
     """
 
-    __slots__ = ("data", "list")
+    __slots__ = ("list",)
+    __marker = object()
 
     def __init__(self, iterable: Iterable[tuple[U, V]] | None = None):
-        self.list = []
+        self.list: list[U] = []
         if iterable is None:
             super().__init__()
         elif isinstance(iterable, Iterable):
             super().__init__(iterable)
-            self.list = sorted(self.data.keys(), key=self._by_value_key)  # type: ignore
+            self.list = sorted(super().keys(), key=self._by_value_key)  # type: ignore
         else:
             raise ValueError("Unsupported input value")
 
     def _by_value_key(self, key: U) -> V:
-        return self.data[key]
+        return self[key]
 
     def __setitem__(self, key, item):
-        if key in self.data:
+        if key in self:
             self.list.remove(key)
 
-        self.data[key] = item
+        super().__setitem__(key, item)
 
-        if not self.list or self.data[key] >= self.data[self.list[-1]]:
+        if not self.list or self[key] >= self[self.list[-1]]:
             self.list.append(key)
         else:
             bisect.insort_right(self.list, key, key=self._by_value_key)
 
     def __delitem__(self, key):
-        del self.data[key]
+        super().__delitem__(key)
         self.list.remove(key)
 
     def clear(self):
-        self.data.clear()
+        super().clear()
         self.list.clear()
 
-    def keys(self) -> SortedKeysView[U]:
+    def keys(self) -> SortedKeysView[U]:  # type: ignore
         return SortedKeysView(self)
 
-    def values(self) -> SortedValuesView[V]:
+    def values(self) -> SortedValuesView[V]:  # type: ignore
         return SortedValuesView(self)
 
-    def items(self) -> SortedItemsView[U, V]:
+    def items(self) -> SortedItemsView[U, V]:  # type: ignore
         return SortedItemsView(self)
+
+    def pop(self, key, default=__marker):
+        marker = self.__marker
+        result = super().pop(key, marker)
+        if result is not marker:
+            self.list.remove(key)
+            return result
+        if default is marker:
+            raise KeyError(key)
+        return default
 
     def peek_value(self, index: int = -1) -> V:
         """
@@ -115,21 +125,20 @@ class ValueSortedDict(UserDict[U, V]):
         :param index: Index to peek the value at, defaults to -1
         :return: The value
         """
-        return self.data[self.list[index]]
+        return self[self.list[index]]
 
     def popitem(self):
         key = self.list.pop()
-        return key, self.data.pop(key)
+        return key, super().pop(key)
 
     def update(self, mapping):
-        # pylint: disable=W0221
-        self.data.update(mapping)
-        self.list = sorted(self.data.keys(), key=self._by_value_key)
+        super_ = super()
+        super_.update(mapping)
+        self.list = sorted(super_.keys(), key=self._by_value_key)
 
     def copy(self):
         copy_ = self.__class__()
-        copy_.data = self.data.copy()
-        copy_.list = self.list.copy()
+        copy_.update(self)
         return copy_
 
     def __iter__(self):
@@ -139,10 +148,19 @@ class ValueSortedDict(UserDict[U, V]):
         return self.list.__reversed__()
 
     def __repr__(self):
-        vals = [f"{key}: {self.data[key]}" for key in self.list]
+        vals = [f"{key}: {self[key]}" for key in self.list]
         return f"{{{', '.join(vals)}}}"
 
-    def __ior__(self, other):  # type: ignore
-        super().__ior__(other)
-        self.list = sorted(self.data.keys(), key=self._by_value_key)
+    def __or__(self, other):
+        new = super().__or__(other)
+        return self.__class__(new)
+
+    def __ror__(self, other):
+        new = super().__ror__(other)
+        return self.__class__(new)
+
+    def __ior__(self, other):
+        super_ = super()
+        super_.__ior__(other)
+        self.list = sorted(super_.keys(), key=self._by_value_key)
         return self
