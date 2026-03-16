@@ -447,16 +447,16 @@ class LapsManager(ABC):
         return self.get_score() != other.get_score()
 
     def __lt__(self, other: Self) -> bool:
-        return self.get_score() < other.get_score()
+        return self.get_score() < other.get_score()  # type: ignore
 
     def __le__(self, other: Self) -> bool:
-        return self.get_score() <= other.get_score()
+        return self.get_score() <= other.get_score()  # type: ignore
 
     def __gt__(self, other: Self) -> bool:
-        return self.get_score() > other.get_score()
+        return self.get_score() > other.get_score()  # type: ignore
 
     def __ge__(self, other: Self) -> bool:
-        return self.get_score() >= other.get_score()
+        return self.get_score() >= other.get_score()  # type: ignore
 
     def __hash__(self):
         return object.__hash__(self)
