@@ -10,11 +10,11 @@ from tortoise import fields
 
 from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
-from pulsarity.database.pilot import Pilot
 
 if TYPE_CHECKING:
     from pulsarity.database.heat import Heat
     from pulsarity.database.lap import Lap
+    from pulsarity.database.pilot import Pilot
     from pulsarity.database.signal import SignalHistory
 
 

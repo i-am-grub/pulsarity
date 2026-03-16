@@ -12,9 +12,9 @@ from pulsarity.events.enums import (
 
 __all__ = [
     "EventBroker",
-    "register_as_callback",
     "EventSetupEvt",
     "RaceSequenceEvt",
     "SpecialEvt",
     "_ApplicationEvt",
+    "register_as_callback",
 ]

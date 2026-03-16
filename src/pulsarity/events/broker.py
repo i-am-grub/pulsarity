@@ -10,16 +10,19 @@ import itertools
 import logging
 import uuid
 from collections import defaultdict
-from collections.abc import AsyncGenerator, Callable
 from dataclasses import dataclass, field
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from pydantic import BaseModel
 
-from pulsarity._protobuf import websocket_pb2
 from pulsarity.events.enums import EvtPriority, _ApplicationEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Callable
+
+    from pulsarity._protobuf.websocket_pb2 import EventID
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +88,7 @@ class EventBroker:
 
     __slots__ = ("_connections",)
 
-    _callbacks: dict[websocket_pb2, list[_EvtCallbackData]] = defaultdict(list)  # type: ignore
+    _callbacks: ClassVar[dict[EventID, list[_EvtCallbackData]]] = defaultdict(list)
 
     def __init__(self) -> None:
         """
@@ -226,7 +229,8 @@ class EventBroker:
                 callbacks.remove(callback_)
                 break
         else:
-            raise RuntimeError("Callback not register in system")
+            msg = "Callback not register in system"
+            raise RuntimeError(msg)
 
     @classmethod
     def clear_registered(cls) -> None:
@@ -270,7 +274,10 @@ def register_as_callback(
     @functools.wraps
     def inner(func):
         EventBroker.register_event_callback(
-            func, event, priority=priority, default_kwargs=default_kwargs
+            func,
+            event,
+            priority=priority,
+            default_kwargs=default_kwargs,
         )
 
         return func

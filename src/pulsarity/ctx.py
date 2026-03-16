@@ -4,16 +4,17 @@ Application context managment
 
 from __future__ import annotations
 
-from asyncio import AbstractEventLoop
 from contextvars import ContextVar
 from typing import TYPE_CHECKING
-
-from starlette.requests import Request
-from starlette.websockets import WebSocket
 
 from pulsarity.utils.config import DEFAULT_CONFIG_FILE, PulsarityConfig
 
 if TYPE_CHECKING:
+    from asyncio import AbstractEventLoop
+
+    from starlette.requests import Request
+    from starlette.websockets import WebSocket
+
     from pulsarity.events.broker import EventBroker
     from pulsarity.interface.timer_manager import TimerInterfaceManager
     from pulsarity.race.manager import RaceManager
@@ -21,9 +22,8 @@ if TYPE_CHECKING:
 
 
 loop_ctx: ContextVar[AbstractEventLoop] = ContextVar("loop_ctx")
-config_ctx: ContextVar[PulsarityConfig] = ContextVar(
-    "config_ctx", default=PulsarityConfig.from_file(DEFAULT_CONFIG_FILE)
-)
+config_ctx: ContextVar[PulsarityConfig] = ContextVar("config_ctx")
+config_ctx.set(PulsarityConfig.from_file(DEFAULT_CONFIG_FILE))
 
 event_broker_ctx: ContextVar[EventBroker] = ContextVar("event_broker_ctx")
 race_manager_ctx: ContextVar[RaceManager] = ContextVar("race_manager_ctx")

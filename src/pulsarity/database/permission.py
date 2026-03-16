@@ -41,16 +41,14 @@ class Permission(_PulsarityBase):
 
         permissions: set[str] = set(await cls.all().values_list("value", flat=True))  # type: ignore
 
-        permissions_add = []
+        permissions_add: list[Permission] = []
 
         for permission_class in UserPermission.__subclasses__():
             persistent = permission_class is SystemDefaultPerms
-
-            for enum in permission_class:
-                if enum not in permissions:
-                    permissions_add.append(
-                        Permission(value=enum, persistent=persistent)
-                    )
+            enums = (e for e in permission_class)
+            filtered = filter(lambda x: x not in permissions, enums)
+            perms = (Permission(value=e, persistent=persistent) for e in filtered)
+            permissions_add.extend(perms)
 
         await cls.bulk_create(permissions_add)
 

@@ -7,7 +7,7 @@ import logging
 import uuid
 from dataclasses import dataclass
 from enum import IntEnum, auto
-from typing import NamedTuple
+from typing import ClassVar, NamedTuple
 
 from pulsarity import ctx
 from pulsarity.interface.timer_interface import (
@@ -102,13 +102,13 @@ class TimerInterfaceManager:
 
     __slots__ = (
         "_active_interfaces",
-        "_shutdown_evt",
         "_lap_queue",
+        "_shutdown_evt",
         "_signal_queue",
         "_tasks",
     )
 
-    _interfaces: dict[str, type[TimerInterface]] = {}
+    _interfaces: ClassVar[dict[str, type[TimerInterface]]] = {}
 
     def __init__(self) -> None:
         self._active_interfaces: dict[str, _ActiveTimer] = {}
@@ -124,7 +124,8 @@ class TimerInterfaceManager:
         Start the interface processing tasks
         """
         if self._tasks is not None:
-            raise RuntimeError("Timer instance manager already started")
+            msg = "Timer instance manager already started"
+            raise RuntimeError(msg)
 
         self._shutdown_evt.clear()
 
@@ -186,15 +187,15 @@ class TimerInterfaceManager:
 
         if isinstance(interface, TimerInterface):
             if interface.identifier in cls._interfaces:
-                raise RuntimeError(
-                    "Interface type with matching identifier already registered"
-                )
+                msg = "Interface type with matching identifier already registered"
+                raise RuntimeError(msg)
 
             cls._interfaces[interface.identifier] = interface
 
             return interface
 
-        raise RuntimeError("Attempted to register an invalid timer interface type")
+        msg = "Attempted to register an invalid timer interface type"
+        raise RuntimeError(msg)
 
     @classmethod
     def clear_registered(cls) -> None:
@@ -223,9 +224,8 @@ class TimerInterfaceManager:
                 uuid_ = uuid.uuid4()
 
             if uuid_.hex in self._active_interfaces:
-                raise RuntimeError(
-                    "Attempted to register with an already allocated uuid"
-                )
+                msg = "Attempted to register with an already allocated uuid"
+                raise RuntimeError(msg)
 
             instance = interface()
 
@@ -234,12 +234,12 @@ class TimerInterfaceManager:
 
             index = len(self._active_interfaces)
             self._active_interfaces[uuid_.hex] = _ActiveTimer(
-                interface=instance, index=index
+                interface=instance,
+                index=index,
             )
         else:
-            raise RuntimeError(
-                "Interface class with provided identifier not registered"
-            )
+            msg = "Interface class with provided identifier not registered"
+            raise RuntimeError(msg)
 
     def decommission_interface(self, uuid_: uuid.UUID):
         """
@@ -252,14 +252,16 @@ class TimerInterfaceManager:
             interface.interface.shutdown()
             self._active_interfaces.pop(uuid_.hex)
         else:
-            raise RuntimeError("Interface with identifer not instantiated")
+            msg = "Interface with identifer not instantiated"
+            raise RuntimeError(msg)
 
     async def shutdown(self, timeout: float | None = None) -> None:
         """
         Shutdown all interfaces
         """
         if self._tasks is None:
-            raise RuntimeError("Timer instance manager not started")
+            msg = "Timer instance manager not started"
+            raise RuntimeError(msg)
 
         for interface in self._active_interfaces.values():
             interface.interface.shutdown()

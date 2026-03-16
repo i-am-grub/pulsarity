@@ -60,7 +60,9 @@ class User(_PulsarityBase):
     _password_hash = fields.TextField(null=True)
     """Hash of the user's password"""
     roles: fields.ManyToManyRelation[Role] = fields.ManyToManyField(
-        "system.Role", related_name="users", through="user_role"
+        "system.Role",
+        related_name="users",
+        through="user_role",
     )
     """The role of the user"""
     last_login = fields.DatetimeField(null=True)
@@ -102,7 +104,7 @@ class User(_PulsarityBase):
         permissions: set[str] = set()
 
         for role in self.roles:
-            permissions.update(set(perm.value for perm in role.permissions))
+            permissions.update({perm.value for perm in role.permissions})
 
         return permissions
 
@@ -121,11 +123,15 @@ class User(_PulsarityBase):
 
         try:
             result = await loop.run_in_executor(
-                None, _PH.verify, self._password_hash, password
+                None,
+                _PH.verify,
+                self._password_hash,
+                password,
             )
         except VerifyMismatchError:
             logger.warning(
-                "Stored hash for %s does not match the provided password", self.username
+                "Stored hash for %s does not match the provided password",
+                self.username,
             )
             return False
         except VerificationError:
@@ -149,10 +155,11 @@ class User(_PulsarityBase):
 
         loop = asyncio.get_running_loop()
 
-        result = await loop.run_in_executor(
-            None, _PH.check_needs_rehash, self._password_hash
+        return await loop.run_in_executor(
+            None,
+            _PH.check_needs_rehash,
+            self._password_hash,
         )
-        return result
 
     async def update_user_password(self, password: str) -> None:
         """
@@ -181,7 +188,7 @@ class User(_PulsarityBase):
         :param uuid: The uuid to search for
         """
         return await cls.get_or_none(auth_id=uuid).prefetch_related(
-            "roles__permissions"
+            "roles__permissions",
         )
 
     @classmethod
@@ -199,19 +206,20 @@ class User(_PulsarityBase):
         Verify all system roles are in the user database.
         """
         configs = ctx.config_ctx.get()
-        assert configs.secrets is not None
         default_username = configs.secrets.default_username
         default_password = configs.secrets.default_password
 
         user, created = await User.get_or_create(
-            username=default_username, persistent=True
+            username=default_username,
+            persistent=True,
         )
 
         role = await Role.get_or_none(name="SYSTEM_ADMIN")
         if role is not None:
             await user.roles.add(role)
         else:
-            raise RuntimeError("Role for system admin does not exist")
+            msg = "Role for system admin does not exist"
+            raise RuntimeError(msg)
 
         if created:
             await user.update_user_password(default_password)

@@ -4,11 +4,13 @@ Background task manager
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable, Iterable
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pulsarity import ctx
 from pulsarity.utils.asyncio import ensure_async
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable, Iterable
 
 logger = logging.getLogger(__name__)
 

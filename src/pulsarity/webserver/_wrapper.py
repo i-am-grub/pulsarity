@@ -2,24 +2,31 @@
 Endpoint wrappers
 """
 
+from __future__ import annotations
+
 import functools
 import inspect
 import logging
 from collections.abc import Callable, Coroutine
 from json.decoder import JSONDecodeError
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from google.protobuf.message import DecodeError  # type: ignore
 from pydantic import BaseModel, ValidationError
 from starlette.exceptions import HTTPException
-from starlette.requests import Request
 from starlette.responses import Response
 
 from pulsarity import ctx
-from pulsarity._validation._base import ProtocolBufferModel
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.utils.asyncio import ensure_async
 from pulsarity.webserver._auth import requires
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine
+
+    from starlette.requests import Request
+
+    from pulsarity._validation._base import ProtocolBufferModel
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +44,7 @@ class ProtobufResponse(Response):
 
     # pylint: disable=R0913,R0917
 
-    __slots__ = ("status_code", "background", "body")
+    __slots__ = ("background", "body", "status_code")
 
     media_type = "application/x-protobuf"
 
@@ -81,21 +88,17 @@ def endpoint(
         base_kwargs = {"request", "query", "path"}
         function_kwargs = set(inspect.signature(func).parameters.keys())
 
-        try:
-            assert function_kwargs.issubset(base_kwargs)
-        except AssertionError as ex:
-            raise KeyError(
+        if not function_kwargs.issubset(base_kwargs):
+            msg = (
                 f"{func.__name__} uses incompatible argument names. "
                 f"Arguments must be limited to {base_kwargs}"
-            ) from ex
+            )
+            raise KeyError(msg)
 
         for perm in permissions:
-            try:
-                assert isinstance(perm, UserPermission)
-            except AssertionError as ex:
-                raise ValueError(
-                    f"{perm} is not a valid {UserPermission.__name__}"
-                ) from ex
+            if not isinstance(perm, UserPermission):
+                msg = f"{perm} is not a valid {UserPermission.__name__}"
+                raise TypeError(msg)
 
         _validate_compatibility(func, request_model, function_kwargs, "request")
         _validate_compatibility(func, query_model, function_kwargs, "query")
@@ -130,28 +133,25 @@ def _validate_compatibility(
     """
 
     if model is not None:
-        try:
-            assert arg_id in used_kwargs
-        except AssertionError as ex:
-            raise KeyError(
+        if arg_id not in used_kwargs:
+            msg = (
                 f"'{arg_id}` must be an argument of the endpoint function "
                 "when a request model has been provided"
-            ) from ex
+            )
+            raise KeyError(msg)
 
-        try:
-            assert issubclass(model, BaseModel)
-        except AssertionError as ex:
-            raise ValueError(
+        if not issubclass(model, BaseModel):
+            msg = (
                 f"{func.__name__} query model is not a subclass of {BaseModel.__name__}"
-            ) from ex
-    else:
-        try:
-            assert arg_id not in used_kwargs
-        except AssertionError as ex:
-            raise KeyError(
-                f"'{arg_id}` must NOT be an argument of the endpoint "
-                f"function when a {arg_id} model has NOT been provided"
-            ) from ex
+            )
+            raise ValueError(msg)
+
+    elif arg_id in used_kwargs:
+        msg = (
+            f"'{arg_id}` must NOT be an argument of the endpoint "
+            f"function when a {arg_id} model has NOT been provided"
+        )
+        raise KeyError(msg)
 
 
 async def _process_request(

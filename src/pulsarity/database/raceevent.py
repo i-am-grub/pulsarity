@@ -76,7 +76,7 @@ class RaceEvent(_PulsarityBase):
         value = await self.raceclasses.all().annotate(max=Max("raceclass_num")).first()
 
         if value is not None:
-            return getattr(value, "max")
+            return value.max  # type: ignore
 
         return None
 

@@ -3,12 +3,15 @@ Cryptography for the application
 """
 
 import datetime
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def generate_self_signed_cert(key_file: Path, cert_file: Path) -> None:

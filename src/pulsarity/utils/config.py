@@ -18,12 +18,12 @@ from pulsarity.utils.logging import generate_default_config
 DEFAULT_CONFIG_FILE = Path("config.json")
 
 
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class _SecretsConfig(BaseModel):
     default_username: str = "admin"
-    default_password: str = "pulsarity"
+    default_password: str = "pulsarity"  # noqa: S105
     secret_key: str = Field(default_factory=partial(token_urlsafe, 32))
 
 
@@ -45,14 +45,14 @@ class _GeneralConfig(BaseModel):
 class _SystemDatabaseConfig(BaseModel):
     engine: str = "tortoise.backends.sqlite"
     credentials: dict = Field(
-        default_factory=partial(dict, (("file_path", "system.db"),))
+        default_factory=partial(dict, (("file_path", "system.db"),)),
     )
 
 
 class _EventDatabaseConfig(BaseModel):
     engine: str = "tortoise.backends.sqlite"
     credentials: dict = Field(
-        default_factory=partial(dict, (("file_path", "event.db"),))
+        default_factory=partial(dict, (("file_path", "event.db"),)),
     )
 
 
@@ -66,7 +66,7 @@ class PulsarityConfig(BaseModel):
     The server configs
     """
 
-    secrets: _SecretsConfig | None = Field(default_factory=_SecretsConfig)
+    secrets: _SecretsConfig = Field(default_factory=_SecretsConfig)
     webserver: _WebserverConfig = Field(default_factory=_WebserverConfig)
     general: _GeneralConfig = Field(default_factory=_GeneralConfig)
     database: _DatabaseConfig = Field(default_factory=_DatabaseConfig)
@@ -88,11 +88,11 @@ class PulsarityConfig(BaseModel):
                 return config
 
         except ValidationError:
-            _logger.error("Invalid server config file. Using defaults.")
+            logger.exception("Invalid server config file. Using defaults.")
             return cls()
 
         except FileNotFoundError:
-            _logger.info("Config file not found. Loading defaults")
+            logger.info("Config file not found. Loading defaults")
             return cls()
 
     @property
@@ -121,7 +121,8 @@ class PulsarityConfig(BaseModel):
             file.write(self.model_dump_json(indent=4))
 
     async def write_config_to_file_async(
-        self, filepath: Path = DEFAULT_CONFIG_FILE
+        self,
+        filepath: Path = DEFAULT_CONFIG_FILE,
     ) -> None:
         """
         Writes the current config to a file
@@ -139,6 +140,10 @@ class PulsarityConfig(BaseModel):
         Gets a shareable version of the config data
         """
         copy_ = self.model_copy()
-        copy_.secrets = None
+        copy_.secrets = _SecretsConfig(
+            default_username="",
+            default_password="",
+            secret_key="",
+        )
         copy_.webserver.key_password = ""
         return copy_

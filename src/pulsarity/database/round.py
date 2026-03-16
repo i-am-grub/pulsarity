@@ -72,7 +72,7 @@ class Round(_PulsarityBase):
         value = await self.heats.all().annotate(max=Max("heat_num")).first()
 
         if value is not None:
-            return getattr(value, "max")
+            return value.max  # type: ignore
 
         return None
 

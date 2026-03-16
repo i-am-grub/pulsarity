@@ -4,11 +4,13 @@ Asyncio helpers
 
 import asyncio
 import inspect
-from collections.abc import Awaitable, Callable, Coroutine
-from concurrent.futures import Future
-from typing import ParamSpec, TypeVar
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 from pulsarity import ctx
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable, Coroutine
+    from concurrent.futures import Future
 
 T = TypeVar("T")
 P = ParamSpec("P")
