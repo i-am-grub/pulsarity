@@ -6,14 +6,16 @@ import asyncio
 from collections import defaultdict
 from datetime import timedelta
 from functools import partial
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 
 from pulsarity.database.lap import Lap
-from pulsarity.database.raceformat import RaceFormat
 from pulsarity.database.signal import SignalHistory
-from pulsarity.interface.timer_manager import FullLapData, FullSignalData
 from pulsarity.race._state import RaceStateManager, RaceStatus
 from pulsarity.race.processor import RaceProcessor, RaceProcessorManager, SafeRaceFormat
+
+if TYPE_CHECKING:
+    from pulsarity.database.raceformat import RaceFormat
+    from pulsarity.interface.timer_manager import FullLapData, FullSignalData
 
 
 class _SignalRecord(NamedTuple):
@@ -127,7 +129,8 @@ class RaceManager:
         if self._processor is not None:
             self._processor.add_lap_record(slot, record)
         else:
-            raise RuntimeError("Unable to add record when processor is not set")
+            msg = "Unable to add record when processor is not set"
+            raise RuntimeError(msg)
 
     def status_aware_lap_record(self, slot: int, record: FullLapData) -> None:
         """
@@ -169,9 +172,11 @@ class RaceManager:
             try:
                 self._processor.remove_lap_record(slot, key)
             except KeyError as ex:
-                raise ValueError("Invalid value for lap key") from ex
+                msg = "Invalid value for lap key"
+                raise ValueError(msg) from ex
         else:
-            raise RuntimeError("Unable to remove record when processor is not set")
+            msg = "Unable to remove record when processor is not set"
+            raise RuntimeError(msg)
 
     async def _save_lap_data(self) -> None:
         """
@@ -189,7 +194,8 @@ class RaceManager:
             )
             await Lap.bulk_create(laps, batch_size=25)
         else:
-            raise RuntimeError("Unable to save laps when process is not set")
+            msg = "Unable to save laps when process is not set"
+            raise RuntimeError(msg)
 
     async def _save_signal_data(self) -> None:
         """

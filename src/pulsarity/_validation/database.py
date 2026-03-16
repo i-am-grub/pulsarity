@@ -2,19 +2,21 @@
 Validation classes for database data
 """
 
-from datetime import datetime
-from typing import Annotated, Iterable, Self
+from datetime import datetime  # noqa: TC003
+from typing import TYPE_CHECKING, Annotated, Iterable, Self
 
 from google.protobuf import timestamp_pb2  # type: ignore
 from pydantic import BeforeValidator, TypeAdapter
 
 from pulsarity._protobuf import database_pb2
 from pulsarity._validation._base import ProtocolBufferModel, to_datetime
-from pulsarity.database.heat import Heat
-from pulsarity.database.pilot import Pilot
-from pulsarity.database.raceclass import RaceClass
-from pulsarity.database.raceevent import RaceEvent
-from pulsarity.database.round import Round
+
+if TYPE_CHECKING:
+    from pulsarity.database.heat import Heat
+    from pulsarity.database.pilot import Pilot
+    from pulsarity.database.raceclass import RaceClass
+    from pulsarity.database.raceevent import RaceEvent
+    from pulsarity.database.round import Round
 
 
 class AttributeModel(ProtocolBufferModel):
@@ -238,7 +240,7 @@ class RoundsModel(ProtocolBufferModel):
         return cls.model_validate(message, from_attributes=True)
 
     def model_dump_protobuf(self) -> database_pb2.Rounds:
-        rounds = (round.model_dump_protobuf() for round in self.rounds)
+        rounds = (round_.model_dump_protobuf() for round_ in self.rounds)
         return database_pb2.Rounds(rounds=rounds)
 
 

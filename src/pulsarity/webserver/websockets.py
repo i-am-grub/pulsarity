@@ -4,9 +4,7 @@ Webserver Websocket Connections
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable
-from typing import Any, NamedTuple, ParamSpec, TypeVar
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, NamedTuple, ParamSpec, TypeVar
 
 from google.protobuf.message import DecodeError  # type: ignore
 from pydantic import TypeAdapter, ValidationError
@@ -21,6 +19,10 @@ from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+    from uuid import UUID
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -55,9 +57,9 @@ def ws_event(event: _ApplicationEvt):
 
     :param event: The event to base the routing on
     """
-    assert event.event_id not in _wse_routes, (
-        "Multiple routes can not be register for a individual application event"
-    )
+    if event.event_id in _wse_routes:
+        msg = "Multiple routes can not be register for a individual application event"
+        raise RuntimeError(msg)
 
     def inner(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         _wse_routes[event.event_id] = _Route(event.permission, func)

@@ -2,11 +2,20 @@
 Abstract timer interface
 """
 
-import asyncio
-from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Generic, NamedTuple, Protocol, TypeVar, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    Generic,
+    NamedTuple,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
+)
+
+if TYPE_CHECKING:
+    from asyncio import Queue
+    from collections.abc import Callable, Sequence
 
 T = TypeVar("T", bound=int | str | bool | Enum)
 
@@ -104,8 +113,8 @@ class TimerInterface(Protocol):
 
     def subscribe(
         self,
-        lap_queue: asyncio.Queue[BasicLapData],
-        signal_queue: asyncio.Queue[BasicSignalData],
+        lap_queue: Queue[BasicLapData],
+        signal_queue: Queue[BasicSignalData],
     ) -> None:
         """
         Subscribe to recieve lap and signal data from the interface

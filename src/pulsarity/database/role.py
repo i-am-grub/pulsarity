@@ -44,8 +44,7 @@ class Role(_PulsarityBase):
 
         :return: The set of permissions
         """
-        values = set(await self.permissions.all().values_list("value", flat=True))
-        return values  # type: ignore
+        return set(await self.permissions.all().values_list("value", flat=True))  # type: ignore
 
     async def add_permissions(self, *permissions: Permission) -> None:
         """

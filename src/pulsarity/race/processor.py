@@ -2,13 +2,17 @@
 Race processor
 """
 
+from __future__ import annotations
+
 import inspect
 import logging
 from abc import ABC, abstractmethod
 from collections import ChainMap, deque
 from dataclasses import dataclass
 from typing import (
+    TYPE_CHECKING,
     Callable,
+    ClassVar,
     Generic,
     Iterable,
     NamedTuple,
@@ -17,10 +21,14 @@ from typing import (
     TypeVar,
 )
 
-from pulsarity.database._base import JsonParsable
-from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import FullLapData, TimerMode
 from pulsarity.utils.collections import ValueSortedDict
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsAllComparisons
+
+    from pulsarity.database._base import JsonParsable
+    from pulsarity.database.raceformat import RaceFormat
 
 # pylint: disable=R1730
 
@@ -120,6 +128,9 @@ class SlotResult(Generic[T]):
     def __ge__(self, other: Self) -> bool:
         return self.position >= other.position
 
+    def __hash__(self):
+        return object.__hash__(self)
+
 
 @dataclass(frozen=True, slots=True)
 class SoloResultData:
@@ -145,13 +156,14 @@ class LapsManager(ABC):
     from this class).
     """
 
-    __slots__ = ("_primary_laps", "_split_laps", "_all_laps")
+    __slots__ = ("_all_laps", "_primary_laps", "_split_laps")
 
     def __init__(self) -> None:
         self._primary_laps: ValueSortedDict[int, FullLapData] = ValueSortedDict()
         self._split_laps: ValueSortedDict[int, FullLapData] = ValueSortedDict()
         self._all_laps: ChainMap[int, FullLapData] = ChainMap(
-            self._primary_laps, self._split_laps
+            self._primary_laps,
+            self._split_laps,
         )
 
     def __len__(self) -> int:
@@ -189,7 +201,8 @@ class LapsManager(ABC):
                 continue
             break
         else:
-            raise KeyError("Key not stored in manager")
+            msg = "Key not stored in manager"
+            raise KeyError(msg)
 
         self.remove_lap_cb(key, lap)
 
@@ -218,7 +231,7 @@ class LapsManager(ABC):
         :return: The lap data
         """
         if self._primary_laps:
-            return self._primary_laps.peek_value(-1)
+            return self._primary_laps.values()[-1]
         return None
 
     def get_num_laps(self, holeshot: bool = False) -> int:
@@ -242,11 +255,13 @@ class LapsManager(ABC):
         :return: The total time
         """
         if self._primary_laps:
-            last_lap = self._primary_laps.peek_value(-1)
+            primary_lap_values = self._primary_laps.values()
+
+            last_lap = primary_lap_values[-1]
             last_time = last_lap.timedelta
 
             if holeshot:
-                first_lap = self._primary_laps.peek_value(0)
+                first_lap = primary_lap_values[0]
                 return last_time - first_lap.timedelta
 
             return last_time
@@ -262,12 +277,14 @@ class LapsManager(ABC):
         """
         if self._primary_laps:
             num_laps = len(self._primary_laps)
-            last_lap = self._primary_laps.peek_value(-1)
+            primary_lap_values = self._primary_laps.values()
+
+            last_lap = primary_lap_values[-1]
             last_time = last_lap.timedelta
 
             if holeshot:
                 num_laps -= 1
-                first_lap = self._primary_laps.peek_value(0)
+                first_lap = primary_lap_values[0]
                 return (last_time - first_lap.timedelta) / num_laps
 
             return last_time / num_laps
@@ -303,7 +320,9 @@ class LapsManager(ABC):
         return fastest_time
 
     def get_fastest_consecutive_metric(
-        self, holeshot: bool = False, max_laps: int = 3
+        self,
+        holeshot: bool = False,
+        max_laps: int = 3,
     ) -> ConsecutiveMetric | None:
         """
         Get the fastest consecutive lap times
@@ -320,11 +339,14 @@ class LapsManager(ABC):
         if metrics is None:
             return None
         return ConsecutiveMetric(
-            metrics.fastest_consec_base, metrics.fastest_consec_time
+            metrics.fastest_consec_base,
+            metrics.fastest_consec_time,
         )
 
     def get_combined_metrics(
-        self, holeshot: bool = False, consec_laps: int = 3
+        self,
+        holeshot: bool = False,
+        consec_laps: int = 3,
     ) -> CombinedMetrics | None:
         """
         Generate multiple metrics at once.
@@ -375,7 +397,7 @@ class LapsManager(ABC):
         if not num_laps:
             return None
 
-        consec_laps_ = num_laps if num_laps < consec_laps else consec_laps
+        consec_laps_ = min(consec_laps, num_laps)
         return CombinedMetrics(
             num_laps,
             total_time,
@@ -404,7 +426,7 @@ class LapsManager(ABC):
         """
 
     @abstractmethod
-    def get_score(self) -> tuple:
+    def get_score(self) -> SupportsAllComparisons:
         """
         Get the score of the manager based on the currently stored
         lap data.
@@ -425,16 +447,19 @@ class LapsManager(ABC):
         return self.get_score() != other.get_score()
 
     def __lt__(self, other: Self) -> bool:
-        return self.get_score() < other.get_score()
+        return self.get_score() < other.get_score()  # type: ignore
 
     def __le__(self, other: Self) -> bool:
-        return self.get_score() <= other.get_score()
+        return self.get_score() <= other.get_score()  # type: ignore
 
     def __gt__(self, other: Self) -> bool:
-        return self.get_score() > other.get_score()
+        return self.get_score() > other.get_score()  # type: ignore
 
     def __ge__(self, other: Self) -> bool:
-        return self.get_score() >= other.get_score()
+        return self.get_score() >= other.get_score()  # type: ignore
+
+    def __hash__(self):
+        return object.__hash__(self)
 
 
 class ProcessorField(NamedTuple, Generic[T]):
@@ -538,8 +563,8 @@ class RaceProcessorManager:
     Manages the race processors
     """
 
-    _registered_processors: dict[
-        str | Callable[[RaceProcessor], str], type[RaceProcessor]
+    _registered_processors: ClassVar[
+        dict[str | Callable[[RaceProcessor], str], type[RaceProcessor]],
     ] = {}
 
     @classmethod
@@ -553,21 +578,19 @@ class RaceProcessorManager:
         """
 
         if issubclass(processor_class, RaceProcessor) and not inspect.isabstract(
-            processor_class
+            processor_class,
         ):
             uid = processor_class.Meta.uid
             if uid in cls._registered_processors:
-                raise RuntimeError(
-                    "Interface type with matching identifier already registered"
-                )
+                msg = "Interface type with matching identifier already registered"
+                raise RuntimeError(msg)
 
             cls._registered_processors[uid] = processor_class
 
             return processor_class
 
-        raise TypeError(
-            f"Attempted to register an invalid race processor: {processor_class.__name__}"
-        )
+        msg = f"Attempted to register an invalid race processor: {processor_class.__name__}"
+        raise TypeError(msg)
 
     @classmethod
     def get_processor(cls, processor_uid: str) -> type[RaceProcessor]:

@@ -9,4 +9,4 @@ from pulsarity.interface.timer_interface import (
     TimerSetting,
 )
 
-__all__ = ["Action", "TimerSetting", "BasicLapData", "BasicSignalData"]
+__all__ = ["Action", "BasicLapData", "BasicSignalData", "TimerSetting"]

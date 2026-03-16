@@ -4,8 +4,7 @@ Authorization and permission enforcement
 
 import functools
 import inspect
-from collections.abc import Callable, Iterable, Sequence
-from typing import Any, ParamSpec
+from typing import TYPE_CHECKING, Any, ParamSpec
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -19,8 +18,12 @@ from starlette.requests import HTTPConnection, Request
 from starlette.responses import RedirectResponse
 from starlette.websockets import WebSocket
 
-from pulsarity.database.permission import UserPermission
 from pulsarity.database.user import User
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Sequence
+
+    from pulsarity.database.permission import UserPermission
 
 _P = ParamSpec("_P")
 
@@ -58,14 +61,15 @@ def requires(
         func: Callable[_P, Any],
     ) -> Callable[_P, Any]:
         sig = inspect.signature(func)
-        for idx, parameter in enumerate(sig.parameters.values()):
+        idx = -1
+        for parameter in sig.parameters.values():
+            idx += 1
             if parameter.name in ("request", "websocket"):
                 type_ = parameter.name
                 break
         else:
-            raise Exception(
-                f'No "request" or "websocket" argument on function "{func}"'
-            )
+            msg = f'No "request" or "websocket" argument on function "{func}"'
+            raise RuntimeError(msg)
 
         if type_ == "websocket":
 
@@ -74,12 +78,14 @@ def requires(
                 websocket = kwargs.get(
                     "websocket", args[idx] if idx < len(args) else None
                 )
-                assert isinstance(websocket, WebSocket)
-
-                if not has_required_scope(websocket, scopes_set):
-                    await websocket.close()
+                if isinstance(websocket, WebSocket):
+                    if not has_required_scope(websocket, scopes_set):
+                        await websocket.close()
+                    else:
+                        await func(*args, **kwargs)
                 else:
-                    await func(*args, **kwargs)
+                    msg = "Websocket object not provided as valid arg"
+                    raise TypeError(msg)
 
             return websocket_wrapper
 
@@ -88,30 +94,35 @@ def requires(
             @functools.wraps(func)
             async def async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
                 request = kwargs.get("request", args[idx] if idx < len(args) else None)
-                assert isinstance(request, Request)
-
-                if not has_required_scope(request, scopes_set):
-                    if redirect is not None:
-                        orig_request_qparam = urlencode({"next": str(request.url)})
-                        next_url = f"{request.url_for(redirect)}?{orig_request_qparam}"
-                        return RedirectResponse(url=next_url, status_code=303)
-                    raise HTTPException(status_code=status_code)
-                return await func(*args, **kwargs)
+                if isinstance(request, Request):
+                    if not has_required_scope(request, scopes_set):
+                        if redirect is not None:
+                            orig_request_qparam = urlencode({"next": str(request.url)})
+                            next_url = (
+                                f"{request.url_for(redirect)}?{orig_request_qparam}"
+                            )
+                            return RedirectResponse(url=next_url, status_code=303)
+                        raise HTTPException(status_code=status_code)
+                    return await func(*args, **kwargs)
+                msg = "Request object not provided as valid arg"
+                raise TypeError(msg)
 
             return async_wrapper
 
         @functools.wraps(func)
         def sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
             request = kwargs.get("request", args[idx] if idx < len(args) else None)
-            assert isinstance(request, Request)
+            if isinstance(request, Request):
+                if not has_required_scope(request, scopes_set):
+                    if redirect is not None:
+                        orig_request_qparam = urlencode({"next": str(request.url)})
+                        next_url = f"{request.url_for(redirect)}?{orig_request_qparam}"
+                        return RedirectResponse(url=next_url, status_code=303)
+                    raise HTTPException(status_code=status_code)
+                return func(*args, **kwargs)
 
-            if not has_required_scope(request, scopes_set):
-                if redirect is not None:
-                    orig_request_qparam = urlencode({"next": str(request.url)})
-                    next_url = f"{request.url_for(redirect)}?{orig_request_qparam}"
-                    return RedirectResponse(url=next_url, status_code=303)
-                raise HTTPException(status_code=status_code)
-            return func(*args, **kwargs)
+            msg = "Request object not provided as valid arg"
+            raise TypeError(msg)
 
         return sync_wrapper
 
@@ -123,7 +134,7 @@ class PulsarityUser(BaseUser):
     User of the authentication system
     """
 
-    __slots__ = ("_auth_id", "_username", "_display_name")
+    __slots__ = ("_auth_id", "_display_name", "_username")
 
     def __init__(self, db_user: User):
         self._auth_id = db_user.auth_id.hex

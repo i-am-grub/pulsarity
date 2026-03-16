@@ -74,7 +74,46 @@ disable = [
 ]
 
 [tool.ruff.lint]
-exclude = [".mypy_cache", "env", "src/pulsarity/_protobuf/*"]
+exclude = ["tests/*", "docs/*", ".mypy_cache", "env", "src/pulsarity/_protobuf/*"]
+select = [
+    # defaults
+    "E4", "E7", "E9", "F",
+
+    # extras
+    "A",        # don't shadow builtins
+    "B",        # enable bugbear
+    "BLE",      # blind exception checks
+    "C4",       # use comprehensions
+    "COM",      # catch weird comma situations
+    "EM",       # error message standards
+    "ERA",      # commented out code
+    "EXE",      # shebang and permissions checks
+    "FA",       # validate __future__ annotate usage
+    "FURB",     # refurbishment & modernization
+    "I",        # isort
+    "INP",      # packages should have __init__.py
+    "N",        # pep8 object naming rules
+    "PERF",     # performance hits
+    "PIE",      # flake8-pie misc. checks
+    "PLC",      # pylint conventions
+    "PLE",      # pylint errors
+    "PLW",      # pylint warnings
+    "PT",       # pytest style control
+    "Q",        # quote controls
+    "RET",      # check usage of return
+    "RUF",      # ruff-specific rules
+    "S",        # bandit (security checks)
+    "SIM",      # code simplicity
+    "T10",      # don't leave debugger breakpoints around
+    "T20",      # don't leave print() or pprint() around
+    "TC",       # type checking quality stuff (that mypy doesn't check for)[
+    "TRY",      # better handling of exceptions
+    "W",        # pycodestyle warnings
+    "YTT",      # year2020: python3 version checks
+]
+ignore = [
+    "COM812",
+]
 
 [tool.ruff.format]
 docstring-code-format = true

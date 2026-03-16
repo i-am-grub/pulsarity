@@ -16,26 +16,26 @@ from pulsarity.database.slot import Slot, SlotAttribute
 from pulsarity.database.user import User
 
 __all__ = [
-    "User",
-    "Role",
+    "Heat",
+    "HeatAttribute",
+    "Lap",
     "Permission",
     "Pilot",
     "PilotAttribute",
     "ProcessorFields",
-    "RaceFormat",
-    "SystemDefaultPerms",
-    "RaceEvent",
-    "RaceEventAttribute",
     "RaceClass",
     "RaceClassAttribute",
+    "RaceEvent",
+    "RaceEventAttribute",
+    "RaceFormat",
+    "Role",
     "Round",
     "RoundAttribute",
-    "Heat",
-    "HeatAttribute",
+    "SignalHistory",
     "Slot",
     "SlotAttribute",
-    "SignalHistory",
-    "Lap",
+    "SystemDefaultPerms",
+    "User",
 ]
 
 

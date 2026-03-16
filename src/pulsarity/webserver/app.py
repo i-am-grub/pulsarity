@@ -7,10 +7,9 @@ import contextlib
 import json
 import logging
 from asyncio import Event
-from collections.abc import Callable, Coroutine
 from importlib.resources import files
 from pathlib import Path
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
@@ -33,8 +32,11 @@ from pulsarity.utils import background
 from pulsarity.utils.crypto import generate_self_signed_cert
 from pulsarity.webserver._auth import PulsarityAuthBackend
 from pulsarity.webserver._wrapper import endpoint
-from pulsarity.webserver.routes import ROUTES as http_routes
-from pulsarity.webserver.websockets import ROUTES as ws_routes
+from pulsarity.webserver.routes import ROUTES as HTTP_ROUTES
+from pulsarity.webserver.websockets import ROUTES as WS_ROUTES
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +117,6 @@ def generate_api_application() -> Starlette:
     :return: The api application object
     """
     configs = ctx.config_ctx.get()
-    assert configs.secrets is not None
 
     middleware = [
         Middleware(
@@ -131,7 +132,7 @@ def generate_api_application() -> Starlette:
     ]
 
     return Starlette(
-        routes=http_routes + ws_routes,  # type: ignore
+        routes=HTTP_ROUTES + WS_ROUTES,  # type: ignore
         middleware=middleware,
     )
 
@@ -228,7 +229,6 @@ def generate_webserver_coroutine(
     :return: Webserver coroutine
     """
     configs = ctx.config_ctx.get()
-    assert configs.secrets is not None
     webserver_config = Config()
 
     host = configs.webserver.host

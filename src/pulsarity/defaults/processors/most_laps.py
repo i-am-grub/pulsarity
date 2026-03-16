@@ -3,10 +3,9 @@ Most laps implementation
 """
 
 from collections import defaultdict
-from collections.abc import Iterable
 from itertools import count
+from typing import TYPE_CHECKING
 
-from pulsarity.interface.timer_manager import FullLapData
 from pulsarity.race.processor import (
     CombinedMetrics,
     LapsManager,
@@ -18,13 +17,18 @@ from pulsarity.race.processor import (
     register_processor,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from pulsarity.interface.timer_manager import FullLapData
+
 
 class _MostLapsManager(LapsManager):
     """
     Lap data manager for a single slot
     """
 
-    __slots__ = ("_score", "_metrics")
+    __slots__ = ("_metrics", "_score")
 
     def __init__(self):
         super().__init__()
@@ -40,7 +44,9 @@ class _MostLapsManager(LapsManager):
         self._metrics = None
 
     def get_metrics(
-        self, holeshot: bool = False, consec_laps: int = 3
+        self,
+        holeshot: bool = False,
+        consec_laps: int = 3,
     ) -> CombinedMetrics | None:
         """
         Gets the combined metrics
@@ -64,7 +70,6 @@ class _MostLapsManager(LapsManager):
 
         :return: The tuple containing the score
         """
-
         if self._score is not None:
             return self._score
 
@@ -74,11 +79,11 @@ class _MostLapsManager(LapsManager):
 
         if self._primary_laps:
             primary_laps = len(self._primary_laps)
-            last_lap = self._primary_laps.peek_value(-1)
+            last_lap = self._primary_laps.values()[-1]
             last_timestamp = last_lap.timedelta
 
         if self._split_laps:
-            last_split = self._split_laps.peek_value(-1)
+            last_split = self._split_laps.values()[-1]
 
             if last_split.timedelta > last_timestamp:
                 last_index = last_split.timer_index
@@ -95,10 +100,12 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
     Processor to enforce the most laps ruleset
     """
 
-    __slots__ = ("_format", "_lap_data", "_cache", "_count")
+    __slots__ = ("_cache", "_count", "_format", "_lap_data")
 
     class Meta:
-        """Processor metadata"""
+        """
+        Processor metadata
+        """
 
         uid = "most_laps"
         fields = (
@@ -142,7 +149,7 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
         is passed to the processor - a different source for the slot
         keys is needed
         """
-        return all(self.is_slot_done(slot) for slot in self._lap_data.keys())
+        return all(self.is_slot_done(slot) for slot in self._lap_data)
 
     def _get_cache(self) -> dict[int, SlotResult[SoloResultData]]:
         """
@@ -155,7 +162,9 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
             prev_manager: _MostLapsManager | None = None
 
             for slot_id, manager in sorted(
-                self._lap_data.items(), key=lambda pair: pair[1], reverse=True
+                self._lap_data.items(),
+                key=lambda pair: pair[1],
+                reverse=True,
             ):
                 if manager == prev_manager:
                     step += 1

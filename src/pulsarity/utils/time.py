@@ -14,8 +14,7 @@ def get_current_epoch_time() -> timedelta:
     :return: A timedelta object
     """
     epoch_start = datetime.fromtimestamp(0, timezone.utc)
-    current_time = datetime.now(tz=timezone.utc) - epoch_start
-    return current_time
+    return datetime.now(tz=timezone.utc) - epoch_start
 
 
 def get_current_epoch_time_seconds() -> float:

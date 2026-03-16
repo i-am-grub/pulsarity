@@ -31,6 +31,7 @@ else:
             "system behaviors may occur."
         ),
         RuntimeWarning,
+        stacklevel=1,
     )
 
 logger = logging.getLogger(__name__)
@@ -130,7 +131,7 @@ def main() -> None:
     if ws_restart.is_set():
         logger.info("Automatically rebooting server")
         args = [sys.executable, "-m", "pulsarity", *sys.argv]
-        os.execv(sys.executable, args)
+        os.execv(sys.executable, args)  # noqa: S606
 
 
 if __name__ == "__main__":
