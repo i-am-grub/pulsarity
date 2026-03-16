@@ -7,7 +7,6 @@ from __future__ import annotations
 import functools
 import inspect
 import logging
-from collections.abc import Callable, Coroutine
 from json.decoder import JSONDecodeError
 from typing import TYPE_CHECKING, NamedTuple
 

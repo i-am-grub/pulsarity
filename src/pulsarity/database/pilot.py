@@ -43,7 +43,8 @@ class Pilot(_PulsarityBase):
     name = fields.CharField(max_length=120, null=True)
     """Pilot name"""
     used_frequencies = fields.CharField(max_length=80, null=True)
-    """Serialized list of frequencies this pilot has been assigned when starting a race ordered by recency"""
+    """Serialized list of frequencies this pilot has been assigned when
+    starting a race ordered by recency"""
     attributes: fields.ReverseRelation[PilotAttribute]
     """PilotAttributes for this pilot. Access through awaitable attributes."""
 

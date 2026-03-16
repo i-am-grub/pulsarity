@@ -5,7 +5,6 @@ Webserver Websocket Connections
 import asyncio
 import logging
 from typing import TYPE_CHECKING, Any, NamedTuple, ParamSpec, TypeVar
-from uuid import UUID
 
 from google.protobuf.message import DecodeError  # type: ignore
 from pydantic import TypeAdapter, ValidationError

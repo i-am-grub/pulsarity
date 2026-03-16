@@ -74,7 +74,7 @@ disable = [
 ]
 
 [tool.ruff.lint]
-exclude = ["tests", ".mypy_cache", "env", "src/pulsarity/_protobuf/*"]
+exclude = ["tests/*", "docs/*", ".mypy_cache", "env", "src/pulsarity/_protobuf/*"]
 select = [
     # defaults
     "E4", "E7", "E9", "F",
