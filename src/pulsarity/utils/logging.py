@@ -55,12 +55,11 @@ def generate_default_config() -> dict:
                 "respect_handler_level": True,
             },
         },
+        "root": {
+            "handlers": ["queue_handler"],
+            "level": "WARNING",
+        },
         "loggers": {
-            "root": {
-                "handlers": ["queue_handler"],
-                "level": "WARNING",
-                "propagate": False,
-            },
             "pulsarity": {
                 "handlers": ["queue_handler"],
                 "level": "INFO",
