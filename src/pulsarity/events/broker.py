@@ -54,7 +54,7 @@ class _EvtCallbackData:
     Dataclass used for containing event callback data
     """
 
-    priority: int
+    priority: EvtPriority
     func: Callable
     default_data: dict[str, Any]
 
