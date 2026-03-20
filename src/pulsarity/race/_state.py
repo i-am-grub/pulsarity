@@ -97,17 +97,17 @@ class RaceStateManager:
 
         timestamp: float | None = None
         for status, timestamp in self._race_records:
-            if status == RaceStatus.RACING:
+            if status is RaceStatus.RACING:
                 race_period_start = timestamp
 
-            elif status == RaceStatus.OVERTIME:
+            elif status is RaceStatus.OVERTIME:
                 if last_status != RaceStatus.RACING:
                     race_period_start = timestamp
 
-            elif status == RaceStatus.PAUSED:
+            elif status is RaceStatus.PAUSED:
                 race_duration += timestamp - race_period_start
 
-            elif status == RaceStatus.STOPPED:
+            elif status is RaceStatus.STOPPED:
                 if last_status is not None and last_status in RaceStatus.UNDERWAY:
                     race_duration += timestamp - race_period_start
                 return race_duration
@@ -118,7 +118,7 @@ class RaceStateManager:
             msg = f"Unexpected state encountered: {self._race_records}"
             raise RuntimeError(msg)
 
-        if last_status == RaceStatus.PAUSED:
+        if last_status is RaceStatus.PAUSED:
             return race_duration
 
         return race_duration + (ctx.loop_ctx.get().time() - timestamp)
@@ -131,7 +131,7 @@ class RaceStateManager:
         :return: The start timestamp
         """
         for record in self._race_records:
-            if record.status == RaceStatus.RACING:
+            if record.status is RaceStatus.RACING:
                 return record.timestamp
         msg = "Race not underway"
         raise RuntimeError(msg)
@@ -157,7 +157,7 @@ class RaceStateManager:
         :return: The stop timestamp
         """
         for record in self._race_records:
-            if record.status == RaceStatus.STOPPED:
+            if record.status is RaceStatus.STOPPED:
                 return record.timestamp
         msg = "Race not stopped"
         raise RuntimeError(msg)
@@ -188,7 +188,7 @@ class RaceStateManager:
         start_delay = format_.stage_time_sec + _random_delay
         start_time = assigned_start + start_delay
 
-        if self.status == RaceStatus.READY:
+        if self.status is RaceStatus.READY:
             self._format = format_
             self._program_handle = ctx.loop_ctx.get().call_at(
                 assigned_start, self._stage, start_time
@@ -214,18 +214,18 @@ class RaceStateManager:
             self._race_records.clear()
             logger.info("Stopped race before start. Race manager reset")
 
-        elif self.status == RaceStatus.RACING:
+        elif self.status is RaceStatus.RACING:
             event_broker.trigger_background(RaceSequenceEvt.RACE_FINISH)
             event_broker.trigger_background(RaceSequenceEvt.RACE_STOP)
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
 
-        elif self.status == RaceStatus.OVERTIME:
+        elif self.status is RaceStatus.OVERTIME:
             event_broker.trigger_background(RaceSequenceEvt.RACE_STOP)
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
 
-        elif self.status == RaceStatus.PAUSED:
+        elif self.status is RaceStatus.PAUSED:
             for record in reversed(self._race_records):
                 if record.status in RaceStatus.UNDERWAY:
                     break
@@ -233,7 +233,7 @@ class RaceStateManager:
                 msg = "Underway status not found in paused race records"
                 raise RuntimeError(msg)
 
-            if record.status == RaceStatus.RACING:
+            if record.status is RaceStatus.RACING:
                 event_broker.trigger_background(RaceSequenceEvt.RACE_FINISH)
                 event_broker.trigger_background(RaceSequenceEvt.RACE_STOP)
             else:
@@ -263,7 +263,7 @@ class RaceStateManager:
         """
         event_broker = ctx.event_broker_ctx.get()
 
-        if self.status != RaceStatus.PAUSED:
+        if self.status is not RaceStatus.PAUSED:
             msg = "Unable to resume a race state when race status is not paused"
             raise RuntimeError(msg)
 
@@ -383,7 +383,7 @@ class RaceStateManager:
         """
         Reset the manager for the next race
         """
-        if self.status == RaceStatus.STOPPED:
+        if self.status is RaceStatus.STOPPED:
             self._format = None
             self._race_records.clear()
             self._status = RaceStatus.READY

@@ -8,7 +8,7 @@ from pulsarity.interface.timer_manager import FullLapData
 from pulsarity.race.ruleset import (
     LapsManager,
     RaceRuleset,
-    RacerulesetManager,
+    RaceRulesetManager,
     SlotResult,
 )
 
@@ -61,7 +61,7 @@ def test_register_ruleset_error():
     """
 
     with pytest.raises(TypeError):
-        RacerulesetManager.register(Badruleset)
+        RaceRulesetManager.register(Badruleset)
 
 
 def test_register_ruleset_duplicate_error():
@@ -69,9 +69,9 @@ def test_register_ruleset_duplicate_error():
     Test for registration of a bad ruleset
     """
 
-    RacerulesetManager.register(_Testruleset)
+    RaceRulesetManager.register(_Testruleset)
     with pytest.raises(RuntimeError):
-        RacerulesetManager.register(_Testruleset)
+        RaceRulesetManager.register(_Testruleset)
 
 
 def test_get_ruleset():
@@ -79,10 +79,10 @@ def test_get_ruleset():
     Test getting a registered ruleset
     """
     with pytest.raises(KeyError):
-        ruleset = RacerulesetManager.get_ruleset("foo")
+        ruleset = RaceRulesetManager.get_ruleset("foo")
 
-    RacerulesetManager.register(_Testruleset)
-    ruleset = RacerulesetManager.get_ruleset("foo")
+    RaceRulesetManager.register(_Testruleset)
+    ruleset = RaceRulesetManager.get_ruleset("foo")
     assert ruleset is _Testruleset
 
 

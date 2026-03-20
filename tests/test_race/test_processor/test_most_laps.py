@@ -1,4 +1,4 @@
-from pulsarity.defaults.rulesets.most_laps import MostLapsruleset
+from pulsarity.defaults.rulesets.most_laps import MostLapsRuleset
 from pulsarity.interface.timer_manager import FullLapData
 from pulsarity.race.ruleset import SafeRaceFormat
 
@@ -11,10 +11,10 @@ def test_most_laps_ruleset():
     """
     race_time_sec = 4
     overtime_sec = -1
-    fields = {field.name: field.default for field in MostLapsruleset.Meta.fields}
+    fields = {field.name: field.default for field in MostLapsRuleset.Meta.fields}
 
     race_format = SafeRaceFormat(0, 0, False, race_time_sec, overtime_sec, fields)
-    ruleset = MostLapsruleset(race_format)
+    ruleset = MostLapsRuleset(race_format)
 
     # Test adding 1 lap
     lap1 = FullLapData(1.0, 0, "foo", 0)

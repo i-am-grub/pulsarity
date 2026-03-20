@@ -3,13 +3,14 @@ Enums for system events
 """
 
 from dataclasses import dataclass
-from enum import Enum, IntEnum, auto
+from enum import Enum
+from typing import Self
 
 from pulsarity._protobuf import websocket_pb2
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 
 
-class EvtPriority(IntEnum):
+class EvtPriority(Enum):
     """
     The priority of the event over other events that may
     be queued. By default, this is does not determine the
@@ -18,13 +19,18 @@ class EvtPriority(IntEnum):
     action.
     """
 
-    HIGHEST = auto()
-    HIGHER = auto()
-    HIGH = auto()
-    MEDUIUM = auto()
-    LOW = auto()
-    LOWER = auto()
-    LOWEST = auto()
+    HIGHEST = 1
+    HIGHER = 2
+    HIGH = 3
+    MEDUIUM = 4
+    LOW = 5
+    LOWER = 6
+    LOWEST = 7
+
+    def __lt__(self, other: Self):
+        if self.__class__ is other.__class__:
+            return self.value < other.value
+        return NotImplemented
 
 
 @dataclass(frozen=True)

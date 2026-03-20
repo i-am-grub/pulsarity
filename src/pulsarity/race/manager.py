@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from pulsarity.database.lap import Lap
 from pulsarity.database.signal import SignalHistory
 from pulsarity.race._state import RaceStateManager, RaceStatus
-from pulsarity.race.ruleset import RaceRuleset, RacerulesetManager, SafeRaceFormat
+from pulsarity.race.ruleset import RaceRuleset, RaceRulesetManager, SafeRaceFormat
 
 if TYPE_CHECKING:
     from pulsarity.database.raceformat import RaceFormat
@@ -89,7 +89,7 @@ class RaceManager:
         :param assigned_start: The event loop start time of the race.
         Currently equivalent to monotonic time
         """
-        ruleset = RacerulesetManager.get_ruleset(format_.ruleset_id)
+        ruleset = RaceRulesetManager.get_ruleset(format_.ruleset_id)
         safe_format = SafeRaceFormat.from_format(format_)
         self._ruleset = ruleset(safe_format)
         self._state.schedule_race(safe_format, assigned_start=assigned_start)
@@ -113,7 +113,7 @@ class RaceManager:
 
         `WARNING`: This will clear all unsaved data
         """
-        if self._state.status == RaceStatus.STOPPED:
+        if self._state.status is RaceStatus.STOPPED:
             async with self._save_lock:
                 self._state.reset()
                 self._ruleset = None
@@ -220,7 +220,7 @@ class RaceManager:
         """
         Saves the race data to the database
         """
-        if self._state.status == RaceStatus.STOPPED:
+        if self._state.status is RaceStatus.STOPPED:
             async with self._save_lock, asyncio.TaskGroup() as tg:
                 tg.create_task(self._save_lap_data())
                 tg.create_task(self._save_signal_data())

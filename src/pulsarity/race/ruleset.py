@@ -55,7 +55,7 @@ class SafeRaceFormat(NamedTuple):
         Builds an immutable from the a database race format instance and
         the ruleset fields default values.
         """
-        ruleset = RacerulesetManager.get_ruleset(format_.ruleset_id)
+        ruleset = RaceRulesetManager.get_ruleset(format_.ruleset_id)
         fields = {field.name: field.default for field in ruleset.Meta.fields}
         fields.update({field.name: field.value for field in format_.ruleset_fields})
         return cls(
@@ -181,7 +181,7 @@ class LapsManager(ABC):
         :param key: The key to save the lap with
         :param lap: The lap data
         """
-        if lap.timer_mode == TimerMode.PRIMARY:
+        if lap.timer_mode is TimerMode.PRIMARY:
             self._primary_laps[key] = lap
         else:
             self._split_laps[key] = lap
@@ -480,7 +480,7 @@ class RaceRuleset(ABC, Generic[T]):
     """
 
     class Meta:
-        """ruleset metadata"""
+        """Ruleset metadata"""
 
         uid: str
         """ruleset unique identifier"""
@@ -558,7 +558,7 @@ class RaceRuleset(ABC, Generic[T]):
         """
 
 
-class RacerulesetManager:
+class RaceRulesetManager:
     """
     Manages the race rulesets
     """
@@ -624,5 +624,5 @@ def register_ruleset(interface_class: type[RaceRuleset]) -> type[RaceRuleset]:
     :param interface_class: The race ruleset class to register
     :return: The registered race ruleset
     """
-    RacerulesetManager.register(interface_class)
+    RaceRulesetManager.register(interface_class)
     return interface_class

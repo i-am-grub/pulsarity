@@ -95,7 +95,7 @@ class _MostLapsManager(LapsManager):
 
 
 @register_ruleset
-class MostLapsruleset(RaceRuleset[SoloResultData]):
+class MostLapsRuleset(RaceRuleset[SoloResultData]):
     """
     ruleset to enforce the most laps ruleset
     """
@@ -104,7 +104,7 @@ class MostLapsruleset(RaceRuleset[SoloResultData]):
 
     class Meta:
         """
-        ruleset metadata
+        Ruleset metadata
         """
 
         uid = "most_laps"
