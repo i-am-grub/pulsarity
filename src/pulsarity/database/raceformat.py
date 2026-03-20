@@ -10,13 +10,13 @@ from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 
-class ProcessorFields(_PulsarityBase, Generic[ATTRIBUTE]):
+class RulesetField(_PulsarityBase, Generic[ATTRIBUTE]):
     """
-    Unique fields for a race processor.
+    Unique fields for a race ruleset.
     """
 
     raceformat: fields.ForeignKeyRelation[RaceFormat] = fields.ForeignKeyField(
-        "event.RaceFormat", related_name="processor_fields"
+        "event.RaceFormat", related_name="ruleset_fields"
     )
     name = fields.CharField(max_length=80)
     value = fields.JSONField[ATTRIBUTE]()
@@ -25,7 +25,7 @@ class ProcessorFields(_PulsarityBase, Generic[ATTRIBUTE]):
         """Tortoise ORM metadata"""
 
         app = "event"
-        table = "processor_field"
+        table = "ruleset_field"
         unique_together = (("raceformat", "name"),)
 
 
@@ -46,10 +46,10 @@ class RaceFormat(_PulsarityBase):
     """Race clock duration in seconds, unused if unlimited_time is True"""
     overtime_sec = fields.IntField(default=0)
     """Overtime duration in seconds, -1 for unlimited, unused if unlimited_time is True"""
-    processor_id = fields.CharField(max_length=32)
-    """The identifer for the format's processor"""
-    processor_fields: fields.ReverseRelation[ProcessorFields]
-    """The fields assigned to the format's processor"""
+    ruleset_id = fields.CharField(max_length=32)
+    """The identifer for the format's ruleset"""
+    ruleset_fields: fields.ReverseRelation[RulesetField]
+    """The fields assigned to the format's ruleset"""
 
     class Meta:
         """Tortoise ORM metadata"""

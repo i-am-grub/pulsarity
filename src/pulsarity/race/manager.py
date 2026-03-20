@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from pulsarity.database.lap import Lap
 from pulsarity.database.signal import SignalHistory
 from pulsarity.race._state import RaceStateManager, RaceStatus
-from pulsarity.race.processor import RaceProcessor, RaceProcessorManager, SafeRaceFormat
+from pulsarity.race.ruleset import RaceRuleset, RacerulesetManager, SafeRaceFormat
 
 if TYPE_CHECKING:
     from pulsarity.database.raceformat import RaceFormat
@@ -28,7 +28,7 @@ class RaceManager:
     Links race state/timing and race data
     """
 
-    ___slots__ = ("_state", "_save_lock", "_signal_data", "_processor")
+    ___slots__ = ("_state", "_save_lock", "_signal_data", "_ruleset")
 
     def __init__(self) -> None:
         self._state = RaceStateManager()
@@ -39,8 +39,8 @@ class RaceManager:
             defaultdict(partial(defaultdict, list))
         )
         """Race signal data storage"""
-        self._processor: RaceProcessor | None = None
-        """The processor used for processing race data"""
+        self._ruleset: RaceRuleset | None = None
+        """The ruleset used for processing race data"""
 
     @property
     def status(self) -> RaceStatus:
@@ -89,9 +89,9 @@ class RaceManager:
         :param assigned_start: The event loop start time of the race.
         Currently equivalent to monotonic time
         """
-        processor = RaceProcessorManager.get_processor(format_.processor_id)
+        ruleset = RacerulesetManager.get_ruleset(format_.ruleset_id)
         safe_format = SafeRaceFormat.from_format(format_)
-        self._processor = processor(safe_format)
+        self._ruleset = ruleset(safe_format)
         self._state.schedule_race(safe_format, assigned_start=assigned_start)
 
     def stop_race(self) -> None:
@@ -116,25 +116,25 @@ class RaceManager:
         if self._state.status == RaceStatus.STOPPED:
             async with self._save_lock:
                 self._state.reset()
-                self._processor = None
+                self._ruleset = None
                 self._signal_data.clear()
 
     def add_lap_record(self, slot: int, record: FullLapData) -> None:
         """
-        Add lap record to the processor instance
+        Add lap record to the ruleset instance
 
         :param slot: Slot to assign the lap record
         :param lap_data: Lap data
         """
-        if self._processor is not None:
-            self._processor.add_lap_record(slot, record)
+        if self._ruleset is not None:
+            self._ruleset.add_lap_record(slot, record)
         else:
-            msg = "Unable to add record when processor is not set"
+            msg = "Unable to add record when ruleset is not set"
             raise RuntimeError(msg)
 
     def status_aware_lap_record(self, slot: int, record: FullLapData) -> None:
         """
-        Add a lap record to the processor instance if the race status is underway
+        Add a lap record to the ruleset instance if the race status is underway
 
         :param slot: The slot to add the lap record to
         :param record: The lap record to add
@@ -163,26 +163,26 @@ class RaceManager:
 
     def remove_lap_record(self, slot: int, key: int) -> None:
         """
-        Add remove record from the processor instance
+        Add remove record from the ruleset instance
 
         :param slot: Slot to assign the lap record
         :param key: The key to use for removing the record
         """
-        if self._processor is not None:
+        if self._ruleset is not None:
             try:
-                self._processor.remove_lap_record(slot, key)
+                self._ruleset.remove_lap_record(slot, key)
             except KeyError as ex:
                 msg = "Invalid value for lap key"
                 raise ValueError(msg) from ex
         else:
-            msg = "Unable to remove record when processor is not set"
+            msg = "Unable to remove record when ruleset is not set"
             raise RuntimeError(msg)
 
     async def _save_lap_data(self) -> None:
         """
         Saves the lap data to the database
         """
-        if self._processor is not None:
+        if self._ruleset is not None:
             laps = (
                 Lap(
                     slot_id=lap.node_index,
@@ -190,7 +190,7 @@ class RaceManager:
                     timer_index=lap.timer_index,
                     timer_identifier=lap.timer_identifier,
                 )
-                for lap in self._processor.get_laps_iterable()
+                for lap in self._ruleset.get_laps_iterable()
             )
             await Lap.bulk_create(laps, batch_size=25)
         else:

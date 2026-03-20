@@ -1,5 +1,5 @@
 """
-Race processor
+Race ruleset
 """
 
 from __future__ import annotations
@@ -53,11 +53,11 @@ class SafeRaceFormat(NamedTuple):
     def from_format(cls, format_: RaceFormat) -> Self:
         """
         Builds an immutable from the a database race format instance and
-        the processor fields default values.
+        the ruleset fields default values.
         """
-        processor = RaceProcessorManager.get_processor(format_.processor_id)
-        fields = {field.name: field.default for field in processor.Meta.fields}
-        fields.update({field.name: field.value for field in format_.processor_fields})
+        ruleset = RacerulesetManager.get_ruleset(format_.ruleset_id)
+        fields = {field.name: field.default for field in ruleset.Meta.fields}
+        fields.update({field.name: field.value for field in format_.ruleset_fields})
         return cls(
             format_.stage_time_sec,
             format_.random_stage_delay,
@@ -148,7 +148,7 @@ class SoloResultData:
 
 class LapsManager(ABC):
     """
-    Helper class to assist with storing lap data in `RaceProcessor`s
+    Helper class to assist with storing lap data in `Raceruleset`s
 
     This class automatically sorts lap data based on the `TimerMode` and
     implements convience comparsion methods to enable sorting based on the
@@ -462,9 +462,9 @@ class LapsManager(ABC):
         return object.__hash__(self)
 
 
-class ProcessorField(NamedTuple, Generic[T]):
+class RulesetFieldData(NamedTuple, Generic[T]):
     """
-    Custom field for processor
+    Custom field data for ruleset
     """
 
     name: str
@@ -473,19 +473,19 @@ class ProcessorField(NamedTuple, Generic[T]):
     default: T
 
 
-class RaceProcessor(ABC, Generic[T]):
+class RaceRuleset(ABC, Generic[T]):
     """
     Abstract base class for processing race data.
     Can be used to enforce custom rulesets
     """
 
     class Meta:
-        """Processor metadata"""
+        """ruleset metadata"""
 
         uid: str
-        """processor unique identifier"""
-        fields: Iterable[ProcessorField]
-        """custom fields for processor"""
+        """ruleset unique identifier"""
+        fields: Iterable[RulesetFieldData]
+        """custom fields for ruleset"""
 
     @abstractmethod
     def __init__(self, race_format: SafeRaceFormat) -> None:
@@ -552,77 +552,77 @@ class RaceProcessor(ABC, Generic[T]):
     @abstractmethod
     def get_laps_iterable(self) -> Iterable[FullLapData]:
         """
-        Gets all of the laps stored by the race processor
+        Gets all of the laps stored by the race ruleset
 
         :return: An iterable of the lap data
         """
 
 
-class RaceProcessorManager:
+class RacerulesetManager:
     """
-    Manages the race processors
+    Manages the race rulesets
     """
 
-    _registered_processors: ClassVar[
-        dict[str | Callable[[RaceProcessor], str], type[RaceProcessor]],
+    _registered_ruleset: ClassVar[
+        dict[str | Callable[[RaceRuleset], str], type[RaceRuleset]],
     ] = {}
 
     @classmethod
-    def register(cls, processor_class: type[RaceProcessor]) -> type[RaceProcessor]:
+    def register(cls, ruleset_class: type[RaceRuleset]) -> type[RaceRuleset]:
         """
         Registers a rulesets type to be used by the system.
         Can be used as a decorator
 
-        :param processor_class: The class to register
+        :param ruleset_class: The class to register
         :raises RuntimeError: Class already registered
         """
 
-        if issubclass(processor_class, RaceProcessor) and not inspect.isabstract(
-            processor_class,
+        if issubclass(ruleset_class, RaceRuleset) and not inspect.isabstract(
+            ruleset_class,
         ):
-            uid = processor_class.Meta.uid
-            if uid in cls._registered_processors:
+            uid = ruleset_class.Meta.uid
+            if uid in cls._registered_ruleset:
                 msg = "Interface type with matching identifier already registered"
                 raise RuntimeError(msg)
 
-            cls._registered_processors[uid] = processor_class
+            cls._registered_ruleset[uid] = ruleset_class
 
-            return processor_class
+            return ruleset_class
 
-        msg = f"Attempted to register an invalid race processor: {processor_class.__name__}"
+        msg = f"Attempted to register an invalid race ruleset: {ruleset_class.__name__}"
         raise TypeError(msg)
 
     @classmethod
-    def get_processor(cls, processor_uid: str) -> type[RaceProcessor]:
+    def get_ruleset(cls, ruleset_uid: str) -> type[RaceRuleset]:
         """
-        Gets the processor for the provided uid
+        Gets the ruleset for the provided uid
 
-        :param ruleset_uid: The uid of the processor
+        :param ruleset_uid: The uid of the ruleset
         :return:
         """
         try:
-            return cls._registered_processors[processor_uid]
+            return cls._registered_ruleset[ruleset_uid]
         except KeyError:
             logger.exception(
-                "Processor for format is not registered in the system. Key id: %s",
-                processor_uid,
+                "ruleset for format is not registered in the system. Key id: %s",
+                ruleset_uid,
             )
             raise
 
     @classmethod
     def clear_registered(cls) -> None:
         """
-        UNIT TESTING ONLY: Clears all registered processors.
+        UNIT TESTING ONLY: Clears all registered rulesets.
         """
-        cls._registered_processors.clear()
+        cls._registered_ruleset.clear()
 
 
-def register_processor(interface_class: type[RaceProcessor]) -> type[RaceProcessor]:
+def register_ruleset(interface_class: type[RaceRuleset]) -> type[RaceRuleset]:
     """
-    Decorator used for registering RaceProcessor classes
+    Decorator used for registering Raceruleset classes
 
-    :param interface_class: The race processor class to register
-    :return: The registered race processor
+    :param interface_class: The race ruleset class to register
+    :return: The registered race ruleset
     """
-    RaceProcessorManager.register(interface_class)
+    RacerulesetManager.register(interface_class)
     return interface_class

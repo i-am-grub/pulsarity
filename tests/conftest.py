@@ -24,7 +24,7 @@ from pulsarity.database import (
 from pulsarity.events.broker import EventBroker
 from pulsarity.interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.manager import RaceManager
-from pulsarity.race.processor import RaceProcessorManager
+from pulsarity.race.ruleset import RacerulesetManager
 from pulsarity.utils import background
 from pulsarity.utils.config import PulsarityConfig
 from pulsarity.webserver import app
@@ -46,7 +46,7 @@ async def context_and_cleanup():
     await background.shutdown(5)
 
     TimerInterfaceManager.clear_registered()
-    RaceProcessorManager.clear_registered()
+    RacerulesetManager.clear_registered()
     EventBroker.clear_registered()
 
     ctx.loop_ctx.reset(loop_token)
@@ -149,7 +149,7 @@ async def _limited_schedule():
         unlimited_time=False,
         race_time_sec=2,
         overtime_sec=1,
-        processor_id="foo-bar",
+        ruleset_id="foo-bar",
     )
 
 
@@ -162,7 +162,7 @@ async def _limited_no_ot_schedule():
         unlimited_time=False,
         race_time_sec=2,
         overtime_sec=0,
-        processor_id="foo-bar",
+        ruleset_id="foo-bar",
     )
 
 
@@ -175,7 +175,7 @@ async def _unlimited_schedule():
         unlimited_time=True,
         race_time_sec=2,
         overtime_sec=1,
-        processor_id="foo-bar",
+        ruleset_id="foo-bar",
     )
 
 

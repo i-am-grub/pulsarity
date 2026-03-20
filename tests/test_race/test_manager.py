@@ -2,12 +2,12 @@ from collections.abc import Iterable, Sequence
 
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import FullLapData
-from pulsarity.race.processor import RaceProcessor, SlotResult
+from pulsarity.race.ruleset import RaceRuleset, SlotResult
 
 
-class MostLapsProcessor(RaceProcessor):
+class MostLapsruleset(RaceRuleset):
     """
-    Processor to test good implementation
+    ruleset to test good implementation
     """
 
     def __init__(self, race_format: RaceFormat) -> None: ...

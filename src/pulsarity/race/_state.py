@@ -13,7 +13,7 @@ from pulsarity.events import RaceSequenceEvt
 if TYPE_CHECKING:
     from asyncio import TimerHandle
 
-    from pulsarity.race.processor import SafeRaceFormat
+    from pulsarity.race.ruleset import SafeRaceFormat
 
 logger = logging.getLogger(__name__)
 

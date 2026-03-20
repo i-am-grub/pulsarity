@@ -5,10 +5,10 @@ import pytest
 
 from pulsarity.database.raceformat import RaceFormat
 from pulsarity.interface.timer_manager import FullLapData
-from pulsarity.race.processor import (
+from pulsarity.race.ruleset import (
     LapsManager,
-    RaceProcessor,
-    RaceProcessorManager,
+    RaceRuleset,
+    RacerulesetManager,
     SlotResult,
 )
 
@@ -21,19 +21,19 @@ class _TestManager(LapsManager):
     def remove_lap_cb(self, *_) -> None: ...
 
 
-class BadProcessor(RaceProcessor):
+class Badruleset(RaceRuleset):
     """
-    Processor to test bad implementation
+    ruleset to test bad implementation
     """
 
 
-class _TestProcessor(RaceProcessor):
+class _Testruleset(RaceRuleset):
     """
-    Processor to test good implementation
+    ruleset to test good implementation
     """
 
     class Meta:
-        """Processor metadata"""
+        """ruleset metadata"""
 
         uid = "foo"
         fields = ()
@@ -55,35 +55,35 @@ class _TestProcessor(RaceProcessor):
     def get_laps_iterable(self) -> Iterable[FullLapData]: ...
 
 
-def test_register_processor_error():
+def test_register_ruleset_error():
     """
     Test for registration of a bad interface
     """
 
     with pytest.raises(TypeError):
-        RaceProcessorManager.register(BadProcessor)
+        RacerulesetManager.register(Badruleset)
 
 
-def test_register_processor_duplicate_error():
+def test_register_ruleset_duplicate_error():
     """
-    Test for registration of a bad processor
+    Test for registration of a bad ruleset
     """
 
-    RaceProcessorManager.register(_TestProcessor)
+    RacerulesetManager.register(_Testruleset)
     with pytest.raises(RuntimeError):
-        RaceProcessorManager.register(_TestProcessor)
+        RacerulesetManager.register(_Testruleset)
 
 
-def test_get_processor():
+def test_get_ruleset():
     """
-    Test getting a registered processor
+    Test getting a registered ruleset
     """
     with pytest.raises(KeyError):
-        processor = RaceProcessorManager.get_processor("foo")
+        ruleset = RacerulesetManager.get_ruleset("foo")
 
-    RaceProcessorManager.register(_TestProcessor)
-    processor = RaceProcessorManager.get_processor("foo")
-    assert processor is _TestProcessor
+    RacerulesetManager.register(_Testruleset)
+    ruleset = RacerulesetManager.get_ruleset("foo")
+    assert ruleset is _Testruleset
 
 
 def test_all_metrics():

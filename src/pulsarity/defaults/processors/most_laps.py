@@ -6,15 +6,15 @@ from collections import defaultdict
 from itertools import count
 from typing import TYPE_CHECKING
 
-from pulsarity.race.processor import (
+from pulsarity.race.ruleset import (
     CombinedMetrics,
     LapsManager,
-    ProcessorField,
-    RaceProcessor,
+    RaceRuleset,
+    RulesetFieldData,
     SafeRaceFormat,
     SlotResult,
     SoloResultData,
-    register_processor,
+    register_ruleset,
 )
 
 if TYPE_CHECKING:
@@ -94,23 +94,23 @@ class _MostLapsManager(LapsManager):
         return self._score
 
 
-@register_processor
-class MostLapsProcessor(RaceProcessor[SoloResultData]):
+@register_ruleset
+class MostLapsruleset(RaceRuleset[SoloResultData]):
     """
-    Processor to enforce the most laps ruleset
+    ruleset to enforce the most laps ruleset
     """
 
     __slots__ = ("_cache", "_count", "_format", "_lap_data")
 
     class Meta:
         """
-        Processor metadata
+        ruleset metadata
         """
 
         uid = "most_laps"
         fields = (
-            ProcessorField("holeshot", "holeshot", bool, False),
-            ProcessorField("consecutive", "consecutive laps", int, 3),
+            RulesetFieldData("holeshot", "holeshot", bool, False),
+            RulesetFieldData("consecutive", "consecutive laps", int, 3),
         )
 
     def __init__(self, race_format: SafeRaceFormat) -> None:
@@ -146,7 +146,7 @@ class MostLapsProcessor(RaceProcessor[SoloResultData]):
     def all_slots_finished(self):
         """
         Note: This serves as a temporary implementation until slot data
-        is passed to the processor - a different source for the slot
+        is passed to the ruleset - a different source for the slot
         keys is needed
         """
         return all(self.is_slot_done(slot) for slot in self._lap_data)
