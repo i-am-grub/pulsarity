@@ -33,7 +33,7 @@ def generate_default_config() -> dict:
             },
         },
         "handlers": {
-            "stderr": {
+            "stdout": {
                 "level": "INFO",
                 "formatter": "standard",
                 "class": "logging.StreamHandler",
@@ -51,7 +51,7 @@ def generate_default_config() -> dict:
             "queue_handler": {
                 "class": "logging.handlers.QueueHandler",
                 "listener": "pulsarity.utils.logging.AutoQueueListener",
-                "handlers": ["stderr", "file"],
+                "handlers": ["stdout", "file"],
                 "respect_handler_level": True,
             },
         },
