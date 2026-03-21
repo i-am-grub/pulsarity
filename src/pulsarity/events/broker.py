@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from pydantic import BaseModel
 
-from pulsarity.events.enums import EvtPriority, _ApplicationEvt
+from pulsarity.events.enums import EvtPriority, SystemEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
 
@@ -35,7 +35,7 @@ class _QueuedEvtData:
     Dataclass used for containing event data across the queue
     """
 
-    evt: _ApplicationEvt
+    evt: SystemEvt
     uuid: uuid.UUID
     data: dict[str, Any]
 
@@ -98,7 +98,7 @@ class EventBroker:
 
     def publish(
         self,
-        event: _ApplicationEvt,
+        event: SystemEvt,
         data: BaseModel | dict[str, Any] | None = None,
         *,
         uuid_: uuid.UUID | None = None,
@@ -119,7 +119,7 @@ class EventBroker:
 
     async def trigger(
         self,
-        event: _ApplicationEvt,
+        event: SystemEvt,
         data: BaseModel | dict[str, Any] | None = None,
         *,
         uuid_: uuid.UUID | None = None,
@@ -139,7 +139,7 @@ class EventBroker:
 
     def trigger_background(
         self,
-        event: _ApplicationEvt,
+        event: SystemEvt,
         data: BaseModel | dict[str, Any] | None = None,
         *,
         uuid_: uuid.UUID | None = None,
@@ -187,7 +187,7 @@ class EventBroker:
     def register_event_callback(
         cls,
         callback: Callable,
-        event: _ApplicationEvt,
+        event: SystemEvt,
         *,
         priority: EvtPriority = EvtPriority.LOWEST,
         default_kwargs: BaseModel | dict[str, Any] | None = None,
@@ -215,7 +215,7 @@ class EventBroker:
     def unregister_event_callback(
         cls,
         callback: Callable,
-        event: _ApplicationEvt,
+        event: SystemEvt,
     ) -> None:
         """
         Unregister an event callback
@@ -257,7 +257,7 @@ class EventBroker:
 
 
 def register_as_callback(
-    event: _ApplicationEvt,
+    event: SystemEvt,
     *,
     priority: EvtPriority = EvtPriority.LOWEST,
     default_kwargs: dict[str, Any] | None = None,

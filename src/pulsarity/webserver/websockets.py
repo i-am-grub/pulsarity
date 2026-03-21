@@ -16,7 +16,7 @@ from pulsarity import ctx
 from pulsarity._protobuf import websocket_pb2
 from pulsarity._validation import websocket as ws_validation
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
-from pulsarity.events import RaceSequenceEvt, SpecialEvt, _ApplicationEvt
+from pulsarity.events import SystemEvt
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
 
@@ -51,7 +51,7 @@ class _ExternalEvent(NamedTuple):
     data: dict[str, Any]
 
 
-def ws_event(event: _ApplicationEvt):
+def ws_event(event: SystemEvt):
     """
     Decorator for registerting routes based on recieved websocket event data
 
@@ -128,7 +128,7 @@ async def _send_event_data() -> None:
         if permissions is None:
             continue
 
-        if event.evt.event_id == SpecialEvt.PERMISSIONS_UPDATE.event_id:
+        if event.evt.event_id == SystemEvt.PERMISSIONS_UPDATE.event_id:
             temp = await user.get_permissions()
             permissions.clear()
             permissions.update(temp)
@@ -158,7 +158,7 @@ async def handle_ws_event(event: ws_validation.WebsocketEvent):
         await ensure_async(route.func, event)
 
 
-@ws_event(SpecialEvt.HEARTBEAT)
+@ws_event(SystemEvt.HEARTBEAT)
 async def heatbeat_echo(event: ws_validation.SystemHeartbeat):
     """
     Echo recieved heatbeat data
@@ -166,10 +166,10 @@ async def heatbeat_echo(event: ws_validation.SystemHeartbeat):
     :param event: The websocket event data
     """
     event_broker = ctx.event_broker_ctx.get()
-    event_broker.publish(SpecialEvt.HEARTBEAT, uuid_=event.uuid)
+    event_broker.publish(SystemEvt.HEARTBEAT, uuid_=event.uuid)
 
 
-@ws_event(SpecialEvt.SHUTDOWN)
+@ws_event(SystemEvt.SHUTDOWN)
 async def shutdown_server(_event: ws_validation.SystemShutdown):
     """
     Shutdown the webserver
@@ -177,7 +177,7 @@ async def shutdown_server(_event: ws_validation.SystemShutdown):
     ws_shutdown.set()
 
 
-@ws_event(SpecialEvt.RESTART)
+@ws_event(SystemEvt.RESTART)
 async def restart_server(_event: ws_validation.SystemRestart):
     """
     Restart the webserver
@@ -185,14 +185,14 @@ async def restart_server(_event: ws_validation.SystemRestart):
     ws_restart.set()
 
 
-@ws_event(RaceSequenceEvt.RACE_SCHEDULE)
+@ws_event(SystemEvt.RACE_SCHEDULE)
 async def schedule_race(_event: ws_validation.ScheduleRace):
     """
     Schedule the start of a race.
     """
 
 
-@ws_event(RaceSequenceEvt.RACE_STOP)
+@ws_event(SystemEvt.RACE_STOP)
 async def race_stop(_event: ws_validation.RaceStop):
     """
     Stop the current race

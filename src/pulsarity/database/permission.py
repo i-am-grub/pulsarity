@@ -4,7 +4,7 @@ ORM classes for Permission data
 
 from __future__ import annotations
 
-from enum import StrEnum, auto
+from enum import StrEnum, auto, unique
 from typing import TYPE_CHECKING
 
 from tortoise import fields
@@ -62,6 +62,7 @@ class UserPermission(StrEnum):
     """
 
 
+@unique
 class SystemDefaultPerms(UserPermission):
     """
     Default user permissions for the system

@@ -3,18 +3,10 @@ System events
 """
 
 from pulsarity.events.broker import EventBroker, register_as_callback
-from pulsarity.events.enums import (
-    EventSetupEvt,
-    RaceSequenceEvt,
-    SpecialEvt,
-    _ApplicationEvt,
-)
+from pulsarity.events.enums import SystemEvt
 
 __all__ = [
     "EventBroker",
-    "EventSetupEvt",
-    "RaceSequenceEvt",
-    "SpecialEvt",
-    "_ApplicationEvt",
+    "SystemEvt",
     "register_as_callback",
 ]

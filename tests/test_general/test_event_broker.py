@@ -7,7 +7,7 @@ import threading
 
 import pytest
 
-from pulsarity.events import EventBroker, EventSetupEvt, RaceSequenceEvt
+from pulsarity.events import EventBroker, SystemEvt
 from pulsarity.utils import background
 
 
@@ -63,7 +63,7 @@ async def test_single_event_handling():
     """
     broker = EventBroker()
 
-    events = [EventSetupEvt.PILOT_ADD]
+    events = [SystemEvt.PILOT_ADD]
     values = [{"id": 1}]
     event_values = tuple(zip(events, values))
 
@@ -77,9 +77,9 @@ async def test_multi_event_handling():
     """
     broker = EventBroker()
 
-    events = [EventSetupEvt.PILOT_ADD] * 3
+    events = [SystemEvt.PILOT_ADD] * 3
     values = [{"id": 1}] * 3
-    events.append(RaceSequenceEvt.RACE_START)
+    events.append(SystemEvt.RACE_START)
     values.append({"id": 5})
     event_values = tuple(zip(events, values))
 
@@ -96,7 +96,7 @@ async def test_event_async_callback():
 
     broker = EventBroker()
 
-    events = [EventSetupEvt.PILOT_ADD]
+    events = [SystemEvt.PILOT_ADD]
     values = [{"id": 1}]
     event_values = tuple(zip(events, values))
 
@@ -106,7 +106,7 @@ async def test_event_async_callback():
         flag.set()
 
     broker.register_event_callback(
-        test_cb, EventSetupEvt.PILOT_ADD, default_kwargs={"flag": flag}
+        test_cb, SystemEvt.PILOT_ADD, default_kwargs={"flag": flag}
     )
 
     assert not flag.is_set()
@@ -126,7 +126,7 @@ async def disable_test_event_sync_callback():
 
     broker = EventBroker()
 
-    events = [EventSetupEvt.PILOT_ADD]
+    events = [SystemEvt.PILOT_ADD]
     values = [{"id": 1}]
     event_values = tuple(zip(events, values))
 
@@ -136,7 +136,7 @@ async def disable_test_event_sync_callback():
         flag.set()
 
     broker.register_event_callback(
-        test_cb, EventSetupEvt.PILOT_ADD, default_kwargs={"flag": flag}
+        test_cb, SystemEvt.PILOT_ADD, default_kwargs={"flag": flag}
     )
 
     assert not flag.is_set()
@@ -159,13 +159,13 @@ async def test_event_callback_unregister_pass():
     async def test_cb(**_):
         pass
 
-    broker.register_event_callback(test_cb, EventSetupEvt.PILOT_ADD)
+    broker.register_event_callback(test_cb, SystemEvt.PILOT_ADD)
 
-    assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.event_id]) != 0
+    assert len(broker._callbacks[SystemEvt.PILOT_ADD.event_id]) != 0
 
-    broker.unregister_event_callback(test_cb, EventSetupEvt.PILOT_ADD)
+    broker.unregister_event_callback(test_cb, SystemEvt.PILOT_ADD)
 
-    assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.event_id]) == 0
+    assert len(broker._callbacks[SystemEvt.PILOT_ADD.event_id]) == 0
 
 
 @pytest.mark.asyncio
@@ -179,7 +179,7 @@ async def test_event_callback_unregister_fail():
     async def test_cb(**_):
         pass
 
-    assert len(broker._callbacks[EventSetupEvt.PILOT_ADD.event_id]) == 0
+    assert len(broker._callbacks[SystemEvt.PILOT_ADD.event_id]) == 0
 
     with pytest.raises(RuntimeError):
-        broker.unregister_event_callback(test_cb, EventSetupEvt.PILOT_ADD)
+        broker.unregister_event_callback(test_cb, SystemEvt.PILOT_ADD)
