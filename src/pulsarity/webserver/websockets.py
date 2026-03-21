@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any, NamedTuple, ParamSpec, TypeVar
 
-from google.protobuf.message import DecodeError  # type: ignore
+from google.protobuf.message import DecodeError
 from pydantic import TypeAdapter, ValidationError
 from starlette.authentication import requires
 from starlette.routing import WebSocketRoute
@@ -15,13 +15,13 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 from pulsarity import ctx
 from pulsarity._protobuf import websocket_pb2
 from pulsarity._validation import websocket as ws_validation
-from pulsarity.database.permission import SystemDefaultPerms, UserPermission
+from pulsarity.database.permission import SystemDefaultPerms
 from pulsarity.events import SystemEvt
 from pulsarity.utils import background
-from pulsarity.utils.asyncio import ensure_async
+from pulsarity.webserver import _wrapper
+from pulsarity.webserver._wrapper import ws_event
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
     from uuid import UUID
 
 T = TypeVar("T")
@@ -37,35 +37,10 @@ WS_EVENT_ADAPTER: TypeAdapter[ws_validation.BaseEvent] = TypeAdapter(
 )
 
 
-class _Route(NamedTuple):
-    permission: UserPermission
-    func: Callable
-
-
-_wse_routes: dict[websocket_pb2.EventID, _Route] = {}  # type: ignore
-
-
 class _ExternalEvent(NamedTuple):
     uuid: UUID
     event_id: websocket_pb2.EventID
     data: dict[str, Any]
-
-
-def ws_event(event: SystemEvt):
-    """
-    Decorator for registerting routes based on recieved websocket event data
-
-    :param event: The event to base the routing on
-    """
-    if event.event_id in _wse_routes:
-        msg = "Multiple routes can not be register for a individual application event"
-        raise RuntimeError(msg)
-
-    def inner(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
-        _wse_routes[event.event_id] = _Route(event.permission, func)
-        return func
-
-    return inner
 
 
 @requires(SystemDefaultPerms.EVENT_WEBSOCKET)
@@ -112,7 +87,7 @@ async def _recieve_event_data() -> None:
         except ValidationError:
             logger.debug("Error validating websocket data: %s", event)
         else:
-            background.add_background_task(handle_ws_event, event_)
+            background.add_background_task(_wrapper.handle_ws_event, event_)
 
 
 async def _send_event_data() -> None:
@@ -140,26 +115,8 @@ async def _send_event_data() -> None:
             await websocket.send_bytes(data)
 
 
-async def handle_ws_event(event: ws_validation.WebsocketEvent):
-    """
-    Routes the event data to the proper websocket action while
-    ensuring the user has the proper permissions
-
-    :param event: The websocket event
-    """
-    try:
-        route = _wse_routes[event.event_id]
-    except KeyError:
-        logger.exception(
-            "Route not defined for websocket data. Event ID: %s", event.event_id
-        )
-
-    if route.permission in ctx.user_permsissions_ctx.get():
-        await ensure_async(route.func, event)
-
-
 @ws_event(SystemEvt.HEARTBEAT)
-async def heatbeat_echo(event: ws_validation.SystemHeartbeat):
+async def heatbeat_echo(event: ws_validation.SystemHeartbeat) -> None:
     """
     Echo recieved heatbeat data
 
@@ -170,7 +127,7 @@ async def heatbeat_echo(event: ws_validation.SystemHeartbeat):
 
 
 @ws_event(SystemEvt.SHUTDOWN)
-async def shutdown_server(_event: ws_validation.SystemShutdown):
+async def shutdown_server(_: ws_validation.SystemShutdown) -> None:
     """
     Shutdown the webserver
     """
@@ -178,7 +135,7 @@ async def shutdown_server(_event: ws_validation.SystemShutdown):
 
 
 @ws_event(SystemEvt.RESTART)
-async def restart_server(_event: ws_validation.SystemRestart):
+async def restart_server(_: ws_validation.SystemRestart) -> None:
     """
     Restart the webserver
     """
@@ -186,14 +143,14 @@ async def restart_server(_event: ws_validation.SystemRestart):
 
 
 @ws_event(SystemEvt.RACE_SCHEDULE)
-async def schedule_race(_event: ws_validation.ScheduleRace):
+async def schedule_race(_: ws_validation.ScheduleRace) -> None:
     """
     Schedule the start of a race.
     """
 
 
 @ws_event(SystemEvt.RACE_STOP)
-async def race_stop(_event: ws_validation.RaceStop):
+async def race_stop(_: ws_validation.RaceStop) -> None:
     """
     Stop the current race
     """

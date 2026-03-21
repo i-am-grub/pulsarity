@@ -8,24 +8,31 @@ import functools
 import inspect
 import logging
 from json.decoder import JSONDecodeError
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, Literal, NamedTuple, TypeVar, overload
 
-from google.protobuf.message import DecodeError  # type: ignore
+from google.protobuf.message import DecodeError
 from pydantic import BaseModel, ValidationError
 from starlette.exceptions import HTTPException
 from starlette.responses import Response
 
 from pulsarity import ctx
+from pulsarity._validation import websocket as ws_validation
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.utils.asyncio import ensure_async
 from pulsarity.webserver._auth import requires
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine
+    from collections.abc import Awaitable, Callable, Coroutine
 
     from starlette.requests import Request
 
+    from pulsarity._protobuf import websocket_pb2
     from pulsarity._validation._base import ProtocolBufferModel
+    from pulsarity.events import SystemEvt
+
+
+T = TypeVar("T")
+U = TypeVar("U", bound=ws_validation.BaseEvent)
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +41,11 @@ class _ValModels(NamedTuple):
     request: type[ProtocolBufferModel] | None
     query: type[BaseModel] | None
     path: type[BaseModel] | None
+
+
+class _Route(NamedTuple):
+    permission: UserPermission
+    func: Callable
 
 
 class ProtobufResponse(Response):
@@ -201,3 +213,101 @@ async def _process_request(
         return endpoint_result
 
     return Response()
+
+
+_wse_routes: dict[websocket_pb2.EventID, _Route] = {}
+
+
+async def handle_ws_event(event: ws_validation.WebsocketEvent):
+    """
+    Routes the event data to the proper websocket action while
+    ensuring the user has the proper permissions
+
+    :param event: The websocket event
+    """
+    try:
+        route = _wse_routes[event.event_id]
+    except KeyError:
+        logger.exception(
+            "Route not defined for websocket data. Event ID: %s", event.event_id
+        )
+
+    if route.permission in ctx.user_permsissions_ctx.get():
+        await ensure_async(route.func, event)
+
+
+@overload
+def ws_event(
+    evt: Literal[SystemEvt.HEARTBEAT],
+) -> Callable[
+    [Callable[[ws_validation.SystemHeartbeat], Awaitable[T]]],
+    Callable[[ws_validation.SystemHeartbeat], Awaitable[T]],
+]: ...
+@overload
+def ws_event(
+    evt: Literal[SystemEvt.SHUTDOWN],
+) -> Callable[
+    [Callable[[ws_validation.SystemShutdown], Awaitable[T]]],
+    Callable[[ws_validation.SystemShutdown], Awaitable[T]],
+]: ...
+@overload
+def ws_event(
+    evt: Literal[SystemEvt.RESTART],
+) -> Callable[
+    [Callable[[ws_validation.SystemRestart], Awaitable[T]]],
+    Callable[[ws_validation.SystemRestart], Awaitable[T]],
+]: ...
+@overload
+def ws_event(
+    evt: Literal[SystemEvt.RACE_SCHEDULE],
+) -> Callable[
+    [Callable[[ws_validation.ScheduleRace], Awaitable[T]]],
+    Callable[[ws_validation.ScheduleRace], Awaitable[T]],
+]: ...
+@overload
+def ws_event(
+    evt: Literal[SystemEvt.RACE_STOP],
+) -> Callable[
+    [Callable[[ws_validation.RaceStop], Awaitable[T]]],
+    Callable[[ws_validation.RaceStop], Awaitable[T]],
+]: ...
+@overload
+def ws_event(
+    evt: Literal[SystemEvt.PILOT_ADD],
+) -> Callable[
+    [Callable[[ws_validation.PilotAddEvent], Awaitable[T]]],
+    Callable[[ws_validation.PilotAddEvent], Awaitable[T]],
+]: ...
+@overload
+def ws_event(
+    evt: Literal[SystemEvt.PILOT_ALTER],
+) -> Callable[
+    [Callable[[ws_validation.PilotAlterEvent], Awaitable[T]]],
+    Callable[[ws_validation.PilotAlterEvent], Awaitable[T]],
+]: ...
+@overload
+def ws_event(
+    evt: Literal[SystemEvt.PILOT_DELETE],
+) -> Callable[
+    [Callable[[ws_validation.PilotDeleteEvent], Awaitable[T]]],
+    Callable[[ws_validation.PilotDeleteEvent], Awaitable[T]],
+]: ...
+def ws_event(
+    evt: SystemEvt,
+) -> Callable[[Callable[[U], Awaitable[T]]], Callable[[U], Awaitable[T]]]:
+    """
+    Decorator for registerting routes based on recieved websocket event data
+
+    :param event: The event to base the routing on
+    """
+    if evt.event_id in _wse_routes:
+        msg = "Multiple routes can not be register for a individual application event"
+        raise RuntimeError(msg)
+
+    def inner(
+        func: Callable[[U], Awaitable[T]],
+    ) -> Callable[[U], Awaitable[T]]:
+        _wse_routes[evt.event_id] = _Route(evt.permission, func)
+        return func
+
+    return inner
