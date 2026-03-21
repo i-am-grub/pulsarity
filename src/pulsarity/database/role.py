@@ -20,6 +20,12 @@ class Role(_PulsarityBase):
     Role for the application
     """
 
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "system"
+        table = "role"
+
     name = fields.CharField(max_length=64, unique=True)
     """Name of role"""
     users: fields.ManyToManyRelation[User]
@@ -30,12 +36,6 @@ class Role(_PulsarityBase):
     """Permissions granted to a role"""
     persistent = fields.BooleanField(default=False)
     """Entry is persistent in database"""
-
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "system"
-        table = "role"
 
     async def get_permissions(self) -> set[str]:
         """

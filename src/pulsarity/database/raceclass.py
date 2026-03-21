@@ -24,12 +24,6 @@ class RaceClassAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     Unique and stored individually stored values for each race class.
     """
 
-    name = fields.CharField(max_length=80)
-    raceclass: fields.ForeignKeyRelation[RaceClass] = fields.ForeignKeyField(
-        "event.RaceClass", related_name="attributes"
-    )
-    value = fields.JSONField[ATTRIBUTE]()
-
     class Meta:
         """Tortoise ORM metadata"""
 
@@ -37,11 +31,24 @@ class RaceClassAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
         table = "raceclass_attr"
         unique_together = (("raceclass", "name"),)
 
+    name = fields.CharField(max_length=80)
+    raceclass: fields.ForeignKeyRelation[RaceClass] = fields.ForeignKeyField(
+        "event.RaceClass", related_name="attributes"
+    )
+    value = fields.JSONField[ATTRIBUTE]()
+
 
 class RaceClass(_PulsarityBase):
     """
     Database content for raceclasses
     """
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "raceclass"
+        unique_together = (("event", "raceclass_num"),)
 
     lock = asyncio.Lock()
     """Use when claiming a new `raceclass_num` during initial creation"""
@@ -61,13 +68,6 @@ class RaceClass(_PulsarityBase):
     )
     attributes: fields.ReverseRelation[RaceClassAttribute]
     """The attributes assigned to the race class"""
-
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "event"
-        table = "raceclass"
-        unique_together = (("event", "raceclass_num"),)
 
     @property
     def name(self) -> str:

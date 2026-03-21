@@ -23,12 +23,6 @@ class SlotAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     Unique and stored individually stored values for each round.
     """
 
-    name = fields.CharField(max_length=80)
-    slot: fields.ForeignKeyRelation[Slot] = fields.ForeignKeyField(
-        "event.Slot", related_name="attributes"
-    )
-    value = fields.JSONField[ATTRIBUTE]()
-
     class Meta:
         """Tortoise ORM metadata"""
 
@@ -36,11 +30,24 @@ class SlotAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
         table = "slot_attr"
         unique_together = (("slot", "name"),)
 
+    name = fields.CharField(max_length=80)
+    slot: fields.ForeignKeyRelation[Slot] = fields.ForeignKeyField(
+        "event.Slot", related_name="attributes"
+    )
+    value = fields.JSONField[ATTRIBUTE]()
+
 
 class Slot(_PulsarityBase):
     """
     Database content for slots
     """
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "slot"
+        unique_together = (("heat", "index"), ("heat", "pilot"))
 
     heat: fields.ForeignKeyRelation[Heat] = fields.ForeignKeyField(
         "event.Heat", related_name="slots"
@@ -56,10 +63,3 @@ class Slot(_PulsarityBase):
     """The slot's time series values for the race"""
     attributes: fields.ReverseRelation[SlotAttribute]
     """The custom attributes of the slot"""
-
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "event"
-        table = "slot"
-        unique_together = (("heat", "index"), ("heat", "pilot"))

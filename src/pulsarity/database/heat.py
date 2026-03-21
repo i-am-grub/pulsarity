@@ -22,12 +22,6 @@ class HeatAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     Unique and stored individually stored values for each heat.
     """
 
-    name = fields.CharField(max_length=80)
-    heat: fields.ForeignKeyRelation[Heat] = fields.ForeignKeyField(
-        "event.Heat", related_name="attributes"
-    )
-    value = fields.JSONField[ATTRIBUTE]()
-
     class Meta:
         """Tortoise ORM metadata"""
 
@@ -35,11 +29,24 @@ class HeatAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
         table = "heat_attr"
         unique_together = (("heat", "name"),)
 
+    name = fields.CharField(max_length=80)
+    heat: fields.ForeignKeyRelation[Heat] = fields.ForeignKeyField(
+        "event.Heat", related_name="attributes"
+    )
+    value = fields.JSONField[ATTRIBUTE]()
+
 
 class Heat(_PulsarityBase):
     """
     Database content for race heats
     """
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "heat"
+        unique_together = (("round", "heat_num"),)
 
     lock = asyncio.Lock()
     """Use when claiming a new `heat_num` during initial creation"""
@@ -56,10 +63,3 @@ class Heat(_PulsarityBase):
     """Whether the heat has been completed or not"""
     attributes: fields.ReverseRelation[HeatAttribute]
     """The attributes assigned to the heat"""
-
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "event"
-        table = "heat"
-        unique_together = (("round", "heat_num"),)

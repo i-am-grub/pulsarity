@@ -20,6 +20,12 @@ class Permission(_PulsarityBase):
     Role for the application
     """
 
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "system"
+        table = "permission"
+
     value = fields.CharField(max_length=64, unique=True)
     """Name of role"""
     persistent = fields.BooleanField(default=False)
@@ -27,30 +33,22 @@ class Permission(_PulsarityBase):
     roles: fields.ManyToManyRelation[Role]
     """Roles permission is assigned to"""
 
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "system"
-        table = "permission"
-
     @classmethod
     async def verify_persistant(cls) -> None:
         """
         Verify all nessessary permissions are in the user database.
         """
 
+        def generate_permissions():
+            for permission_class in UserPermission.__subclasses__():
+                persistent = permission_class is SystemDefaultPerms
+                for e in permission_class:
+                    if e not in permissions:
+                        yield Permission(value=e, persistent=persistent)
+
         permissions: set[str] = set(await cls.all().values_list("value", flat=True))  # type: ignore
 
-        permissions_add: list[Permission] = []
-
-        for permission_class in UserPermission.__subclasses__():
-            persistent = permission_class is SystemDefaultPerms
-            enums = (e for e in permission_class)
-            filtered = filter(lambda x: x not in permissions, enums)
-            perms = (Permission(value=e, persistent=persistent) for e in filtered)
-            permissions_add.extend(perms)
-
-        await cls.bulk_create(permissions_add)
+        await cls.bulk_create(generate_permissions())
 
 
 class UserPermission(StrEnum):

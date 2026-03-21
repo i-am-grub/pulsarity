@@ -15,12 +15,6 @@ class RulesetField(_PulsarityBase, Generic[ATTRIBUTE]):
     Unique fields for a race ruleset.
     """
 
-    raceformat: fields.ForeignKeyRelation[RaceFormat] = fields.ForeignKeyField(
-        "event.RaceFormat", related_name="ruleset_fields"
-    )
-    name = fields.CharField(max_length=80)
-    value = fields.JSONField[ATTRIBUTE]()
-
     class Meta:
         """Tortoise ORM metadata"""
 
@@ -28,11 +22,23 @@ class RulesetField(_PulsarityBase, Generic[ATTRIBUTE]):
         table = "ruleset_field"
         unique_together = (("raceformat", "name"),)
 
+    raceformat: fields.ForeignKeyRelation[RaceFormat] = fields.ForeignKeyField(
+        "event.RaceFormat", related_name="ruleset_fields"
+    )
+    name = fields.CharField(max_length=80)
+    value = fields.JSONField[ATTRIBUTE]()
+
 
 class RaceFormat(_PulsarityBase):
     """
     The properties that govern how a race is conducted
     """
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "raceformat"
 
     name: fields.Field[str] = fields.CharField(max_length=80)
     """User-facing name"""
@@ -50,9 +56,3 @@ class RaceFormat(_PulsarityBase):
     """The identifer for the format's ruleset"""
     ruleset_fields: fields.ReverseRelation[RulesetField]
     """The fields assigned to the format's ruleset"""
-
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "event"
-        table = "raceformat"

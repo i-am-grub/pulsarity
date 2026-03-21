@@ -49,6 +49,12 @@ class User(_PulsarityBase):
     User for the application
     """
 
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "system"
+        table = "user"
+
     auth_id = fields.UUIDField(default=uuid4)
     """The UUID associated with the user"""
     username = fields.CharField(max_length=32, unique=True)
@@ -71,12 +77,6 @@ class User(_PulsarityBase):
     """A flag signaling the user's password should be reset"""
     persistent = fields.BooleanField(default=False)
     """Entry is persistent in database"""
-
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "system"
-        table = "user"
 
     @property
     def display_name(self) -> str:

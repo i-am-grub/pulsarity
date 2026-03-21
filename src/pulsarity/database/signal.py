@@ -72,6 +72,13 @@ class SignalHistory(_PulsarityBase):
     Time series context for slot
     """
 
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "slot_history"
+        unique_together = (("slot", "timer_index"),)
+
     slot: fields.ForeignKeyRelation[Slot] = fields.ForeignKeyField(
         "event.Slot", "history"
     )
@@ -85,13 +92,6 @@ class SignalHistory(_PulsarityBase):
         _SLOT_HISTORY_DECODE_ADAPTER.validate_python,
     )
     """The series of history for the slot"""
-
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "event"
-        table = "slot_history"
-        unique_together = (("slot", "timer_index"),)
 
     def __lt__(self, obj: Self) -> bool:
         """

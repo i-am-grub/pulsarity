@@ -20,12 +20,6 @@ class LapAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     Unique and stored individually stored values for each event.
     """
 
-    name = fields.CharField(max_length=80)
-    lap: fields.ForeignKeyRelation[Lap] = fields.ForeignKeyField(
-        "event.Lap", related_name="attributes"
-    )
-    value = fields.JSONField[ATTRIBUTE]()
-
     class Meta:
         """Tortoise ORM metadata"""
 
@@ -33,11 +27,24 @@ class LapAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
         table = "lap_attr"
         unique_together = (("lap", "name"),)
 
+    name = fields.CharField(max_length=80)
+    lap: fields.ForeignKeyRelation[Lap] = fields.ForeignKeyField(
+        "event.Lap", related_name="attributes"
+    )
+    value = fields.JSONField[ATTRIBUTE]()
+
 
 class Lap(_PulsarityBase):
     """
     Database content for race laps
     """
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "lap"
+        unique_together = (("slot", "timedelta", "timer_index"),)
 
     slot: fields.ForeignKeyRelation[Slot] = fields.ForeignKeyField("event.Slot", "laps")
     """The slot the lap belongs to"""
@@ -47,10 +54,3 @@ class Lap(_PulsarityBase):
     """The index of the timer the lap was recorded from"""
     attributes: fields.ReverseRelation[LapAttribute]
     """The attributes assigned to the event"""
-
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "event"
-        table = "lap"
-        unique_together = (("slot", "timedelta", "timer_index"),)

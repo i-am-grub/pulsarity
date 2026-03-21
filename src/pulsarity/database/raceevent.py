@@ -21,12 +21,6 @@ class RaceEventAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     Unique and stored individually stored values for each event.
     """
 
-    name = fields.CharField(max_length=80)
-    event: fields.ForeignKeyRelation[RaceEvent] = fields.ForeignKeyField(
-        "event.RaceEvent", related_name="attributes"
-    )
-    value = fields.JSONField[ATTRIBUTE]()
-
     class Meta:
         """Tortoise ORM metadata"""
 
@@ -34,11 +28,23 @@ class RaceEventAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
         table = "raceevent_attr"
         unique_together = (("event", "name"),)
 
+    name = fields.CharField(max_length=80)
+    event: fields.ForeignKeyRelation[RaceEvent] = fields.ForeignKeyField(
+        "event.RaceEvent", related_name="attributes"
+    )
+    value = fields.JSONField[ATTRIBUTE]()
+
 
 class RaceEvent(_PulsarityBase):
     """
     Database content for race events
     """
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "raceevent"
 
     name_ = fields.CharField(max_length=120)
     """The name of the event"""
@@ -48,12 +54,6 @@ class RaceEvent(_PulsarityBase):
     """The race classes assigned to the event"""
     attributes: fields.ReverseRelation[RaceEventAttribute]
     """The attributes assigned to the event"""
-
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "event"
-        table = "raceevent"
 
     @property
     def name(self) -> str:

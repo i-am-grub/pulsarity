@@ -23,12 +23,6 @@ class RoundAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     Unique and stored individually stored values for each round.
     """
 
-    name = fields.CharField(max_length=80)
-    round: fields.ForeignKeyRelation[Round] = fields.ForeignKeyField(
-        "event.Round", related_name="attributes"
-    )
-    value = fields.JSONField[ATTRIBUTE]()
-
     class Meta:
         """Tortoise ORM metadata"""
 
@@ -36,11 +30,24 @@ class RoundAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
         table = "round_attr"
         unique_together = (("round", "name"),)
 
+    name = fields.CharField(max_length=80)
+    round: fields.ForeignKeyRelation[Round] = fields.ForeignKeyField(
+        "event.Round", related_name="attributes"
+    )
+    value = fields.JSONField[ATTRIBUTE]()
+
 
 class Round(_PulsarityBase):
     """
     Database content for rounds within a raceclass
     """
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "round"
+        unique_together = (("raceclass", "round_num"),)
 
     lock = asyncio.Lock()
     """Use when claiming a new `round_num` during initial creation"""
@@ -55,13 +62,6 @@ class Round(_PulsarityBase):
     """The heats assigned to the round"""
     attributes: fields.ReverseRelation[RoundAttribute]
     """The attributes assigned to the round"""
-
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "event"
-        table = "round"
-        unique_together = (("raceclass", "round_num"),)
 
     @property
     async def max_heat_num(self) -> int | None:

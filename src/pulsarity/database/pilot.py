@@ -17,12 +17,6 @@ class PilotAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     Unique and stored individually stored values for each pilot.
     """
 
-    name = fields.CharField(max_length=80)
-    pilot: fields.ForeignKeyRelation[Pilot] = fields.ForeignKeyField(
-        "event.Pilot", related_name="attributes"
-    )
-    value = fields.JSONField[ATTRIBUTE]()
-
     class Meta:
         """Tortoise ORM metadata"""
 
@@ -30,11 +24,23 @@ class PilotAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
         table = "pilot_attr"
         unique_together = (("pilot", "name"),)
 
+    name = fields.CharField(max_length=80)
+    pilot: fields.ForeignKeyRelation[Pilot] = fields.ForeignKeyField(
+        "event.Pilot", related_name="attributes"
+    )
+    value = fields.JSONField[ATTRIBUTE]()
+
 
 class Pilot(_PulsarityBase):
     """
     Database content for event participants
     """
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "event"
+        table = "pilot"
 
     callsign = fields.CharField(max_length=80)
     """Pilot callsign"""
@@ -47,12 +53,6 @@ class Pilot(_PulsarityBase):
     starting a race ordered by recency"""
     attributes: fields.ReverseRelation[PilotAttribute]
     """PilotAttributes for this pilot. Access through awaitable attributes."""
-
-    class Meta:
-        """Tortoise ORM metadata"""
-
-        app = "event"
-        table = "pilot"
 
     def __repr__(self):
         return f"<Pilot {self.id}>"
