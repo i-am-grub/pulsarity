@@ -15,10 +15,10 @@ class BaseEvent(BaseModel):
     websocket data
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
     uuid: UUID4
-    event_id: Literal[websocket_pb2.EVENT_UNSPECIFIED]  # type: ignore
+    event_id: websocket_pb2.EventID
 
     def model_dump_protobuf(self) -> bytes:
         """

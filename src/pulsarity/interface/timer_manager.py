@@ -6,7 +6,7 @@ import asyncio
 import logging
 import uuid
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import Enum, auto, unique
 from typing import ClassVar, NamedTuple
 
 from pulsarity import ctx
@@ -20,6 +20,7 @@ from pulsarity.utils import background
 logger = logging.getLogger(__name__)
 
 
+@unique
 class TimerMode(Enum):
     """
     The different modes a timer can registered as
