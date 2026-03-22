@@ -57,7 +57,7 @@ dev = [
     # Linting
     "mypy==1.19.*",
     "pylint==4.0.*",
-    "types-protobuf>=6.32.*",
+    "types-protobuf==6.32.*",
 ]
 docs = [
     "myst-parser==5.0.0",
