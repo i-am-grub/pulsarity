@@ -8,31 +8,11 @@ import logging.config
 import os
 import signal
 import sys
-import warnings
 
 import pulsarity
 from pulsarity import ctx
 from pulsarity.webserver import app
 from pulsarity.webserver.websockets import ws_restart, ws_shutdown
-
-# pylint: disable=E0401
-
-if sys.platform in ("linux", "darwin"):
-    from uvloop import run
-elif sys.platform == "win32":
-    from winloop import run
-else:
-    from asyncio import run
-
-    warnings.warn(
-        (
-            "The detected operating system does not support accelerated "
-            "event loops; defaulting to the base event loop. Unexpected "
-            "system behaviors may occur."
-        ),
-        RuntimeWarning,
-        stacklevel=1,
-    )
 
 logger = logging.getLogger(__name__)
 _shutdown_event = asyncio.Event()
@@ -97,9 +77,13 @@ async def _app() -> None:
     The main application will be served after the first time setup
     check/setup
     """
-    loop = asyncio.get_running_loop()
-    loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
-    loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
+    if sys.platform == "win32":
+        signal.signal(signal.Signals.SIGINT, _signal_shutdown)
+        signal.signal(signal.Signals.SIGTERM, _signal_shutdown)
+    else:
+        loop = asyncio.get_running_loop()
+        loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
+        loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
     if not ctx.config_ctx.get().from_save:
         logger.info("Starting first time setup application")
@@ -123,7 +107,7 @@ def main() -> None:
     _setup_logging()
     logger.info("Server version: %s", pulsarity.__version__)
 
-    run(_app())
+    asyncio.run(_app())
 
     if ws_shutdown.is_set():
         return

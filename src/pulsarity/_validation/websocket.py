@@ -18,7 +18,7 @@ class BaseEvent(BaseModel):
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
     uuid: UUID4
-    event_id: websocket_pb2.EventID
+    event_id: int
 
     def model_dump_protobuf(self) -> bytes:
         """
@@ -26,7 +26,8 @@ class BaseEvent(BaseModel):
         """
 
         return websocket_pb2.WebsocketEvent(
-            uuid=self.uuid.bytes, event_id=self.event_id
+            uuid=self.uuid.bytes,
+            event_id=self.event_id,  # type: ignore
         ).SerializeToString()
 
 

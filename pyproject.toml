@@ -20,8 +20,6 @@ dependencies = [
     "starsessions==2.2.1",
     "aiosqlite==0.22.1",
     "hypercorn==0.18.0",
-    "uvloop==0.22.1 ; sys_platform == \"linux\" or sys_platform == \"darwin\"",
-    "winloop==0.5.0 ; sys_platform == \"win32\"",
     "cryptography==46.0.6",
     "argon2-cffi==25.1.0",
     "tortoise-orm==1.1.7",
