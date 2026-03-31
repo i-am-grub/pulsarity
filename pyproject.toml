@@ -27,7 +27,7 @@ dependencies = [
     "tortoise-orm==1.1.7",
     "pydantic==2.12.5",
     "cffi==2.0.0",
-    "anyio==4.12.1",
+    "anyio==4.13.0",
     "protobuf==7.34.1",
 ]
 
