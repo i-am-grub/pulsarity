@@ -16,17 +16,36 @@ classifiers = [
 ]
 
 dependencies = [
+    # Main dependencies
     "starlette==1.0.0",
     "starsessions==2.2.1",
-    "aiosqlite==0.22.1",
     "hypercorn==0.18.0",
     "cryptography==46.0.6",
     "argon2-cffi==25.1.0",
     "tortoise-orm==1.1.7",
     "pydantic==2.12.5",
-    "cffi==2.0.0",
     "anyio==4.13.0",
     "protobuf==7.34.1",
+
+    # Upstream Dependencies
+    "cffi==2.0.0", # argon, cryptography
+    "idna==3.11", # anyio, httpx
+    "argon2-cffi-bindings==25.1.0", # argon
+    "pycparser==2.23", # cffi
+    "h11==0.16.0", # hypercorn
+    "h2==4.3.0", # hypercorn
+    "hpack==4.1.0", # hypercorn
+    "hyperframe==6.1.0", # hypercorn
+    "priority==2.0.0", # hypercorn
+    "wsproto==1.3.2", # hypercorn
+    "annotated-types==0.7.0", # pydantic
+    "pydantic-core==2.41.5", # pydantic
+    "typing-extensions==4.15.0", # pydantic
+    "typing-inspection==0.4.2", # pydantic
+    "itsdangerous==2.2.0", # star-sessions
+    "aiosqlite==0.22.1", # tortoise-orm
+    "iso8601==2.1.0", # tortoise-orm
+    "pypika-tortoise==0.6.5" # tortoise-orm
 ]
 
 [project.urls]
@@ -56,6 +75,24 @@ dev = [
     "mypy==1.19.1",
     "pylint==4.0.5",
     "types-protobuf==6.32.1.20260221",
+
+    # Upstream Dependencies
+    "certifi==v2025.11.12", # httpx
+    "httpcore==1.0.9", # httpx
+    "librt==0.7.4", # mypy
+    "mypy-extensions==1.1.0", # mypy
+    "pathspec==0.12.1", # mypy
+    "astroid==4.0.2", # pylint
+    "dill==0.4.0", # pylint
+    "isort==7.0.0", # pylint
+    "mccabe==0.7.0", # pylint
+    "platformdirs==4.5.1", # pylint
+    "tomlkit==0.13.3", # pylint
+    "iniconfig==2.3.0", # pytest
+    "packaging==25.0", # pytest
+    "pluggy==1.6.0", # pytest
+    "pygments==2.19.2", # pytest
+    "coverage==7.13.0", # pytest-cov
 ]
 docs = [
     "myst-parser==5.0.0",
