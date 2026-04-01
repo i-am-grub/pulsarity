@@ -33,13 +33,13 @@ dependencies = [
 repository = "https://github.com/i-am-grub/pulsarity"
 
 [project.optional-dependencies]
-pgsql = [ "asyncpg==0.31" ]
+pgsql = [ "asyncpg==0.31.0" ]
 
 [project.scripts]
 pulsarity = "pulsarity.__main__:main"
 
 [build-system]
-requires = ["uv_build==0.10.*"]
+requires = ["uv_build==0.11.2"]
 build-backend = "uv_build"
 
 [dependency-groups]
@@ -53,9 +53,9 @@ dev = [
     "pytest-randomly==4.0.1",
 
     # Linting
-    "mypy==1.19.*",
-    "pylint==4.0.*",
-    "types-protobuf==6.32.*",
+    "mypy==1.19.1",
+    "pylint==4.0.5",
+    "types-protobuf==6.32.1.20260221",
 ]
 docs = [
     "myst-parser==5.0.0",
