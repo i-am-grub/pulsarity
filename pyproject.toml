@@ -91,7 +91,7 @@ dev = [
     "iniconfig==2.3.0", # pytest
     "packaging==25.0", # pytest
     "pluggy==1.6.0", # pytest
-    "pygments==2.19.2", # pytest
+    "pygments==2.20.0", # pytest
     "coverage==7.13.0", # pytest-cov
 ]
 docs = [
