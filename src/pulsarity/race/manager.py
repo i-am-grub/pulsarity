@@ -47,12 +47,11 @@ class RaceManager:
         """The current status of the race"""
         return self._state.status
 
-    @property
-    def race_time(self) -> float:
+    def get_race_time(self) -> float:
         """
         The current time of the race
         """
-        return self._state.race_time
+        return self._state.get_race_time()
 
     def get_race_start_time(self) -> float:
         """

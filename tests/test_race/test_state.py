@@ -257,15 +257,15 @@ async def test_racing_paused(
     assert race_manager.status == RaceStatus.PAUSED
     assert race_manager._program_handle is None
 
-    time_ = race_manager.race_time
+    time_ = race_manager.get_race_time()
     assert time_ > 0.0
     await asyncio.sleep(0.1)
-    new_time = race_manager.race_time
+    new_time = race_manager.get_race_time()
     assert time_ == new_time
 
     race_manager.resume_race()
     await asyncio.sleep(0.1)
-    newest_time = race_manager.race_time
+    newest_time = race_manager.get_race_time()
     assert race_manager.status == RaceStatus.RACING
     assert newest_time > time_
 
@@ -294,15 +294,15 @@ async def test_overtime_paused(
     assert race_manager.status == RaceStatus.PAUSED
     assert race_manager._program_handle is None
 
-    time_ = race_manager.race_time
+    time_ = race_manager.get_race_time()
     assert time_ > 0.0
     await asyncio.sleep(0.1)
-    new_time = race_manager.race_time
+    new_time = race_manager.get_race_time()
     assert time_ == new_time
 
     race_manager.resume_race()
     await asyncio.sleep(0.1)
-    newest_time = race_manager.race_time
+    newest_time = race_manager.get_race_time()
     assert race_manager.status == RaceStatus.OVERTIME
     assert newest_time > time_
 
@@ -331,15 +331,15 @@ async def test_unlimited_sequence_resume(
     assert race_manager.status == RaceStatus.PAUSED
     assert race_manager._program_handle is None
 
-    time_ = race_manager.race_time
+    time_ = race_manager.get_race_time()
     assert time_ > 0
     await asyncio.sleep(0.1)
-    new_time = race_manager.race_time
+    new_time = race_manager.get_race_time()
     assert time_ == new_time
 
     race_manager.resume_race()
     await asyncio.sleep(0.1)
-    newest_time = race_manager.race_time
+    newest_time = race_manager.get_race_time()
     assert race_manager.status == RaceStatus.RACING
     assert newest_time > time_
 
@@ -366,10 +366,10 @@ async def test_racing_paused_stopped(
     assert race_manager.status == RaceStatus.PAUSED
     assert race_manager._program_handle is None
 
-    time_ = race_manager.race_time
+    time_ = race_manager.get_race_time()
     assert time_ > 0
     await asyncio.sleep(0.1)
-    new_time = race_manager.race_time
+    new_time = race_manager.get_race_time()
     assert time_ == new_time
 
     race_manager.stop_race()
@@ -402,10 +402,10 @@ async def test_overtime_paused_stopped(
     assert race_manager.status == RaceStatus.PAUSED
     assert race_manager._program_handle is None
 
-    time_ = race_manager.race_time
+    time_ = race_manager.get_race_time()
     assert time_ > 0.0
     await asyncio.sleep(0.1)
-    new_time = race_manager.race_time
+    new_time = race_manager.get_race_time()
     assert time_ == new_time
 
     race_manager.stop_race()
@@ -490,7 +490,7 @@ async def test_get_race_start(
     await asyncio.sleep(unlimited_schedule.stage_time_sec)
 
     assert race_manager.status == RaceStatus.RACING
-    assert race_manager.race_time > 0.0
+    assert race_manager.get_race_time() > 0.0
 
 
 @pytest.mark.asyncio
@@ -504,27 +504,27 @@ async def test_get_race_time(
     offset = future_schedule(unlimited_schedule, race_manager)
 
     assert race_manager.status == RaceStatus.SCHEDULED
-    assert race_manager.race_time == 0.0
+    assert race_manager.get_race_time() == 0.0
 
     await asyncio.sleep(offset + 0.1)
 
     assert race_manager.status == RaceStatus.STAGING
-    assert race_manager.race_time == 0.0
+    assert race_manager.get_race_time() == 0.0
 
     await asyncio.sleep(unlimited_schedule.stage_time_sec)
 
     assert race_manager.status == RaceStatus.RACING
-    assert race_manager.race_time > 0.0
+    assert race_manager.get_race_time() > 0.0
 
     race_manager.pause_race()
-    pause_time = race_manager.race_time
+    pause_time = race_manager.get_race_time()
     assert race_manager.status == RaceStatus.PAUSED
-    assert race_manager.race_time > 0.0
+    assert race_manager.get_race_time() > 0.0
     await asyncio.sleep(1)
-    assert race_manager.race_time == pause_time
+    assert race_manager.get_race_time() == pause_time
 
     race_manager.stop_race()
     assert race_manager.status == RaceStatus.STOPPED
     await asyncio.sleep(1)
-    assert race_manager.race_time > 0.0
-    assert race_manager.race_time == pause_time
+    assert race_manager.get_race_time() > 0.0
+    assert race_manager.get_race_time() == pause_time

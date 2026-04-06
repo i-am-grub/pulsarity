@@ -61,9 +61,17 @@ class RaceStateManager:
     machine.
     """
 
-    __slots__ = ("_format", "_program_handle", "_race_records", "_status")
+    __slots__ = (
+        "_duration_cache",
+        "_format",
+        "_program_handle",
+        "_race_records",
+        "_status",
+    )
 
     def __init__(self) -> None:
+        self._duration_cache: float = 0.0
+        """Cached race duration based on RaceStatus records"""
         self._race_records: list[_RaceEventRecord] = []
         """The sequence of the race"""
         self._program_handle: TimerHandle | None = None
@@ -78,8 +86,41 @@ class RaceStateManager:
         """The current status of the race"""
         return self._status
 
-    @property
-    def race_time(self) -> float:
+    def _get_duration_cache(self) -> float:
+        """
+        Cache of the calculated race duration based on
+        RaceStatus state changes
+        """
+        if self._duration_cache:
+            return self._duration_cache
+
+        race_duration: float = 0.0
+        race_period_start: float = 0.0
+        last_status: RaceStatus | None = None
+
+        timestamp: float = 0.0
+        for status, timestamp in self._race_records:
+            if status is RaceStatus.RACING:
+                race_period_start = timestamp
+
+            elif status is RaceStatus.OVERTIME:
+                if last_status is not RaceStatus.RACING:
+                    race_period_start = timestamp
+
+            elif status is RaceStatus.PAUSED:
+                race_duration += timestamp - race_period_start
+
+            elif status is RaceStatus.STOPPED:
+                if last_status is not None and last_status in RaceStatus.UNDERWAY:
+                    race_duration += timestamp - race_period_start
+                break
+
+            last_status = status
+
+        self._duration_cache = race_duration
+        return self._duration_cache
+
+    def get_race_time(self) -> float:
         """
         The current time of the race
 
@@ -92,37 +133,13 @@ class RaceStateManager:
             msg = "Unexpected empty records"
             raise RuntimeError(msg)
 
-        race_duration: float = 0.0
-        race_period_start: float = 0.0
-        last_status: RaceStatus | None = None
+        duration = self._get_duration_cache()
 
-        timestamp: float | None = None
-        for status, timestamp in self._race_records:
-            if status is RaceStatus.RACING:
-                race_period_start = timestamp
+        last_status, timestamp = self._race_records[-1]
+        if last_status in RaceStatus.UNDERWAY:
+            return duration + (ctx.loop_ctx.get().time() - timestamp)
 
-            elif status is RaceStatus.OVERTIME:
-                if last_status != RaceStatus.RACING:
-                    race_period_start = timestamp
-
-            elif status is RaceStatus.PAUSED:
-                race_duration += timestamp - race_period_start
-
-            elif status is RaceStatus.STOPPED:
-                if last_status is not None and last_status in RaceStatus.UNDERWAY:
-                    race_duration += timestamp - race_period_start
-                return race_duration
-
-            last_status = status
-
-        if timestamp is None:
-            msg = f"Unexpected state encountered: {self._race_records}"
-            raise RuntimeError(msg)
-
-        if last_status is RaceStatus.PAUSED:
-            return race_duration
-
-        return race_duration + (ctx.loop_ctx.get().time() - timestamp)
+        return duration
 
     def get_race_start_time(self) -> float:
         """
@@ -172,6 +189,7 @@ class RaceStateManager:
         """
         self._status = status
         self._race_records.append(_RaceEventRecord(status, ctx.loop_ctx.get().time()))
+        self._duration_cache = 0.0
 
     def schedule_race(self, format_: SafeRaceFormat, assigned_start: float) -> None:
         """
@@ -282,7 +300,7 @@ class RaceStateManager:
         if self._format.unlimited_time:
             self._set_status(RaceStatus.RACING)
 
-        elif (time_ := self.race_time) < self._format.race_time_sec:
+        elif (time_ := self.get_race_time()) < self._format.race_time_sec:
             remaining_duration = self._format.race_time_sec - time_
             self._program_handle = ctx.loop_ctx.get().call_later(
                 remaining_duration, self._finish
@@ -386,6 +404,7 @@ class RaceStateManager:
         """
         if self.status is RaceStatus.STOPPED:
             self._format = None
+            self._duration_cache = 0.0
             self._race_records.clear()
             self._status = RaceStatus.READY
             logger.info("Race manager reset")
