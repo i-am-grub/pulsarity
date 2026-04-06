@@ -33,5 +33,5 @@ jobs:
     - name: Install the project
       run: uv sync --group dev
 
-    - name: Test with tox
+    - name: Test with pytest
       run: uv run pytest
