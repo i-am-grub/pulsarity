@@ -28,7 +28,7 @@ from pulsarity.database import setup_default_objects
 from pulsarity.events import EventBroker, SystemEvt
 from pulsarity.interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.manager import RaceManager
-from pulsarity.utils import background
+from pulsarity.utils import background, config
 from pulsarity.utils.crypto import generate_self_signed_cert
 from pulsarity.webserver._auth import PulsarityAuthBackend
 from pulsarity.webserver._wrapper import endpoint
@@ -116,7 +116,7 @@ def generate_api_application() -> Starlette:
 
     :return: The api application object
     """
-    configs = ctx.config_ctx.get()
+    configs = config.config_manager
 
     middleware = [
         Middleware(
@@ -228,7 +228,7 @@ def generate_webserver_coroutine(
     :param app: Application to use for the webserver, defaults to None
     :return: Webserver coroutine
     """
-    configs = ctx.config_ctx.get()
+    configs = config.config_manager
     webserver_config = Config()
 
     host = configs.webserver.host
@@ -328,7 +328,7 @@ async def database_startup() -> None:
     """
     await Tortoise.init(
         {
-            "connections": ctx.config_ctx.get().database.model_dump(),
+            "connections": config.config_manager.database.model_dump(),
             "apps": {
                 "system": {
                     "models": ["pulsarity.database"],

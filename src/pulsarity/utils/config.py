@@ -147,3 +147,6 @@ class PulsarityConfig(BaseModel):
         )
         copy_.webserver.key_password = ""
         return copy_
+
+
+config_manager = PulsarityConfig.from_file(DEFAULT_CONFIG_FILE)

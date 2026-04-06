@@ -11,6 +11,7 @@ import sys
 
 import pulsarity
 from pulsarity import ctx
+from pulsarity.utils import config
 from pulsarity.webserver import app
 from pulsarity.webserver.websockets import ws_restart, ws_shutdown
 
@@ -85,7 +86,7 @@ async def _app() -> None:
         loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
         loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
-    if not ctx.config_ctx.get().from_save:
+    if not config.config_manager.from_save:
         logger.info("Starting first time setup application")
         setup_app = app.generate_setup_application(_shutdown_setup_event)
         coro = app.generate_webserver_coroutine(setup_app, _setup_shutdown)
