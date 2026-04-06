@@ -31,7 +31,7 @@ dependencies = [
     "cffi==2.0.0", # argon, cryptography
     "idna==3.11", # anyio, httpx
     "argon2-cffi-bindings==25.1.0", # argon
-    "pycparser==2.23", # cffi
+    "pycparser==3.0", # cffi
     "h11==0.16.0", # hypercorn
     "h2==4.3.0", # hypercorn
     "hpack==4.1.0", # hypercorn
