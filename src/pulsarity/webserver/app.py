@@ -199,9 +199,7 @@ def generate_setup_application(shudown_evt: Event) -> Starlette:
         """
         # pylint: disable=W0511
         # TODO: Process setup info
-
-        config = ctx.config_ctx.get()
-        await config.write_config_to_file_async()
+        await config.config_manager.write_config_to_file_async()
         shudown_evt.set()
 
     api_routes = [Route("/save", endpoint=save_settings, methods=["POST"])]

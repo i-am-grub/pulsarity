@@ -19,11 +19,12 @@ from pulsarity.database.permission import SystemDefaultPerms
 from pulsarity.events import SystemEvt
 from pulsarity.utils import background
 from pulsarity.webserver import _wrapper
-from pulsarity.webserver._auth import PulsarityUser
 from pulsarity.webserver._wrapper import ws_event
 
 if TYPE_CHECKING:
     from uuid import UUID
+
+    from pulsarity.webserver._auth import PulsarityUser
 
 T = TypeVar("T")
 P = ParamSpec("P")

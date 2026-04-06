@@ -10,7 +10,6 @@ import signal
 import sys
 
 import pulsarity
-from pulsarity import ctx
 from pulsarity.utils import config
 from pulsarity.webserver import app
 from pulsarity.webserver.websockets import ws_restart, ws_shutdown
@@ -28,7 +27,7 @@ def _setup_logging():
     if not os.path.exists("logs"):
         os.mkdir("logs")
 
-    logging_conf = ctx.config_ctx.get().logging
+    logging_conf = config.config_manager.logging
     if logging_conf is not None:
         logging.config.dictConfig(logging_conf)
 
