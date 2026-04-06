@@ -19,6 +19,7 @@ from pulsarity.database.permission import SystemDefaultPerms
 from pulsarity.events import SystemEvt
 from pulsarity.utils import background
 from pulsarity.webserver import _wrapper
+from pulsarity.webserver._auth import PulsarityUser
 from pulsarity.webserver._wrapper import ws_event
 
 if TYPE_CHECKING:
@@ -50,11 +51,12 @@ async def server_event_ws(websocket: WebSocket):
     """
     await websocket.accept()
 
-    ctx.websocket_ctx.set(websocket)
-    ctx.user_ctx.set(websocket.user)
+    user: PulsarityUser = websocket.user
+    permissions = await user.get_permissions()
 
-    permissions = await ctx.user_ctx.get().get_permissions()
-    ctx.user_permsissions_ctx.set(permissions)
+    websocket_token = ctx.websocket_ctx.set(websocket)
+    user_token = ctx.user_ctx.set(user)
+    permission_token = ctx.user_permsissions_ctx.set(permissions)
 
     try:
         async with asyncio.TaskGroup() as tg:
@@ -64,6 +66,9 @@ async def server_event_ws(websocket: WebSocket):
     except* WebSocketDisconnect:
         logger.debug("%s disconnected from websocket", ctx.user_ctx.get().display_name)
     finally:
+        ctx.websocket_ctx.reset(websocket_token)
+        ctx.user_ctx.reset(user_token)
+        ctx.user_permsissions_ctx.reset(permission_token)
         await websocket.close()
 
 

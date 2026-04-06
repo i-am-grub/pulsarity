@@ -123,13 +123,15 @@ def endpoint(
             @requires(SystemDefaultPerms.AUTHENTICATED, status_code=401)
             @requires(permissions, status_code=403)
             async def wrapper(request: Request) -> Response:
-                return await _process_request(func, request, models)
+                with ctx.request_ctx.set(request), ctx.user_ctx.set(request.user):  # type: ignore
+                    return await _process_request(func, request, models)
 
         else:
 
             @functools.wraps(func)
             async def wrapper(request: Request) -> Response:
-                return await _process_request(func, request, models)
+                with ctx.request_ctx.set(request), ctx.user_ctx.set(request.user):  # type: ignore
+                    return await _process_request(func, request, models)
 
         return wrapper
 
@@ -171,8 +173,6 @@ async def _process_request(
     """
     Processes the incoming request
     """
-    ctx.request_ctx.set(request)
-    ctx.user_ctx.set(request.user)
     kwargs: dict[str, BaseModel] = {}
 
     if val_models.request is not None:
