@@ -242,12 +242,13 @@ class LapsManager(ABC):
         :return: The number of laps completed
         """
         num_laps = len(self._primary_laps)
+
         if holeshot:
             num_laps -= 1
 
         return max(num_laps, 0)
 
-    def get_total_time(self, holeshot: bool = False) -> float | None:
+    def get_total_time(self, holeshot: bool = False) -> float:
         """
         Get the total time
 
@@ -266,7 +267,7 @@ class LapsManager(ABC):
 
             return last_time
 
-        return None
+        return 0.0
 
     def get_average_lap_time(self, holeshot: bool = False) -> float | None:
         """
@@ -275,19 +276,11 @@ class LapsManager(ABC):
         :param holeshot: Holeshot active, defaults to False
         :return: The average time
         """
-        if self._primary_laps:
-            num_laps = len(self._primary_laps)
-            primary_lap_values = self._primary_laps.values()
+        total_time = self.get_total_time(holeshot)
+        num_laps = self.get_num_laps(holeshot)
 
-            last_lap = primary_lap_values[-1]
-            last_time = last_lap.timedelta
-
-            if holeshot:
-                num_laps -= 1
-                first_lap = primary_lap_values[0]
-                return (last_time - first_lap.timedelta) / num_laps
-
-            return last_time / num_laps
+        if total_time and num_laps:
+            return total_time / num_laps
 
         return None
 
