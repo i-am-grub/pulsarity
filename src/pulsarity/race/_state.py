@@ -215,7 +215,7 @@ class RaceStateManager:
             self._set_status(RaceStatus.SCHEDULED)
 
         else:
-            msg = "Unable to resume race state when race status is not paused"
+            msg = f"Unable to schedule race when status is not {RaceStatus.READY}"
             raise RuntimeError(msg)
 
     def stop_race(self) -> None:

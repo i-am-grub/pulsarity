@@ -80,7 +80,7 @@ class RaceManager:
         """
         return self._state.get_race_stop_time()
 
-    def schedule_race(self, format_: RaceFormat, *, assigned_start: float):
+    def schedule_race(self, format_: RaceFormat, assigned_start: float):
         """
         Schedule the sequence of events for the race
 
@@ -88,10 +88,14 @@ class RaceManager:
         :param assigned_start: The event loop start time of the race.
         Currently equivalent to monotonic time
         """
+        if self.status is not RaceStatus.READY:
+            msg = f"Unable to schedule race when status is not {RaceStatus.READY}"
+            raise RuntimeError(msg)
+
         ruleset = RaceRulesetManager.get_ruleset(format_.ruleset_id)
         safe_format = SafeRaceFormat.from_format(format_)
         self._ruleset = ruleset(safe_format)
-        self._state.schedule_race(safe_format, assigned_start=assigned_start)
+        self._state.schedule_race(safe_format, assigned_start)
 
     def stop_race(self) -> None:
         """

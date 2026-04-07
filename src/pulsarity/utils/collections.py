@@ -2,10 +2,13 @@
 
 import bisect
 from collections.abc import ItemsView, Iterable, KeysView, ValuesView
-from typing import TypeVar, overload, override
+from typing import TYPE_CHECKING, TypeVar, overload, override
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsRichComparison
 
 U = TypeVar("U")
-V = TypeVar("V")
+V = TypeVar("V", bound="SupportsRichComparison")
 
 
 class SortedKeysView(KeysView[U]):
@@ -75,7 +78,7 @@ class ValueSortedDict(dict[U, V]):
             super().__init__()
         elif isinstance(iterable, Iterable):
             super().__init__(iterable)
-            self.list = sorted(super().keys(), key=self._by_value_key)  # type: ignore
+            self.list = sorted(super().keys(), key=self._by_value_key)
         else:
             msg = f"{type(iterable)} object is not iterable"
             raise TypeError(msg)

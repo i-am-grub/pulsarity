@@ -25,7 +25,7 @@ from pulsarity.interface.timer_manager import FullLapData, TimerMode
 from pulsarity.utils.collections import ValueSortedDict
 
 if TYPE_CHECKING:
-    from _typeshed import SupportsAllComparisons
+    from _typeshed import SupportsAllComparisons, SupportsBool
 
     from pulsarity.database._base import JsonParsable
     from pulsarity.database.raceformat import RaceFormat
@@ -446,17 +446,17 @@ class LapsManager(ABC):
             return True
         return self.get_score() != other.get_score()
 
-    def __lt__(self, other: Self) -> bool:
-        return self.get_score() < other.get_score()  # type: ignore
+    def __lt__(self, other: Self) -> SupportsBool:
+        return self.get_score() < other.get_score()
 
-    def __le__(self, other: Self) -> bool:
-        return self.get_score() <= other.get_score()  # type: ignore
+    def __le__(self, other: Self) -> SupportsBool:
+        return self.get_score() <= other.get_score()
 
-    def __gt__(self, other: Self) -> bool:
-        return self.get_score() > other.get_score()  # type: ignore
+    def __gt__(self, other: Self) -> SupportsBool:
+        return self.get_score() > other.get_score()
 
-    def __ge__(self, other: Self) -> bool:
-        return self.get_score() >= other.get_score()  # type: ignore
+    def __ge__(self, other: Self) -> SupportsBool:
+        return self.get_score() >= other.get_score()
 
     def __hash__(self):
         return object.__hash__(self)

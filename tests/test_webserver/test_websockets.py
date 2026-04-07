@@ -48,7 +48,7 @@ async def test_server_websocket_auth(user_creds: tuple[str, str]):
 
         assert response.status_code == 200
 
-        async with httpx_ws.aconnect_ws("/ws", client) as ws:  # type: ignore
+        async with httpx_ws.aconnect_ws("/ws", client) as ws:
             await ws.send_bytes(evt.SerializeToString())
 
             async with asyncio.timeout(5.0):

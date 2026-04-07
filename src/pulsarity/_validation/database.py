@@ -5,7 +5,7 @@ Validation classes for database data
 from datetime import datetime  # noqa: TC003
 from typing import TYPE_CHECKING, Annotated, Iterable, Self
 
-from google.protobuf import timestamp_pb2  # type: ignore
+from google.protobuf import timestamp_pb2
 from pydantic import BeforeValidator, TypeAdapter
 
 from pulsarity._protobuf import database_pb2

@@ -5,13 +5,13 @@ Validation helpers
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Self
 
-from google.protobuf import timestamp_pb2  # type: ignore
+from google.protobuf import timestamp_pb2
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from google.protobuf.message import Message  # type: ignore
+    from google.protobuf.message import Message
 
 
 def to_datetime(obj: timestamp_pb2.Timestamp | datetime) -> datetime:
