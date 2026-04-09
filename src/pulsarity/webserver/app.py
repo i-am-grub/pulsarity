@@ -26,7 +26,7 @@ from tortoise import Tortoise
 from pulsarity import ctx, defaults
 from pulsarity.database import setup_default_objects
 from pulsarity.events import EventBroker, SystemEvt
-from pulsarity.interface.timer_manager import TimerInterfaceManager
+from pulsarity.interface.timer_interface import TimerInterfaceManager
 from pulsarity.race.manager import RaceManager
 from pulsarity.utils import background, config
 from pulsarity.utils.crypto import generate_self_signed_cert

@@ -4,7 +4,7 @@ from itertools import count
 import pytest
 
 from pulsarity.database.raceformat import RaceFormat
-from pulsarity.interface.timer_manager import FullLapData
+from pulsarity.interface.timer_interface import FullLapData
 from pulsarity.race.ruleset import (
     LapsManager,
     RaceRuleset,

@@ -15,7 +15,7 @@ from pulsarity.race.ruleset import RaceRuleset, RaceRulesetManager, SafeRaceForm
 
 if TYPE_CHECKING:
     from pulsarity.database.raceformat import RaceFormat
-    from pulsarity.interface.timer_manager import FullLapData, FullSignalData
+    from pulsarity.interface.timer_interface import FullLapData, FullSignalData
 
 
 class _SignalRecord(NamedTuple):

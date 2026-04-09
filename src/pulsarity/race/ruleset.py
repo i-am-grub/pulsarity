@@ -21,7 +21,7 @@ from typing import (
     TypeVar,
 )
 
-from pulsarity.interface.timer_manager import FullLapData, TimerMode
+from pulsarity.interface.timer_interface import FullLapData, TimerMode
 from pulsarity.utils.collections import ValueSortedDict
 
 if TYPE_CHECKING:
@@ -475,9 +475,9 @@ class RaceRuleset(ABC, Generic[T]):
     class Meta:
         """Ruleset metadata"""
 
-        uid: str
+        uid: ClassVar[str]
         """ruleset unique identifier"""
-        fields: Iterable[RulesetFieldData]
+        fields: ClassVar[Iterable[RulesetFieldData]]
         """custom fields for ruleset"""
 
     @abstractmethod

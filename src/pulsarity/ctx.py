@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from starlette.websockets import WebSocket
 
     from pulsarity.events.broker import EventBroker
-    from pulsarity.interface.timer_manager import TimerInterfaceManager
+    from pulsarity.interface.timer_interface import TimerInterfaceManager
     from pulsarity.race.manager import RaceManager
     from pulsarity.webserver._auth import PulsarityUser
 

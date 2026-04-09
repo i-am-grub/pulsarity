@@ -3,9 +3,14 @@ import time
 import uuid
 
 import pytest
+from typing import ClassVar, Callable
 
 from pulsarity.interface import BasicLapData, BasicSignalData
-from pulsarity.interface.timer_manager import TimerInterfaceManager
+from pulsarity.interface.timer_interface import (
+    TimerInterfaceManager,
+    TimerInterface,
+    TimerSetting,
+)
 
 
 @pytest.fixture(name="interface_manager")
@@ -13,55 +18,28 @@ def _interface_manager():
     yield TimerInterfaceManager()
 
 
-class BadTimerInterface: ...
+class BadTimerInterface(TimerInterface): ...
 
 
-class TestTimerInterface:
-    identifier = "test_interface"
-    display_name = "Test Interface"
-    nodes = []
-    settings = []
-    actions = []
-    connected = True
-    lap_queue: asyncio.Queue[BasicLapData] | None = None
-    signal_queue: asyncio.Queue[BasicSignalData] | None = None
+class TestTimerInterface(TimerInterface):
+    class Meta:
+        """Timer interface metadata"""
+
+        identifier: ClassVar[str] = "test_interface"
+        """Internal identifier"""
+        display_name: ClassVar[str] = "Test Interface"
+        """Human readable identifier"""
+        settings: ClassVar[dict[str, TimerSetting]] = {}
+        """Interface settings"""
+        actions: ClassVar[dict[str, Callable[[], None]]] = {}
+        """Interface actions"""
 
     @property
-    def num_nodes(self):
-        return len(self.nodes)
+    def connected(self):
+        return True
 
-    def subscribe(
-        self,
-        lap_queue: asyncio.Queue[BasicLapData],
-        signal_queue: asyncio.Queue[BasicSignalData],
-    ) -> None:
-        self.lap_queue = lap_queue
-        self.signal_queue = signal_queue
-
-    def shutdown(self):
-        self.lap_queue = None
-        self.signal_queue = None
-
-    def add_lap(self):
-        if self.lap_queue is not None:
-            data = BasicLapData(
-                timestamp=time.monotonic(),
-                node_index=0,
-                timer_identifier=self.identifier,
-            )
-
-            self.lap_queue.put_nowait(data)
-
-    def add_signal(self, value: float):
-        if self.signal_queue is not None:
-            data = BasicSignalData(
-                timestamp=time.monotonic(),
-                node_index=0,
-                value=value,
-                timer_identifier=self.identifier,
-            )
-
-            self.signal_queue.put_nowait(data)
+    async def worker(self):
+        raise TypeError()
 
 
 def test_register_interface_error(interface_manager: TimerInterfaceManager):
@@ -89,11 +67,13 @@ def test_already_instantiated_interface(interface_manager: TimerInterfaceManager
     """
     interface_manager.register(TestTimerInterface)
     uuid_ = uuid.uuid4()
-    interface_manager.instantiate_interface(TestTimerInterface.identifier, uuid_=uuid_)
+    interface_manager.instantiate_interface(
+        TestTimerInterface.Meta.identifier, uuid_=uuid_
+    )
 
     with pytest.raises(RuntimeError):
         interface_manager.instantiate_interface(
-            TestTimerInterface.identifier, uuid_=uuid_
+            TestTimerInterface.Meta.identifier, uuid_=uuid_
         )
 
 
@@ -103,7 +83,7 @@ def test_instantiate_interface_error(interface_manager: TimerInterfaceManager):
     """
     with pytest.raises(RuntimeError):
         interface_manager.instantiate_interface(
-            TestTimerInterface.identifier,
+            TestTimerInterface.Meta.identifier,
         )
 
 
