@@ -80,7 +80,7 @@ dev = [
     "httpcore==1.0.9", # httpx
     "librt==0.7.4", # mypy
     "mypy-extensions==1.1.0", # mypy
-    "pathspec==0.12.1", # mypy
+    "pathspec==1.0.4", # mypy
     "astroid==4.0.2", # pylint
     "dill==0.4.0", # pylint
     "isort==7.0.0", # pylint
