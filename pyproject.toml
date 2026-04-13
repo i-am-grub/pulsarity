@@ -103,7 +103,7 @@ docs = [
 
 [tool.mypy]
 exclude = ["tests", "src/pulsarity/_protobuf"]
-# local_partial_types = true
+local_partial_types = true
 
 [tool.pylint]
 ignore = ["tests", "src/pulsarity/_protobuf"]
