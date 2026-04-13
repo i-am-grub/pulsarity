@@ -78,7 +78,7 @@ dev = [
     # Upstream Dependencies
     "certifi==v2026.2.25", # httpx
     "httpcore==1.0.9", # httpx
-    "librt==0.7.4", # mypy
+    "librt==0.9.0", # mypy
     "mypy-extensions==1.1.0", # mypy
     "pathspec==1.0.4", # mypy
     "astroid==4.0.2", # pylint
@@ -103,6 +103,7 @@ docs = [
 
 [tool.mypy]
 exclude = ["tests", "src/pulsarity/_protobuf"]
+# local_partial_types = true
 
 [tool.pylint]
 ignore = ["tests", "src/pulsarity/_protobuf"]
