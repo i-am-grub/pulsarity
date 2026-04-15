@@ -1,5 +1,5 @@
 """
-System event distribution to clients
+System event broker
 """
 
 import asyncio

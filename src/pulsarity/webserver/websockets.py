@@ -4,45 +4,27 @@ Webserver Websocket Connections
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any, NamedTuple, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 from google.protobuf.message import DecodeError
-from pydantic import TypeAdapter, ValidationError
 from starlette.authentication import requires
 from starlette.routing import WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
+import pulsarity.events.registry as event_registry
 from pulsarity import ctx
 from pulsarity._protobuf import websocket_pb2
-from pulsarity._validation import websocket as ws_validation
 from pulsarity.database.permission import SystemDefaultPerms
 from pulsarity.events import SystemEvt
 from pulsarity.utils import background
-from pulsarity.webserver import _wrapper
-from pulsarity.webserver._wrapper import ws_event
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
     from pulsarity.webserver._auth import PulsarityUser
 
 T = TypeVar("T")
 P = ParamSpec("P")
 
 logger = logging.getLogger(__name__)
-
-ws_shutdown = asyncio.Event()
-ws_restart = asyncio.Event()
-
-WS_EVENT_ADAPTER: TypeAdapter[ws_validation.BaseEvent] = TypeAdapter(
-    ws_validation.WebsocketEvent
-)
-
-
-class _ExternalEvent(NamedTuple):
-    uuid: UUID
-    event_id: websocket_pb2.EventID
-    data: dict[str, Any]
 
 
 @requires(SystemDefaultPerms.EVENT_WEBSOCKET)
@@ -64,8 +46,10 @@ async def server_event_ws(websocket: WebSocket):
             task = tg.create_task(_recieve_event_data())
             background.add_pregenerated_task(task)
             await _send_event_data()
+
     except* WebSocketDisconnect:
         logger.debug("%s disconnected from websocket", ctx.user_ctx.get().display_name)
+
     finally:
         ctx.websocket_ctx.reset(websocket_token)
         ctx.user_ctx.reset(user_token)
@@ -78,6 +62,7 @@ async def _recieve_event_data() -> None:
     Handles recieved data over the websocket
     """
     websocket = ctx.websocket_ctx.get()
+    user = ctx.user_ctx.get()
 
     while True:
         data = await websocket.receive_bytes()
@@ -89,11 +74,25 @@ async def _recieve_event_data() -> None:
             continue
 
         try:
-            event_ = WS_EVENT_ADAPTER.validate_python(event, from_attributes=True)
-        except ValidationError:
+            cls = event_registry.registry[event.event_id]
+        except KeyError:
+            logger.exception(
+                "Attempted to route data to non-registed event handler: %s", event
+            )
+            continue
+
+        if not user.has_permission(cls.evt.permission):
+            logger.debug("User does not have permission for event: %s", event)
+            continue
+
+        try:
+            parsed_evt = cls.from_ws_event(event)
+
+        except TypeError, ValueError:
             logger.debug("Error validating websocket data: %s", event)
+
         else:
-            background.add_background_task(_wrapper.handle_ws_event, event_)
+            background.add_background_task(parsed_evt.client_trigger)
 
 
 async def _send_event_data() -> None:
@@ -109,58 +108,15 @@ async def _send_event_data() -> None:
         if permissions is None:
             continue
 
-        if event.evt.event_id == SystemEvt.PERMISSIONS_UPDATE.event_id:
+        if event.evt is SystemEvt.PERMISSIONS_UPDATE:
             temp = await user.get_permissions()
             permissions.clear()
             permissions.update(temp)
 
         elif event.evt.permission in permissions:
-            evt = _ExternalEvent(event.uuid, event.evt.event_id, event.data)
-            evt_ = WS_EVENT_ADAPTER.validate_python(evt, from_attributes=True)
-            data = evt_.model_dump_protobuf()
-            await websocket.send_bytes(data)
-
-
-@ws_event(SystemEvt.HEARTBEAT)
-async def heatbeat_echo(event: ws_validation.SystemHeartbeat) -> None:
-    """
-    Echo recieved heatbeat data
-
-    :param event: The websocket event data
-    """
-    event_broker = ctx.event_broker_ctx.get()
-    event_broker.publish(SystemEvt.HEARTBEAT, uuid_=event.uuid)
-
-
-@ws_event(SystemEvt.SHUTDOWN)
-async def shutdown_server(_: ws_validation.SystemShutdown) -> None:
-    """
-    Shutdown the webserver
-    """
-    ws_shutdown.set()
-
-
-@ws_event(SystemEvt.RESTART)
-async def restart_server(_: ws_validation.SystemRestart) -> None:
-    """
-    Restart the webserver
-    """
-    ws_restart.set()
-
-
-@ws_event(SystemEvt.RACE_SCHEDULE)
-async def schedule_race(_: ws_validation.ScheduleRace) -> None:
-    """
-    Schedule the start of a race.
-    """
-
-
-@ws_event(SystemEvt.RACE_STOP)
-async def race_stop(_: ws_validation.RaceStop) -> None:
-    """
-    Stop the current race
-    """
-    ctx.race_manager_ctx.get().stop_race()
+            cls = event_registry.registry[event.evt.event_id]
+            route_data = cls(event.uuid, **event.data)
+            await websocket.send_bytes(route_data.model_dump_protobuf())
 
 
 ROUTES = [
