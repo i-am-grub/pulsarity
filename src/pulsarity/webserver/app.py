@@ -32,7 +32,7 @@ from pulsarity.utils import background, config
 from pulsarity.utils.crypto import generate_self_signed_cert
 from pulsarity.webserver._auth import PulsarityAuthBackend
 from pulsarity.webserver._wrapper import endpoint
-from pulsarity.webserver.routes import ROUTES as HTTP_ROUTES
+from pulsarity.webserver.http import ROUTES as HTTP_ROUTES
 from pulsarity.webserver.websockets import ROUTES as WS_ROUTES
 
 if TYPE_CHECKING:
