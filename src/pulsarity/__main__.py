@@ -10,7 +10,7 @@ import signal
 import sys
 
 import pulsarity
-from pulsarity.events.registry import ServerRestart, ServerShutdown
+from pulsarity.events.client import ClientServerRestart, ClientServerShutdown
 from pulsarity.utils import config
 from pulsarity.webserver import app
 
@@ -60,8 +60,8 @@ async def _webserver_shutdown() -> None:
     """
 
     waiters = [
-        asyncio.create_task(ServerRestart.restart_evt.wait()),
-        asyncio.create_task(ServerShutdown.shutdown_evt.wait()),
+        asyncio.create_task(ClientServerRestart.restart_evt.wait()),
+        asyncio.create_task(ClientServerShutdown.shutdown_evt.wait()),
         asyncio.create_task(_shutdown_event.wait()),
     ]
     await asyncio.wait(waiters, return_when=asyncio.FIRST_COMPLETED)
@@ -109,10 +109,10 @@ def main() -> None:
 
     asyncio.run(_app())
 
-    if ServerShutdown.shutdown_evt.is_set():
+    if ClientServerShutdown.shutdown_evt.is_set():
         return
 
-    if ServerRestart.restart_evt.is_set():
+    if ClientServerRestart.restart_evt.is_set():
         logger.info("Automatically rebooting server")
         args = [sys.executable, "-m", "pulsarity", *sys.argv]
         os.execv(sys.executable, args)  # noqa: S606

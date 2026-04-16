@@ -11,11 +11,10 @@ from starlette.authentication import requires
 from starlette.routing import WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-import pulsarity.events.registry as event_registry
 from pulsarity import ctx
 from pulsarity._protobuf import websocket_pb2
 from pulsarity.database.permission import SystemDefaultPerms
-from pulsarity.events import SystemEvt
+from pulsarity.events import client
 from pulsarity.utils import background
 
 if TYPE_CHECKING:
@@ -74,14 +73,14 @@ async def _recieve_event_data() -> None:
             continue
 
         try:
-            cls = event_registry.registry[event.event_id]
+            cls = client.registry[event.event_id]
         except KeyError:
             logger.exception(
                 "Attempted to route data to non-registed event handler: %s", event
             )
             continue
 
-        if not user.has_permission(cls.evt.permission):
+        if not user.has_permission(cls.permission):
             logger.debug("User does not have permission for event: %s", event)
             continue
 
@@ -92,7 +91,7 @@ async def _recieve_event_data() -> None:
             logger.debug("Error validating websocket data: %s", event)
 
         else:
-            background.add_background_task(parsed_evt.client_trigger)
+            background.add_background_task(parsed_evt.run_handler)
 
 
 async def _send_event_data() -> None:
@@ -108,15 +107,14 @@ async def _send_event_data() -> None:
         if permissions is None:
             continue
 
-        if event.evt is SystemEvt.PERMISSIONS_UPDATE:
+        if event.event_id == websocket_pb2.EVENT_PERMISSIONS_UPDATE:
             temp = await user.get_permissions()
             permissions.clear()
             permissions.update(temp)
+            await websocket.send_bytes(event.model_dump_protobuf())
 
-        elif event.evt.permission in permissions:
-            cls = event_registry.registry[event.evt.event_id]
-            route_data = cls(event.uuid, **event.data)
-            await websocket.send_bytes(route_data.model_dump_protobuf())
+        elif event.permission in permissions:
+            await websocket.send_bytes(event.model_dump_protobuf())
 
 
 ROUTES = [
