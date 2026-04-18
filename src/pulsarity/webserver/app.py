@@ -25,7 +25,8 @@ from tortoise import Tortoise
 
 from pulsarity import ctx, defaults
 from pulsarity.database import setup_default_objects
-from pulsarity.events import EventBroker, SystemEvt
+from pulsarity.events import EventBroker
+from pulsarity.events.server import ServerShutdown, ServerStartup
 from pulsarity.interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.manager import RaceManager
 from pulsarity.utils import background, config
@@ -307,14 +308,14 @@ async def server_starup_workflow() -> None:
     defaults.import_all_submodules()
     ctx.timer_manager_ctx.get().start()
 
-    await ctx.event_broker_ctx.get().trigger(SystemEvt.STARTUP, {})
+    await ctx.event_broker_ctx.get().trigger(ServerStartup())
 
 
 async def server_shutdown_workflow() -> None:
     """
     Shutdown workflow
     """
-    await ctx.event_broker_ctx.get().trigger(SystemEvt.SHUTDOWN, {})
+    await ctx.event_broker_ctx.get().trigger(ServerShutdown())
     await ctx.timer_manager_ctx.get().shutdown(5)
     await background.shutdown(5)
     await database_shutdown()

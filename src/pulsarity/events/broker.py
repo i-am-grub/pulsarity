@@ -8,14 +8,13 @@ import copy
 import functools
 import itertools
 import logging
-import uuid
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from pydantic import BaseModel
 
-from pulsarity.events.enums import EvtPriority, SystemEvt
+from pulsarity.events.server import EvtPriority, SystemEventData
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
 
@@ -23,29 +22,9 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable
 
     from pulsarity._protobuf.websocket_pb2 import EventID
+    from pulsarity.events.enums import SystemEvt
 
 logger = logging.getLogger(__name__)
-
-_counter = itertools.count()
-
-
-@dataclass(frozen=True, slots=True)
-class _QueuedEvtData:
-    """
-    Dataclass used for containing event data across the queue
-    """
-
-    evt: SystemEvt
-    uuid: uuid.UUID
-    data: dict[str, Any]
-
-    _id: int = field(default_factory=functools.partial(next, _counter))
-
-    def __lt__(self, other: Self):
-        """
-        Less than comparsion. Enables the use of builtin sorting algorithms
-        """
-        return (self.evt.priority, self._id) < (other.evt.priority, other._id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +37,7 @@ class _EvtCallbackData:
     func: Callable
     default_data: dict[str, Any]
 
+    _counter: ClassVar[itertools.count] = itertools.count()
     _id: int = field(default_factory=functools.partial(next, _counter))
 
     def __lt__(self, other: Self):
@@ -94,15 +74,9 @@ class EventBroker:
         """
         Class initialization
         """
-        self._connections: set[asyncio.PriorityQueue[_QueuedEvtData]] = set()
+        self._connections: set[asyncio.PriorityQueue[SystemEventData]] = set()
 
-    def publish(
-        self,
-        event: SystemEvt,
-        data: BaseModel | dict[str, Any] | None = None,
-        *,
-        uuid_: uuid.UUID | None = None,
-    ) -> None:
+    def publish(self, data: SystemEventData) -> None:
         """
         Push the event data to all subscribed clients
 
@@ -110,20 +84,10 @@ class EventBroker:
         :param data: Event data
         :param uuid: Message uuid, defaults to None
         """
-        uid = uuid.uuid4() if uuid_ is None else uuid_
-
-        data_ = _data_to_dict(data)
-        payload = _QueuedEvtData(event, uid, data_)
         for connection in self._connections:
-            connection.put_nowait(payload)
+            connection.put_nowait(data)
 
-    async def trigger(
-        self,
-        event: SystemEvt,
-        data: BaseModel | dict[str, Any] | None = None,
-        *,
-        uuid_: uuid.UUID | None = None,
-    ) -> None:
+    async def trigger(self, data: SystemEventData) -> None:
         """
         Publishes data to all subscribed clients and triggers
         all registered callbacks for the event
@@ -132,18 +96,12 @@ class EventBroker:
         :param data: Event data
         :param uuid: Message uuid, defaults to None
         """
-        data_ = _data_to_dict(data)
-        self.publish(event, data_, uuid_=uuid_)
-        callbacks = copy.copy(self._callbacks[event.event_id])
-        await self._callback_runner(callbacks, data_)
 
-    def trigger_background(
-        self,
-        event: SystemEvt,
-        data: BaseModel | dict[str, Any] | None = None,
-        *,
-        uuid_: uuid.UUID | None = None,
-    ) -> None:
+        self.publish(data)
+        callbacks = copy.copy(self._callbacks[data.event_id])
+        await self._callback_runner(callbacks, data)
+
+    def trigger_background(self, data: SystemEventData) -> None:
         """
         Publishes data to all subscribed clients and triggers
         all registered callbacks for the event in the background
@@ -152,15 +110,14 @@ class EventBroker:
         :param data: Event data
         :param uuid: Message uuid, defaults to None
         """
-        data_ = _data_to_dict(data)
-        self.publish(event, data_, uuid_=uuid_)
-        callbacks = copy.copy(self._callbacks[event.event_id])
-        background.add_background_task(self._callback_runner, callbacks, data_)
+        self.publish(data)
+        callbacks = copy.copy(self._callbacks[data.event_id])
+        background.add_background_task(self._callback_runner, callbacks, data)
 
     async def _callback_runner(
         self,
         callbacks: list[_EvtCallbackData],
-        data: dict[str, Any],
+        data: SystemEventData,
     ) -> None:
         """
         Run all procided callbacks sequentially
@@ -169,11 +126,12 @@ class EventBroker:
         :param data: The additional data to provide for each callback
         """
         # pylint: disable=W0718
+        data_ = asdict(data)
 
         for callback in callbacks:
-            kwargs = callback.default_data | data
+            cb_data = callback.default_data | data_
             try:
-                await ensure_async(callback.func, **kwargs)
+                await ensure_async(callback.func, cb_data)
             except asyncio.CancelledError:
                 raise
             except BaseException:
@@ -241,7 +199,7 @@ class EventBroker:
 
     async def subscribe(
         self,
-    ) -> AsyncGenerator[_QueuedEvtData, None]:
+    ) -> AsyncGenerator[SystemEventData, None]:
         """
         Subscribe to recieve server events. Typically used for client connections
 
