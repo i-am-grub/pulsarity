@@ -129,9 +129,9 @@ class EventBroker:
         data_ = asdict(data)
 
         for callback in callbacks:
-            kwargs = callback.default_data | data_
+            cb_data = callback.default_data | data_
             try:
-                await ensure_async(callback.func, **kwargs)
+                await ensure_async(callback.func, cb_data)
             except asyncio.CancelledError:
                 raise
             except BaseException:
