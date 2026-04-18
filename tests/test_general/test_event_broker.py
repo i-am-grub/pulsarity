@@ -3,8 +3,7 @@ Coverage tests for the EventBroker class
 """
 
 import asyncio
-import threading
-from typing import Iterable
+from typing import Iterable, TypedDict
 
 import pytest
 
@@ -108,6 +107,10 @@ async def test_multi_event_priority():
     await broker_publish_test(broker, input_order, test_order)
 
 
+class CallbackData(TypedDict):
+    flag: asyncio.Event
+
+
 @pytest.mark.asyncio
 async def test_event_async_callback():
     """
@@ -121,8 +124,9 @@ async def test_event_async_callback():
 
     flag = asyncio.Event()
 
-    async def test_cb(flag: asyncio.Event, **_):
-        flag.set()
+    async def test_cb(data: CallbackData):
+
+        data["flag"].set()
 
     broker.register_event_callback(
         test_cb, SystemEvt.STARTUP, default_kwargs={"flag": flag}
