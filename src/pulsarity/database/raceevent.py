@@ -6,17 +6,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generic, Self
 
+from google.protobuf import timestamp_pb2
 from tortoise import fields
 from tortoise.functions import Max
 
+from pulsarity._protobuf import database_pb2
 from pulsarity.database._base import ATTRIBUTE
-from pulsarity.database._base import PulsarityBase as _PulsarityBase
+from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
+from pulsarity.database._base import PulsarityRaceBase as _PulsarityRaceBase
 
 if TYPE_CHECKING:
     from pulsarity.database.raceclass import RaceClass
 
 
-class RaceEventAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
+class RaceEventAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
     """
     Unique and stored individually stored values for each event.
     """
@@ -34,8 +37,11 @@ class RaceEventAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     )
     value = fields.JSONField[ATTRIBUTE]()
 
+    def to_message(self) -> database_pb2.Attribute:
+        return database_pb2.Attribute(name=self.name)
 
-class RaceEvent(_PulsarityBase):
+
+class RaceEvent(_PulsarityRaceBase):
     """
     Database content for race events
     """
@@ -98,3 +104,19 @@ class RaceEvent(_PulsarityBase):
         Less than comparsion operator. Enables sorting by dates
         """
         return self.date < obj.date
+
+    def to_message(self) -> database_pb2.RaceEvent:
+        attrs = (attribute.to_message() for attribute in self.attributes)
+        date = timestamp_pb2.Timestamp()
+        date.FromDatetime(self.date)
+        return database_pb2.RaceEvent(
+            id=self.id, name=self.name, date=date, attributes=attrs
+        )
+
+    @staticmethod
+    def iterable_to_message(iterable) -> database_pb2.RaceEvents:
+        """
+        Convert iterable to protocol buffer structure
+        """
+        evts = (evt.to_message() for evt in iterable)
+        return database_pb2.RaceEvents(events=evts)

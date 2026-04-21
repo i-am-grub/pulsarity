@@ -8,11 +8,13 @@ from typing import Generic
 
 from tortoise import fields
 
+from pulsarity._protobuf import database_pb2
 from pulsarity.database._base import ATTRIBUTE
-from pulsarity.database._base import PulsarityBase as _PulsarityBase
+from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
+from pulsarity.database._base import PulsarityRaceBase as _PulsarityRaceBase
 
 
-class PilotAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
+class PilotAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
     """
     Unique and stored individually stored values for each pilot.
     """
@@ -30,8 +32,11 @@ class PilotAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     )
     value = fields.JSONField[ATTRIBUTE]()
 
+    def to_message(self) -> database_pb2.Attribute:
+        return database_pb2.Attribute(name=self.name)
 
-class Pilot(_PulsarityBase):
+
+class Pilot(_PulsarityRaceBase):
     """
     Database content for event participants
     """
@@ -105,3 +110,17 @@ class Pilot(_PulsarityBase):
             return self.name
 
         return f"Pilot {self.id}"
+
+    def model_dump_protobuf(self) -> database_pb2.Pilot:
+        attrs = (attribute.to_message() for attribute in self.attributes)
+        return database_pb2.Pilot(
+            id=self.id,
+            display_callsign=self.display_callsign,
+            display_name=self.display_callsign,
+            attributes=attrs,
+        )
+
+    @staticmethod
+    def iterable_to_message(iterable):
+        pilots = (pilot.to_message() for pilot in iterable)
+        return database_pb2.Pilots(pilots)

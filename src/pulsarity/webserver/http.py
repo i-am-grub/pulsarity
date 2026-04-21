@@ -11,7 +11,6 @@ from starlette.routing import Route
 from starsessions.session import regenerate_session_id
 
 from pulsarity import ctx
-from pulsarity._validation import database as db_validation
 from pulsarity._validation.http import (
     LoginRequest,
     LoginResponse,
@@ -123,8 +122,7 @@ async def get_pilot(path: LookupParams) -> Response:
     if pilot is None:
         return Response(status_code=204)
 
-    model = db_validation.PilotModel.model_validate(pilot, from_attributes=True)
-    return ProtobufResponse(model)
+    return ProtobufResponse(pilot.to_message())
 
 
 @endpoint(SystemDefaultPerms.READ_PILOTS, query_model=PaginationParams)
@@ -138,9 +136,9 @@ async def get_pilots(query: PaginationParams) -> Response:
     pilots = (
         await Pilot.filter(id__gt=query.cursor)
         .limit(query.limit)
-        .prefetch_related("attributes")
+        .select_related("attributes")
     )
-    return ProtobufResponse(db_validation.PilotsModel.from_iterable(pilots))
+    return ProtobufResponse(Pilot.iterable_to_message(pilots))
 
 
 @endpoint(SystemDefaultPerms.READ_EVENTS, path_model=LookupParams)
@@ -155,8 +153,7 @@ async def get_event(path: LookupParams) -> Response:
     if event is None:
         return Response(status_code=204)
 
-    model = db_validation.RaceEventModel.model_validate(event, from_attributes=True)
-    return ProtobufResponse(model)
+    return ProtobufResponse(event.to_message())
 
 
 @endpoint(SystemDefaultPerms.READ_EVENTS, query_model=PaginationParams)
@@ -170,9 +167,9 @@ async def get_events(query: PaginationParams) -> Response:
     events = (
         await RaceEvent.filter(id__gt=query.cursor)
         .limit(query.limit)
-        .prefetch_related("attributes")
+        .select_related("attributes")
     )
-    return ProtobufResponse(db_validation.RaceEventsModel.from_iterable(events))
+    return ProtobufResponse(RaceEvent.iterable_to_message(events))
 
 
 @endpoint(SystemDefaultPerms.READ_RACECLASS, path_model=LookupParams)
@@ -187,8 +184,7 @@ async def get_racelass(path: LookupParams) -> Response:
     if raceclass is None:
         return Response(status_code=204)
 
-    model = db_validation.RaceClassModel.model_validate(raceclass, from_attributes=True)
-    return ProtobufResponse(model)
+    return ProtobufResponse(raceclass.to_message())
 
 
 @endpoint(
@@ -209,9 +205,9 @@ async def get_raceclasses_for_event(
         await RaceClass.filter(event_id=path.id)
         .filter(id__gt=query.cursor)
         .limit(query.limit)
-        .prefetch_related("attributes")
+        .select_related("attributes")
     )
-    return ProtobufResponse(db_validation.RaceClassesModel.from_iterable(raceclasses))
+    return ProtobufResponse(RaceClass.iterable_to_message(raceclasses))
 
 
 @endpoint(SystemDefaultPerms.READ_ROUND, path_model=LookupParams)
@@ -224,8 +220,7 @@ async def get_round(path: LookupParams) -> Response:
     if round_ is None:
         return Response(status_code=204)
 
-    model = db_validation.RoundModel.model_validate(round_, from_attributes=True)
-    return ProtobufResponse(model)
+    return ProtobufResponse(round_.to_message())
 
 
 @endpoint(
@@ -241,9 +236,9 @@ async def get_rounds_for_raceclass(
         await Round.filter(raceclass_id=path.id)
         .filter(id__gt=query.cursor)
         .limit(query.limit)
-        .prefetch_related("attributes")
+        .select_related("attributes")
     )
-    return ProtobufResponse(db_validation.RoundsModel.from_iterable(rounds))
+    return ProtobufResponse(Round.iterable_to_message(rounds))
 
 
 @endpoint(SystemDefaultPerms.READ_HEAT, path_model=LookupParams)
@@ -256,8 +251,7 @@ async def get_heat(path: LookupParams) -> Response:
     if heat is None:
         return Response(status_code=204)
 
-    model = db_validation.HeatModel.model_validate(heat, from_attributes=True)
-    return ProtobufResponse(model)
+    return ProtobufResponse(heat.to_message())
 
 
 @endpoint(
@@ -271,10 +265,9 @@ async def get_heats_for_round(path: LookupParams, query: PaginationParams) -> Re
         await Heat.filter(round_id=path.id)
         .filter(id__gt=query.cursor)
         .limit(query.limit)
-        .prefetch_related("attributes")
+        .select_related("attributes")
     )
-
-    return ProtobufResponse(db_validation.HeatsModel.from_iterable(heats))
+    return ProtobufResponse(Heat.iterable_to_message(heats))
 
 
 ROUTES = [

@@ -10,7 +10,7 @@ import logging
 from json.decoder import JSONDecodeError
 from typing import TYPE_CHECKING, NamedTuple, TypeVar
 
-from google.protobuf.message import DecodeError
+from google.protobuf.message import DecodeError, Message
 from pydantic import BaseModel, ValidationError
 from starlette.exceptions import HTTPException
 from starlette.responses import Response
@@ -40,11 +40,6 @@ class _ValModels(NamedTuple):
     path: type[BaseModel] | None
 
 
-class _Route(NamedTuple):
-    permission: UserPermission
-    func: Callable
-
-
 class ProtobufResponse(Response):
     """
     Response sending protocol buffer data
@@ -58,7 +53,7 @@ class ProtobufResponse(Response):
 
     def __init__(
         self,
-        content: ProtocolBufferModel,
+        content: Message,
         status_code=200,
         headers=None,
         media_type=None,
@@ -66,8 +61,8 @@ class ProtobufResponse(Response):
     ):
         super().__init__(content, status_code, headers, media_type, background)
 
-    def render(self, content: ProtocolBufferModel) -> bytes:
-        return content.model_dump_protobuf().SerializeToString()
+    def render(self, content: Message) -> bytes:
+        return content.SerializeToString()
 
 
 def endpoint(
