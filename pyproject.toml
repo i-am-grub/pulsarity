@@ -91,7 +91,7 @@ dev = [
     "packaging==26.0", # pytest
     "pluggy==1.6.0", # pytest
     "pygments==2.20.0", # pytest
-    "coverage==7.13.0", # pytest-cov
+    "coverage==7.13.5", # pytest-cov
 ]
 docs = [
     "myst-parser==5.0.0",
