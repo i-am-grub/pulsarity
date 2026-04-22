@@ -83,7 +83,7 @@ dev = [
     "pathspec==1.0.4", # mypy
     "astroid==4.0.2", # pylint
     "dill==0.4.0", # pylint
-    "isort==7.0.0", # pylint
+    "isort==8.0.1", # pylint
     "mccabe==0.7.0", # pylint
     "platformdirs==4.5.1", # pylint
     "tomlkit==0.13.3", # pylint
