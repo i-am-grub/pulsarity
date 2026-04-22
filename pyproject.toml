@@ -86,7 +86,7 @@ dev = [
     "isort==8.0.1", # pylint
     "mccabe==0.7.0", # pylint
     "platformdirs==4.5.1", # pylint
-    "tomlkit==0.13.3", # pylint
+    "tomlkit==0.14.0", # pylint
     "iniconfig==2.3.0", # pytest
     "packaging==26.0", # pytest
     "pluggy==1.6.0", # pytest
