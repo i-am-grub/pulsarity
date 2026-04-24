@@ -75,6 +75,9 @@ class _HttpModel:
 
 @dataclass_transform()
 def http_route_dataclass(cls: type[_HttpModel]) -> type[_HttpModel]:
+    """
+    Decorator for generating dataclasses for http requests
+    """
     return dataclass(cls, slots=True)
 
 

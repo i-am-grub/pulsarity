@@ -28,6 +28,8 @@ from pulsarity.webserver._wrapper import (
     http_route_dataclass,
 )
 
+# pylint: disable=E1121
+
 logger = logging.getLogger(__name__)
 
 
