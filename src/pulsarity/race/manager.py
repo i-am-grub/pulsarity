@@ -8,6 +8,7 @@ from datetime import timedelta
 from functools import partial
 from typing import TYPE_CHECKING, NamedTuple
 
+from pulsarity._protobuf import database_pb2
 from pulsarity.database.lap import Lap
 from pulsarity.database.signal import SignalHistory
 from pulsarity.race._state import RaceStateManager, RaceStatus
@@ -205,15 +206,22 @@ class RaceManager:
         Saves the signal history to the database
         """
 
+        def signal_history_protobuf(signal_data: list[_SignalRecord]):
+            for record in signal_data:
+                yield database_pb2.SignalRecord(
+                    timedelta=record.timedelta, value=record.value
+                )
+
         def get_slot_data():
             for slot, data_ in self._signal_data.items():
                 for (idx, ident), data in data_.items():
                     data.sort()
+                    history = signal_history_protobuf(data)
                     yield SignalHistory(
                         slot_id=slot,
                         timer_index=idx,
                         timer_identifier=ident,
-                        history=data,
+                        history=database_pb2.SignalHistory(records=history),
                     )
 
         if self._signal_data:
