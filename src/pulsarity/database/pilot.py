@@ -111,7 +111,7 @@ class Pilot(_PulsarityRaceBase):
 
         return f"Pilot {self.id}"
 
-    def model_dump_protobuf(self) -> database_pb2.Pilot:
+    def to_message(self) -> database_pb2.Pilot:
         attrs = (attribute.to_message() for attribute in self.attributes)
         return database_pb2.Pilot(
             id=self.id,
@@ -123,4 +123,4 @@ class Pilot(_PulsarityRaceBase):
     @staticmethod
     def iterable_to_message(iterable):
         pilots = (pilot.to_message() for pilot in iterable)
-        return database_pb2.Pilots(pilots)
+        return database_pb2.Pilots(pilots=pilots)

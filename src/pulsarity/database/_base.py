@@ -64,7 +64,7 @@ class PulsarityRaceBase(PulsarityMessageBase):
         :param id_: The id of the object to search for
         :return: The object from the database
         """
-        return await cls.get_or_none(id=id_).select_related("attributes")
+        return await cls.get_or_none(id=id_).prefetch_related("attributes")
 
     @staticmethod
     @abstractmethod
