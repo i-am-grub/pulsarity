@@ -14,37 +14,37 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0e\x64\x61tabase.proto\x12\x13pulsarity.databsase\x1a\x1fgoogle/protobuf/timestamp.proto\"\x19\n\tAttribute\x12\x0c\n\x04name\x18\x01 \x01(\t\"w\n\x05Pilot\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x18\n\x10\x64isplay_callsign\x18\x02 \x01(\t\x12\x14\n\x0c\x64isplay_name\x18\x03 \x01(\t\x12\x32\n\nattributes\x18\x04 \x03(\x0b\x32\x1e.pulsarity.databsase.Attribute\"4\n\x06Pilots\x12*\n\x06pilots\x18\x01 \x03(\x0b\x32\x1a.pulsarity.databsase.Pilot\"\x83\x01\n\tRaceEvent\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12(\n\x04\x64\x61te\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x32\n\nattributes\x18\x04 \x03(\x0b\x32\x1e.pulsarity.databsase.Attribute\"<\n\nRaceEvents\x12.\n\x06\x65vents\x18\x01 \x03(\x0b\x32\x1e.pulsarity.databsase.RaceEvent\"Y\n\tRaceClass\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x32\n\nattributes\x18\x03 \x03(\x0b\x32\x1e.pulsarity.databsase.Attribute\"B\n\x0bRaceClasses\x12\x33\n\x0braceclasses\x18\x01 \x03(\x0b\x32\x1e.pulsarity.databsase.RaceClass\"Z\n\x05Round\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x11\n\tround_num\x18\x02 \x01(\x05\x12\x32\n\nattributes\x18\x03 \x03(\x0b\x32\x1e.pulsarity.databsase.Attribute\"4\n\x06Rounds\x12*\n\x06rounds\x18\x01 \x03(\x0b\x32\x1a.pulsarity.databsase.Round\"X\n\x04Heat\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x10\n\x08heat_num\x18\x02 \x01(\x05\x12\x32\n\nattributes\x18\x03 \x03(\x0b\x32\x1e.pulsarity.databsase.Attribute\"1\n\x05Heats\x12(\n\x05heats\x18\x01 \x03(\x0b\x32\x19.pulsarity.databsase.Heat\"0\n\x0cSignalRecord\x12\x11\n\ttimedelta\x18\x01 \x01(\x02\x12\r\n\x05value\x18\x02 \x01(\x02\"C\n\rSignalHistory\x12\x32\n\x07records\x18\x01 \x03(\x0b\x32!.pulsarity.databsase.SignalRecordb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0e\x64\x61tabase.proto\x12\x0cpulsarity.db\x1a\x1fgoogle/protobuf/timestamp.proto\"\x19\n\tAttribute\x12\x0c\n\x04name\x18\x01 \x01(\t\"p\n\x05Pilot\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x18\n\x10\x64isplay_callsign\x18\x02 \x01(\t\x12\x14\n\x0c\x64isplay_name\x18\x03 \x01(\t\x12+\n\nattributes\x18\x04 \x03(\x0b\x32\x17.pulsarity.db.Attribute\"-\n\x06Pilots\x12#\n\x06pilots\x18\x01 \x03(\x0b\x32\x13.pulsarity.db.Pilot\"|\n\tRaceEvent\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12(\n\x04\x64\x61te\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12+\n\nattributes\x18\x04 \x03(\x0b\x32\x17.pulsarity.db.Attribute\"5\n\nRaceEvents\x12\'\n\x06\x65vents\x18\x01 \x03(\x0b\x32\x17.pulsarity.db.RaceEvent\"R\n\tRaceClass\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12+\n\nattributes\x18\x03 \x03(\x0b\x32\x17.pulsarity.db.Attribute\";\n\x0bRaceClasses\x12,\n\x0braceclasses\x18\x01 \x03(\x0b\x32\x17.pulsarity.db.RaceClass\"S\n\x05Round\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x11\n\tround_num\x18\x02 \x01(\x05\x12+\n\nattributes\x18\x03 \x03(\x0b\x32\x17.pulsarity.db.Attribute\"-\n\x06Rounds\x12#\n\x06rounds\x18\x01 \x03(\x0b\x32\x13.pulsarity.db.Round\"Q\n\x04Heat\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x10\n\x08heat_num\x18\x02 \x01(\x05\x12+\n\nattributes\x18\x03 \x03(\x0b\x32\x17.pulsarity.db.Attribute\"*\n\x05Heats\x12!\n\x05heats\x18\x01 \x03(\x0b\x32\x12.pulsarity.db.Heat\"0\n\x0cSignalRecord\x12\x11\n\ttimedelta\x18\x01 \x01(\x02\x12\r\n\x05value\x18\x02 \x01(\x02\"<\n\rSignalHistory\x12+\n\x07records\x18\x01 \x03(\x0b\x32\x1a.pulsarity.db.SignalRecordb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'database_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _ATTRIBUTE._serialized_start=72
-  _ATTRIBUTE._serialized_end=97
-  _PILOT._serialized_start=99
-  _PILOT._serialized_end=218
-  _PILOTS._serialized_start=220
-  _PILOTS._serialized_end=272
-  _RACEEVENT._serialized_start=275
-  _RACEEVENT._serialized_end=406
-  _RACEEVENTS._serialized_start=408
-  _RACEEVENTS._serialized_end=468
-  _RACECLASS._serialized_start=470
-  _RACECLASS._serialized_end=559
-  _RACECLASSES._serialized_start=561
-  _RACECLASSES._serialized_end=627
-  _ROUND._serialized_start=629
-  _ROUND._serialized_end=719
-  _ROUNDS._serialized_start=721
-  _ROUNDS._serialized_end=773
-  _HEAT._serialized_start=775
-  _HEAT._serialized_end=863
-  _HEATS._serialized_start=865
-  _HEATS._serialized_end=914
-  _SIGNALRECORD._serialized_start=916
-  _SIGNALRECORD._serialized_end=964
-  _SIGNALHISTORY._serialized_start=966
-  _SIGNALHISTORY._serialized_end=1033
+  _ATTRIBUTE._serialized_start=65
+  _ATTRIBUTE._serialized_end=90
+  _PILOT._serialized_start=92
+  _PILOT._serialized_end=204
+  _PILOTS._serialized_start=206
+  _PILOTS._serialized_end=251
+  _RACEEVENT._serialized_start=253
+  _RACEEVENT._serialized_end=377
+  _RACEEVENTS._serialized_start=379
+  _RACEEVENTS._serialized_end=432
+  _RACECLASS._serialized_start=434
+  _RACECLASS._serialized_end=516
+  _RACECLASSES._serialized_start=518
+  _RACECLASSES._serialized_end=577
+  _ROUND._serialized_start=579
+  _ROUND._serialized_end=662
+  _ROUNDS._serialized_start=664
+  _ROUNDS._serialized_end=709
+  _HEAT._serialized_start=711
+  _HEAT._serialized_end=792
+  _HEATS._serialized_start=794
+  _HEATS._serialized_end=836
+  _SIGNALRECORD._serialized_start=838
+  _SIGNALRECORD._serialized_end=886
+  _SIGNALHISTORY._serialized_start=888
+  _SIGNALHISTORY._serialized_end=948
 # @@protoc_insertion_point(module_scope)
