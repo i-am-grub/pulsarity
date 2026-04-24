@@ -12,8 +12,6 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
-from pydantic import BaseModel
-
 from pulsarity.events.server import EvtPriority, SystemEventData
 from pulsarity.utils import background
 from pulsarity.utils.asyncio import ensure_async
@@ -45,19 +43,6 @@ class _EvtCallbackData:
         Less than comparsion. Enables the use of builtin sorting algorithms
         """
         return (self.priority, self._id) < (other.priority, other._id)
-
-
-def _data_to_dict(data: BaseModel | dict[str, Any] | None = None) -> dict:
-    """
-    Generate a dictionary from input data
-    """
-    if isinstance(data, dict):
-        return data
-
-    if isinstance(data, BaseModel):
-        return data.model_dump()
-
-    return {}
 
 
 class EventBroker:
@@ -148,7 +133,7 @@ class EventBroker:
         event: SystemEvt,
         *,
         priority: EvtPriority = EvtPriority.LOWEST,
-        default_kwargs: BaseModel | dict[str, Any] | None = None,
+        default_kwargs: dict[str, Any] | None = None,
     ) -> None:
         """
         Register a callback to run when when an event is published
@@ -160,13 +145,9 @@ class EventBroker:
         when the event is triggered
         """
         if default_kwargs is None:
-            default_kwargs_ = {}
-        elif isinstance(default_kwargs, BaseModel):
-            default_kwargs_ = default_kwargs.model_dump()
-        else:
-            default_kwargs_ = default_kwargs
+            default_kwargs = {}
 
-        evt_cb = _EvtCallbackData(priority, callback, default_kwargs_)
+        evt_cb = _EvtCallbackData(priority, callback, default_kwargs)
         bisect.insort_right(cls._callbacks[event.event_id], evt_cb)
 
     @classmethod
