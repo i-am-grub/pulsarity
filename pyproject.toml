@@ -20,7 +20,7 @@ dependencies = [
     "starlette==1.0.0",
     "starsessions==2.2.1",
     "hypercorn==0.18.0",
-    "cryptography==46.0.7",
+    "cryptography==47.0.0",
     "argon2-cffi==25.1.0",
     "tortoise-orm==1.1.7",
     "anyio==4.13.0",
