@@ -7,45 +7,35 @@ from __future__ import annotations
 import functools
 import inspect
 import logging
-from json.decoder import JSONDecodeError
-from typing import TYPE_CHECKING, Literal, NamedTuple, TypeVar, overload
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import (
+    TYPE_CHECKING,
+    NamedTuple,
+    Self,
+    TypeVar,
+    dataclass_transform,
+)
 
-from google.protobuf.message import DecodeError
-from pydantic import BaseModel, ValidationError
+from google.protobuf.message import DecodeError, Message
 from starlette.exceptions import HTTPException
 from starlette.responses import Response
 
 from pulsarity import ctx
-from pulsarity._validation import websocket as ws_validation
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.utils.asyncio import ensure_async
 from pulsarity.webserver._auth import requires
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Coroutine
+    from collections.abc import Callable, Coroutine
 
     from starlette.requests import Request
 
-    from pulsarity._protobuf import websocket_pb2
-    from pulsarity._validation._base import ProtocolBufferModel
-    from pulsarity.events import SystemEvt
-
 
 T = TypeVar("T")
-U = TypeVar("U", bound=ws_validation.BaseEvent)
+
 
 logger = logging.getLogger(__name__)
-
-
-class _ValModels(NamedTuple):
-    request: type[ProtocolBufferModel] | None
-    query: type[BaseModel] | None
-    path: type[BaseModel] | None
-
-
-class _Route(NamedTuple):
-    permission: UserPermission
-    func: Callable
 
 
 class ProtobufResponse(Response):
@@ -61,7 +51,7 @@ class ProtobufResponse(Response):
 
     def __init__(
         self,
-        content: ProtocolBufferModel,
+        content: Message,
         status_code=200,
         headers=None,
         media_type=None,
@@ -69,16 +59,68 @@ class ProtobufResponse(Response):
     ):
         super().__init__(content, status_code, headers, media_type, background)
 
-    def render(self, content: ProtocolBufferModel) -> bytes:
-        return content.model_dump_protobuf().SerializeToString()
+    def render(self, content: Message) -> bytes:
+        return content.SerializeToString()
+
+
+@dataclass(slots=True)
+class _HttpModel:
+    """
+    Base class for http route data
+
+    When data is being validated with `__post_init__`, validation errors
+    should raise `ValueError`
+    """
+
+
+@dataclass_transform()
+def http_route_dataclass(cls: type[_HttpModel]) -> type[_HttpModel]:
+    """
+    Decorator for generating dataclasses for http requests
+    """
+    return dataclass(cls, slots=True)
+
+
+@http_route_dataclass
+class QueryDataModel(_HttpModel):
+    """
+    Dataclass for query parameter data
+    """
+
+
+@http_route_dataclass
+class PathDataModel(_HttpModel):
+    """
+    Dataclass for request path data
+    """
+
+
+@http_route_dataclass
+class RequestModel(_HttpModel, ABC):
+    """
+    Dataclass for post/put request data
+    """
+
+    @classmethod
+    @abstractmethod
+    def from_protobuf(cls, data: bytes) -> Self:
+        """
+        Generate a request instance from recieved bytes
+        """
+
+
+class _ValModels(NamedTuple):
+    request: type[RequestModel] | None
+    query: type[QueryDataModel] | None
+    path: type[PathDataModel] | None
 
 
 def endpoint(
     *permissions: UserPermission,
     requires_auth: bool = True,
-    request_model: type[ProtocolBufferModel] | None = None,
-    query_model: type[BaseModel] | None = None,
-    path_model: type[BaseModel] | None = None,
+    request_model: type[RequestModel] | None = None,
+    query_model: type[QueryDataModel] | None = None,
+    path_model: type[PathDataModel] | None = None,
 ):
     """
     Decorator for validating request data, user permissions, and
@@ -92,7 +134,7 @@ def endpoint(
     """
 
     def inner(
-        func: Callable[..., ProtocolBufferModel | Response],
+        func: Callable[..., Response],
     ) -> Callable[[Request], Coroutine[None, None, Response]]:
         # pylint: disable=R0912
 
@@ -139,7 +181,7 @@ def endpoint(
 
 
 def _validate_compatibility(
-    func: Callable, model: type[BaseModel] | None, used_kwargs: set[str], arg_id: str
+    func: Callable, model: type[_HttpModel] | None, used_kwargs: set[str], arg_id: str
 ):
     """
     Validate the compatibility between the function and provided model
@@ -153,10 +195,8 @@ def _validate_compatibility(
             )
             raise KeyError(msg)
 
-        if not issubclass(model, BaseModel):
-            msg = (
-                f"{func.__name__} query model is not a subclass of {BaseModel.__name__}"
-            )
+        if not issubclass(model, _HttpModel):
+            msg = f"{func.__name__} query model is not a subclass of {_HttpModel.__name__}"
             raise ValueError(msg)
 
     elif arg_id in used_kwargs:
@@ -173,7 +213,7 @@ async def _process_request(
     """
     Processes the incoming request
     """
-    kwargs: dict[str, BaseModel] = {}
+    kwargs: dict[str, _HttpModel] = {}
 
     if val_models.request is not None:
         content_type = request.headers.get("content-type")
@@ -182,132 +222,34 @@ async def _process_request(
 
         try:
             data = await request.body()
-            kwargs["request"] = val_models.request.model_validate_protobuf(data)
+            kwargs["request"] = val_models.request.from_protobuf(data)
         except DecodeError as ex:
             raise HTTPException(status_code=400) from ex
-        except ValidationError as ex:
+        except ValueError as ex:
             raise HTTPException(status_code=422) from ex
 
     if val_models.query is not None:
         try:
-            kwargs["query"] = val_models.query.model_validate(request.query_params)
-        except JSONDecodeError as ex:
+            kwargs["query"] = val_models.query(**request.query_params)
+        except TypeError as ex:
             raise HTTPException(status_code=400) from ex
-        except ValidationError as ex:
+        except ValueError as ex:
             raise HTTPException(status_code=422) from ex
 
     if val_models.path is not None:
         try:
-            kwargs["path"] = val_models.path.model_validate(request.path_params)
-        except JSONDecodeError as ex:
+            kwargs["path"] = val_models.path(**request.path_params)
+        except TypeError as ex:
             raise HTTPException(status_code=400) from ex
-        except ValidationError as ex:
+        except ValueError as ex:
             raise HTTPException(status_code=422) from ex
 
     try:
         endpoint_result = await ensure_async(func, **kwargs)
-    except ValidationError as ex:
+    except ValueError as ex:
         raise HTTPException(status_code=500) from ex
 
     if isinstance(endpoint_result, Response):
         return endpoint_result
 
     return Response()
-
-
-_wse_routes: dict[websocket_pb2.EventID, _Route] = {}
-
-
-async def handle_ws_event(event: ws_validation.WebsocketEvent):
-    """
-    Routes the event data to the proper websocket action while
-    ensuring the user has the proper permissions
-
-    :param event: The websocket event
-    """
-    try:
-        route = _wse_routes[event.event_id]
-    except KeyError:
-        logger.exception(
-            "Route not defined for websocket data. Event ID: %s", event.event_id
-        )
-
-    if route.permission in ctx.user_permsissions_ctx.get():
-        await ensure_async(route.func, event)
-
-
-@overload
-def ws_event(
-    evt: Literal[SystemEvt.HEARTBEAT],
-) -> Callable[
-    [Callable[[ws_validation.SystemHeartbeat], Awaitable[T]]],
-    Callable[[ws_validation.SystemHeartbeat], Awaitable[T]],
-]: ...
-@overload
-def ws_event(
-    evt: Literal[SystemEvt.SHUTDOWN],
-) -> Callable[
-    [Callable[[ws_validation.SystemShutdown], Awaitable[T]]],
-    Callable[[ws_validation.SystemShutdown], Awaitable[T]],
-]: ...
-@overload
-def ws_event(
-    evt: Literal[SystemEvt.RESTART],
-) -> Callable[
-    [Callable[[ws_validation.SystemRestart], Awaitable[T]]],
-    Callable[[ws_validation.SystemRestart], Awaitable[T]],
-]: ...
-@overload
-def ws_event(
-    evt: Literal[SystemEvt.RACE_SCHEDULE],
-) -> Callable[
-    [Callable[[ws_validation.ScheduleRace], Awaitable[T]]],
-    Callable[[ws_validation.ScheduleRace], Awaitable[T]],
-]: ...
-@overload
-def ws_event(
-    evt: Literal[SystemEvt.RACE_STOP],
-) -> Callable[
-    [Callable[[ws_validation.RaceStop], Awaitable[T]]],
-    Callable[[ws_validation.RaceStop], Awaitable[T]],
-]: ...
-@overload
-def ws_event(
-    evt: Literal[SystemEvt.PILOT_ADD],
-) -> Callable[
-    [Callable[[ws_validation.PilotAddEvent], Awaitable[T]]],
-    Callable[[ws_validation.PilotAddEvent], Awaitable[T]],
-]: ...
-@overload
-def ws_event(
-    evt: Literal[SystemEvt.PILOT_ALTER],
-) -> Callable[
-    [Callable[[ws_validation.PilotAlterEvent], Awaitable[T]]],
-    Callable[[ws_validation.PilotAlterEvent], Awaitable[T]],
-]: ...
-@overload
-def ws_event(
-    evt: Literal[SystemEvt.PILOT_DELETE],
-) -> Callable[
-    [Callable[[ws_validation.PilotDeleteEvent], Awaitable[T]]],
-    Callable[[ws_validation.PilotDeleteEvent], Awaitable[T]],
-]: ...
-def ws_event(
-    evt: SystemEvt,
-) -> Callable[[Callable[[U], Awaitable[T]]], Callable[[U], Awaitable[T]]]:
-    """
-    Decorator for registerting routes based on recieved websocket event data
-
-    :param event: The event to base the routing on
-    """
-    if evt.event_id in _wse_routes:
-        msg = "Multiple routes can not be register for a individual application event"
-        raise RuntimeError(msg)
-
-    def inner(
-        func: Callable[[U], Awaitable[T]],
-    ) -> Callable[[U], Awaitable[T]]:
-        _wse_routes[evt.event_id] = _Route(evt.permission, func)
-        return func
-
-    return inner

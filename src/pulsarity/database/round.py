@@ -10,15 +10,17 @@ from typing import TYPE_CHECKING, Generic
 from tortoise import fields
 from tortoise.functions import Max
 
+from pulsarity._protobuf import database_pb2
 from pulsarity.database._base import ATTRIBUTE
-from pulsarity.database._base import PulsarityBase as _PulsarityBase
+from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
+from pulsarity.database._base import PulsarityRaceBase as _PulsarityRaceBase
 
 if TYPE_CHECKING:
     from pulsarity.database.heat import Heat
     from pulsarity.database.raceclass import RaceClass
 
 
-class RoundAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
+class RoundAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
     """
     Unique and stored individually stored values for each round.
     """
@@ -36,8 +38,11 @@ class RoundAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     )
     value = fields.JSONField[ATTRIBUTE]()
 
+    def to_message(self) -> database_pb2.Attribute:
+        return database_pb2.Attribute(name=self.name)
 
-class Round(_PulsarityBase):
+
+class Round(_PulsarityRaceBase):
     """
     Database content for rounds within a raceclass
     """
@@ -88,3 +93,14 @@ class Round(_PulsarityBase):
             return 1
 
         return value + 1
+
+    def to_message(self) -> database_pb2.Round:
+        attrs = (attr.to_message() for attr in self.attributes)
+        return database_pb2.Round(
+            id=self.id, round_num=self.round_num, attributes=attrs
+        )
+
+    @staticmethod
+    def iterable_to_message(iterable) -> database_pb2.Rounds:
+        rounds = (round_.to_message() for round_ in iterable)
+        return database_pb2.Rounds(rounds=rounds)

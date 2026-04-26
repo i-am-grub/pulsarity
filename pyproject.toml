@@ -20,10 +20,9 @@ dependencies = [
     "starlette==1.0.0",
     "starsessions==2.2.1",
     "hypercorn==0.18.0",
-    "cryptography==46.0.6",
+    "cryptography==46.0.7",
     "argon2-cffi==25.1.0",
     "tortoise-orm==1.1.7",
-    "pydantic==2.12.5",
     "anyio==4.13.0",
     "protobuf==7.34.1",
 
@@ -38,9 +37,6 @@ dependencies = [
     "hyperframe==6.1.0", # hypercorn
     "priority==2.0.0", # hypercorn
     "wsproto==1.3.2", # hypercorn
-    "annotated-types==0.7.0", # pydantic
-    "typing-extensions==4.15.0", # pydantic
-    "typing-inspection==0.4.2", # pydantic
     "itsdangerous==2.2.0", # star-sessions
     "aiosqlite==0.22.1", # tortoise-orm
     "iso8601==2.1.0", # tortoise-orm
@@ -65,33 +61,33 @@ dev = [
     # Unit testing
     "httpx==0.28.1",
     "httpx-ws==0.9.0",
-    "pytest==9.0.2",
+    "pytest==9.0.3",
     "pytest-asyncio==1.3.0",
     "pytest-cov==7.1.0",
     "pytest-randomly==4.0.1",
 
     # Linting
-    "mypy==1.19.1",
+    "mypy==1.20.1",
     "pylint==4.0.5",
-    "types-protobuf==6.32.1.20260221",
+    "types-protobuf==7.34.1.20260408",
 
     # Upstream Dependencies
     "certifi==v2026.2.25", # httpx
     "httpcore==1.0.9", # httpx
-    "librt==0.7.4", # mypy
+    "librt==0.9.0", # mypy
     "mypy-extensions==1.1.0", # mypy
-    "pathspec==0.12.1", # mypy
+    "pathspec==1.0.4", # mypy
     "astroid==4.0.2", # pylint
     "dill==0.4.0", # pylint
-    "isort==7.0.0", # pylint
+    "isort==8.0.1", # pylint
     "mccabe==0.7.0", # pylint
     "platformdirs==4.5.1", # pylint
-    "tomlkit==0.13.3", # pylint
+    "tomlkit==0.14.0", # pylint
     "iniconfig==2.3.0", # pytest
-    "packaging==25.0", # pytest
+    "packaging==26.1", # pytest
     "pluggy==1.6.0", # pytest
     "pygments==2.20.0", # pytest
-    "coverage==7.13.0", # pytest-cov
+    "coverage==7.13.5", # pytest-cov
 ]
 docs = [
     "myst-parser==5.0.0",
@@ -103,6 +99,7 @@ docs = [
 
 [tool.mypy]
 exclude = ["tests", "src/pulsarity/_protobuf"]
+local_partial_types = true
 
 [tool.pylint]
 ignore = ["tests", "src/pulsarity/_protobuf"]

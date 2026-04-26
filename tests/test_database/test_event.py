@@ -6,6 +6,7 @@ from datetime import timedelta
 
 import pytest
 from tortoise.exceptions import IntegrityError
+from pulsarity._protobuf import database_pb2
 
 from pulsarity.database import (
     Heat,
@@ -305,14 +306,16 @@ async def test_slot_history(basic_slot: Slot):
     Test raceclass deletion as a result of event deletion
     """
     num = 5
-    records = [(0.1 * i, i * 0.1) for i in range(num)]
+    records = (
+        database_pb2.SignalRecord(timedelta=0.1 * i, value=i * 0.1) for i in range(num)
+    )
     history = await SignalHistory.create(
         slot=basic_slot,
-        history=records,
+        history=database_pb2.SignalHistory(records=records),
         timer_identifier="foo",
         timer_timer_index=0,
         timer_index=1,
     )
 
     assert history.id
-    assert len(history.history) == num
+    assert len(history.history.records) == num

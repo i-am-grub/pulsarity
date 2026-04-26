@@ -95,3 +95,17 @@ class Rounds(_message.Message):
     ROUNDS_FIELD_NUMBER: _ClassVar[int]
     rounds: _containers.RepeatedCompositeFieldContainer[Round]
     def __init__(self, rounds: _Optional[_Iterable[_Union[Round, _Mapping]]] = ...) -> None: ...
+
+class SignalHistory(_message.Message):
+    __slots__ = ["records"]
+    RECORDS_FIELD_NUMBER: _ClassVar[int]
+    records: _containers.RepeatedCompositeFieldContainer[SignalRecord]
+    def __init__(self, records: _Optional[_Iterable[_Union[SignalRecord, _Mapping]]] = ...) -> None: ...
+
+class SignalRecord(_message.Message):
+    __slots__ = ["timedelta", "value"]
+    TIMEDELTA_FIELD_NUMBER: _ClassVar[int]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    timedelta: float
+    value: float
+    def __init__(self, timedelta: _Optional[float] = ..., value: _Optional[float] = ...) -> None: ...

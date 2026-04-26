@@ -7,8 +7,8 @@ from enum import Flag, auto, unique
 from random import random
 from typing import TYPE_CHECKING, NamedTuple
 
+import pulsarity.events.server as server_evts
 from pulsarity import ctx
-from pulsarity.events import SystemEvt
 
 if TYPE_CHECKING:
     from asyncio import TimerHandle
@@ -234,13 +234,13 @@ class RaceStateManager:
             logger.info("Stopped race before start. Race manager reset")
 
         elif self.status is RaceStatus.RACING:
-            event_broker.trigger_background(SystemEvt.RACE_FINISH)
-            event_broker.trigger_background(SystemEvt.RACE_STOP)
+            event_broker.trigger_background(server_evts.RaceFinish())
+            event_broker.trigger_background(server_evts.RaceStop())
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
 
         elif self.status is RaceStatus.OVERTIME:
-            event_broker.trigger_background(SystemEvt.RACE_STOP)
+            event_broker.trigger_background(server_evts.RaceStop())
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
 
@@ -253,10 +253,10 @@ class RaceStateManager:
                 raise RuntimeError(msg)
 
             if record.status is RaceStatus.RACING:
-                event_broker.trigger_background(SystemEvt.RACE_FINISH)
-                event_broker.trigger_background(SystemEvt.RACE_STOP)
+                event_broker.trigger_background(server_evts.RaceFinish())
+                event_broker.trigger_background(server_evts.RaceStop())
             else:
-                event_broker.trigger_background(SystemEvt.RACE_STOP)
+                event_broker.trigger_background(server_evts.RaceStop())
 
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
@@ -268,7 +268,7 @@ class RaceStateManager:
         event_broker = ctx.event_broker_ctx.get()
 
         if self.status in RaceStatus.UNDERWAY:
-            event_broker.trigger_background(SystemEvt.RACE_PAUSE)
+            event_broker.trigger_background(server_evts.RacePause())
             self._set_status(RaceStatus.PAUSED)
             logger.info("Race paused")
 
@@ -316,7 +316,7 @@ class RaceStateManager:
             )
             self._set_status(RaceStatus.OVERTIME)
 
-        event_broker.trigger_background(SystemEvt.RACE_RESUME)
+        event_broker.trigger_background(server_evts.RaceResume())
         logger.info("Race resumed")
 
     def _stage(self, start_time: float) -> None:
@@ -329,7 +329,7 @@ class RaceStateManager:
         """
         event_broker = ctx.event_broker_ctx.get()
 
-        event_broker.trigger_background(SystemEvt.RACE_STAGE)
+        event_broker.trigger_background(server_evts.RaceStage())
         self._set_status(RaceStatus.STAGING)
         logger.info("Race scheduled for %d", start_time)
 
@@ -347,7 +347,7 @@ class RaceStateManager:
             msg = "Can not start a race with an unset schedule"
             raise RuntimeError(msg)
 
-        event_broker.trigger_background(SystemEvt.RACE_START)
+        event_broker.trigger_background(server_evts.RaceStart())
         self._set_status(RaceStatus.RACING)
         logger.info("Race started")
 
@@ -371,7 +371,7 @@ class RaceStateManager:
             msg = "Can not finish a race with an unset schedule"
             raise RuntimeError(msg)
 
-        event_broker.trigger_background(SystemEvt.RACE_FINISH)
+        event_broker.trigger_background(server_evts.RaceFinish())
 
         if self._format.overtime_sec > 0:
             self._program_handle = ctx.loop_ctx.get().call_later(
@@ -393,7 +393,7 @@ class RaceStateManager:
         """
         event_broker = ctx.event_broker_ctx.get()
 
-        event_broker.trigger_background(SystemEvt.RACE_STOP)
+        event_broker.trigger_background(server_evts.RaceStop())
         self._set_status(RaceStatus.STOPPED)
         self._program_handle = None
         logger.info("Race stopped")

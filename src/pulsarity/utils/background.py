@@ -12,11 +12,12 @@ from pulsarity.utils.asyncio import ensure_async
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable
 
+
 logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 
-_tasks = set()
+_tasks: set[asyncio.Task] = set()
 
 
 def add_background_task(

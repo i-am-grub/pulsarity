@@ -6,11 +6,13 @@ from typing import Generic
 
 from tortoise import fields
 
+from pulsarity._protobuf import database_pb2
 from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
+from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
 
 
-class RulesetField(_PulsarityBase, Generic[ATTRIBUTE]):
+class RulesetField(_PulsarityMessageBase, Generic[ATTRIBUTE]):
     """
     Unique fields for a race ruleset.
     """
@@ -27,6 +29,9 @@ class RulesetField(_PulsarityBase, Generic[ATTRIBUTE]):
     )
     name = fields.CharField(max_length=80)
     value = fields.JSONField[ATTRIBUTE]()
+
+    def to_message(self) -> database_pb2.Attribute:
+        return database_pb2.Attribute(name=self.name)
 
 
 class RaceFormat(_PulsarityBase):

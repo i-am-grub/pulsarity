@@ -9,15 +9,17 @@ from typing import TYPE_CHECKING, Generic
 
 from tortoise import fields
 
+from pulsarity._protobuf import database_pb2
 from pulsarity.database._base import ATTRIBUTE
-from pulsarity.database._base import PulsarityBase as _PulsarityBase
+from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
+from pulsarity.database._base import PulsarityRaceBase as _PulsarityRaceBase
 
 if TYPE_CHECKING:
     from pulsarity.database.round import Round
     from pulsarity.database.slot import Slot
 
 
-class HeatAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
+class HeatAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
     """
     Unique and stored individually stored values for each heat.
     """
@@ -35,8 +37,11 @@ class HeatAttribute(_PulsarityBase, Generic[ATTRIBUTE]):
     )
     value = fields.JSONField[ATTRIBUTE]()
 
+    def to_message(self) -> database_pb2.Attribute:
+        return database_pb2.Attribute(name=self.name)
 
-class Heat(_PulsarityBase):
+
+class Heat(_PulsarityRaceBase):
     """
     Database content for race heats
     """
@@ -63,3 +68,12 @@ class Heat(_PulsarityBase):
     """Whether the heat has been completed or not"""
     attributes: fields.ReverseRelation[HeatAttribute]
     """The attributes assigned to the heat"""
+
+    def to_message(self) -> database_pb2.Heat:
+        attrs = (attr.to_message() for attr in self.attributes)
+        return database_pb2.Heat(id=self.id, heat_num=self.heat_num, attributes=attrs)
+
+    @staticmethod
+    def iterable_to_message(iterable):
+        heats = (heat.to_message() for heat in iterable)
+        return database_pb2.Heats(heats=heats)

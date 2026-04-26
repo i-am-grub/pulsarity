@@ -3,40 +3,58 @@ Coverage tests for the EventBroker class
 """
 
 import asyncio
-import threading
+from typing import Iterable, TypedDict
 
 import pytest
 
 from pulsarity.events import EventBroker, SystemEvt
 from pulsarity.utils import background
+from pulsarity.events.server import (
+    system_event,
+    SystemEventData,
+    EvtPriority,
+    ServerStartup,
+)
+from pulsarity.database.permission import SystemDefaultPerms
 
 
-async def broker_subscriber(broker: EventBroker, check_values: list):
+@system_event
+class LowPriorityEvent(SystemEventData):
+    event_id = -1
+    priority = EvtPriority.LOW
+    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+
+
+@system_event
+class HighPriorityEvent(SystemEventData):
+    event_id = -2
+    priority = EvtPriority.HIGH
+    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+
+
+async def broker_subscriber(broker: EventBroker, test_values: Iterable[int]):
     """
     Event subscriber for tests
     """
 
-    num_values = len(check_values)
+    num_values = len(test_values)
     assert num_values != 0
 
-    num_processed = 0
+    idx = 0
     async for message in broker.subscribe():
-        assert message.data == check_values.pop(0)
-        num_processed += 1
+        assert message._id == test_values[idx]
+        idx += 1
 
-        if len(check_values) == 0:
+        if idx == num_values:
             break
     else:
         assert False
 
-    assert num_processed == num_values
-    assert len(check_values) == 0
-
 
 async def broker_publish_test(
     broker: EventBroker,
-    event_values: tuple[tuple],
-    test_values: list[dict],
+    event_values: Iterable[tuple[type[SystemEventData], int]],
+    test_values: Iterable[int],
     *,
     use_trigger: bool = False,
 ) -> None:
@@ -47,11 +65,12 @@ async def broker_publish_test(
     task = asyncio.create_task(coro)
     await asyncio.sleep(0)
 
-    for value in event_values:
+    for cls, id_ in event_values:
+        val = cls(_id=id_)
         if use_trigger:
-            await broker.trigger(*value)
+            await broker.trigger(val)
         else:
-            broker.publish(*value)
+            broker.publish(val)
 
     await task
 
@@ -63,29 +82,33 @@ async def test_single_event_handling():
     """
     broker = EventBroker()
 
-    events = [SystemEvt.PILOT_ADD]
-    values = [{"id": 1}]
-    event_values = tuple(zip(events, values))
+    input_order = ((LowPriorityEvent, 1),)
+    test_order = (1,)
 
-    await broker_publish_test(broker, event_values, values)
+    await broker_publish_test(broker, input_order, test_order)
 
 
 @pytest.mark.asyncio
-async def test_multi_event_handling():
+async def test_multi_event_priority():
     """
-    Tests publishing a multiple events to a client with priority
+    Tests publishing a multiple events to a client with
+    event priority
     """
     broker = EventBroker()
 
-    events = [SystemEvt.PILOT_ADD] * 3
-    values = [{"id": 1}] * 3
-    events.append(SystemEvt.RACE_START)
-    values.append({"id": 5})
-    event_values = tuple(zip(events, values))
+    evt_order = [LowPriorityEvent] * 3
+    id_order = list(range(3, 0, -1))
+    evt_order.append(HighPriorityEvent)
+    id_order.append(5)
+    input_order = zip(evt_order, id_order)
 
-    test_order = [{"id": 5}, {"id": 1}, {"id": 1}, {"id": 1}]
+    test_order = [5, *range(1, 4)]
 
-    await broker_publish_test(broker, event_values, test_order)
+    await broker_publish_test(broker, input_order, test_order)
+
+
+class CallbackData(TypedDict):
+    flag: asyncio.Event
 
 
 @pytest.mark.asyncio
@@ -96,52 +119,22 @@ async def test_event_async_callback():
 
     broker = EventBroker()
 
-    events = [SystemEvt.PILOT_ADD]
-    values = [{"id": 1}]
-    event_values = tuple(zip(events, values))
+    input_order = ((ServerStartup, 1),)
+    test_order = (1,)
 
     flag = asyncio.Event()
 
-    async def test_cb(flag: asyncio.Event, **_):
-        flag.set()
+    async def test_cb(data: CallbackData):
+
+        data["flag"].set()
 
     broker.register_event_callback(
-        test_cb, SystemEvt.PILOT_ADD, default_kwargs={"flag": flag}
+        test_cb, SystemEvt.STARTUP, default_kwargs={"flag": flag}
     )
 
     assert not flag.is_set()
 
-    await broker_publish_test(broker, event_values, values, use_trigger=True)
-
-    await background.shutdown(5)
-
-    assert flag.is_set()
-
-
-@pytest.mark.asyncio
-async def disable_test_event_sync_callback():
-    """
-    Test running callbacks upon a event triggering
-    """
-
-    broker = EventBroker()
-
-    events = [SystemEvt.PILOT_ADD]
-    values = [{"id": 1}]
-    event_values = tuple(zip(events, values))
-
-    flag = threading.Event()
-
-    def test_cb(flag: threading.Event, **_):
-        flag.set()
-
-    broker.register_event_callback(
-        test_cb, SystemEvt.PILOT_ADD, default_kwargs={"flag": flag}
-    )
-
-    assert not flag.is_set()
-
-    await broker_publish_test(broker, event_values, values, use_trigger=True)
+    await broker_publish_test(broker, input_order, test_order, use_trigger=True)
 
     await background.shutdown(5)
 
