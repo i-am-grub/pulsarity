@@ -28,7 +28,7 @@ dependencies = [
 
     # Upstream Dependencies
     "cffi==2.0.0", # argon, cryptography
-    "idna==3.11", # anyio, httpx
+    "idna==3.13", # anyio, httpx
     "argon2-cffi-bindings==25.1.0", # argon
     "pycparser==3.0", # cffi
     "h11==0.16.0", # hypercorn
