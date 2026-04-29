@@ -67,7 +67,7 @@ dev = [
     "pytest-randomly==4.0.1",
 
     # Linting
-    "mypy==1.20.1",
+    "mypy==1.20.2",
     "pylint==4.0.5",
     "types-protobuf==7.34.1.20260408",
 
