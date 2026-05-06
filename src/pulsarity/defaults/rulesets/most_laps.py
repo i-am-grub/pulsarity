@@ -20,7 +20,7 @@ from pulsarity.race.ruleset import (
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from pulsarity.interface.timer_manager import FullLapData
+    from pulsarity.interface.timer_interface import FullLapData
 
 
 class _MostLapsManager(LapsManager):

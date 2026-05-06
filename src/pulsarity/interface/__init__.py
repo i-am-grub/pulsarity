@@ -2,11 +2,6 @@
 Hardware Interfaces
 """
 
-from pulsarity.interface.timer_interface import (
-    Action,
-    BasicLapData,
-    BasicSignalData,
-    TimerSetting,
-)
+from pulsarity.interface.timer_interface import BasicLapData, BasicSignalData
 
-__all__ = ["Action", "BasicLapData", "BasicSignalData", "TimerSetting"]
+__all__ = ["BasicLapData", "BasicSignalData"]
