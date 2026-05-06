@@ -6,10 +6,12 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 import uuid
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from enum import Enum, auto, unique
+from functools import cached_property
 from typing import TYPE_CHECKING, ClassVar, Generic, NamedTuple, TypeVar
 
 from pulsarity import ctx
@@ -18,7 +20,10 @@ from pulsarity.utils import background
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-T = TypeVar("T", bound=int | str | bool | Enum)
+T = TypeVar("T", bound=int | float | str | bool | Enum)
+U = TypeVar("U", bound="NodeInterface")
+
+logger = logging.getLogger(__name__)
 
 
 class BasicSignalData(NamedTuple):
@@ -115,33 +120,17 @@ class FullLapData(NamedTuple):
         return TimerMode.PRIMARY
 
 
-@dataclass(frozen=True, slots=True)
-class TimerSetting(Generic[T]):
-    """
-    Interface settings
-    """
-
-    type_: type[T]
-    """The type of setting"""
-    callback: Callable[[int, T], None]
-    """The callback to associate with the setting"""
-
-
+@dataclass(slots=True)
 class NodeInterface:
     """
     Node for a timing interface
     """
 
-    class Meta:
-        """Node interface metadata"""
-
-        settings: ClassVar[dict[str, TimerSetting]] = []
-        """Individual node settings"""
-        actions: ClassVar[dict[str, Callable[[], None]]] = {}
-        """Individual node actions"""
+    actions: ClassVar[dict[str, Callable[[], None]]] = {}
+    """Individual node actions"""
 
 
-class TimerInterface(ABC):
+class TimerInterface(ABC, Generic[U]):
     """
     Protocol for defining how timers should be integrated
     into the server.
@@ -154,8 +143,6 @@ class TimerInterface(ABC):
         """Internal identifier"""
         display_name: ClassVar[str] = ""
         """Human readable identifier"""
-        settings: ClassVar[dict[str, TimerSetting]] = {}
-        """Interface settings"""
         actions: ClassVar[dict[str, Callable[[], None]]] = {}
         """Interface actions"""
 
@@ -167,7 +154,7 @@ class TimerInterface(ABC):
         self._task: asyncio.Task | None = None
         self._lap_queue = lap_queue
         self._signal_queue = signal_queue
-        self._nodes: dict[int, NodeInterface] = {}
+        self._nodes: dict[int, U] = {}
 
     @property
     def num_nodes(self) -> int:
@@ -175,6 +162,13 @@ class TimerInterface(ABC):
         Number of nodes set on the interface
         """
         return len(self._nodes)
+
+    @cached_property
+    def name(self) -> str:
+        """
+        Name of the worker for the interface instance
+        """
+        return f"{self.Meta.identifier}_{id(self)}_worker"
 
     def start(self) -> None:
         """
@@ -185,10 +179,11 @@ class TimerInterface(ABC):
         """
         if self._task is None:
             loop = ctx.loop_ctx.get()
-            name = f"{self.Meta.identifier}_{id(self)}_wrapper"
-            self._task = loop.create_task(self.worker, name=name)
+            logger.debug("Starting timer worker: %s", self.name)
+            self._task = loop.create_task(self.worker(), name=self.name)
         else:
-            msg = "Timer interface already started"
+            logger.debug("Timer worker {%s} already started", self.name)
+            msg = "Timer worker already started"
             raise RuntimeError(msg)
 
     async def shutdown(self) -> None:
@@ -196,18 +191,49 @@ class TimerInterface(ABC):
         Shutdown the worker coroutine.
         """
         if self._task is not None:
+            logger.debug("Stopping timer worker: %s", self.name)
             self._task.cancel()
             await self._task
+            logger.debug("Stopped timer worker: %s", self.name)
             self._task = None
         else:
             msg = "Worker task is not running"
             raise RuntimeError(msg)
+
+    def get_nodes_settings(self) -> dict[int, dict[str, T]]:
+        """
+        Get the current setting values for each node
+        """
+        settings: dict[int, dict[str, T]] = {}
+        for idx, node in self._nodes.items():
+            settings[idx] = {}
+            for field in fields(node):
+                settings[idx][field.name] = getattr(node, field.name)
+
+        return settings
+
+    def get_nodes_actions(self) -> dict[int, list[str]]:
+        """
+        Get the avalible actions for each node
+        """
+        actions: dict[int, list[str]] = {}
+        for idx, node in self._nodes.items():
+            actions[idx] = list(node.actions)
+
+        return actions
 
     @property
     @abstractmethod
     def connected(self) -> bool:
         """
         Connection status
+        """
+
+    @property
+    @abstractmethod
+    def settings(self) -> dict[str, T]:
+        """
+        Get the current setting values for the timing interface
         """
 
     @abstractmethod
@@ -310,7 +336,7 @@ class TimerInterfaceManager:
             race_manager.status_aware_signal_record(outgoing)
 
     @classmethod
-    def register(cls, interface: type[TimerInterface]) -> None:
+    def register(cls, interface: type[TimerInterface]) -> type[TimerInterface]:
         """
         Registers an interface type to be used by the system
 
