@@ -39,6 +39,8 @@ from pulsarity.webserver.websockets import ROUTES as WS_ROUTES
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
 
+    from tortoise.context import TortoiseContext
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,6 +53,7 @@ class ContextState(TypedDict):
     event_broker: EventBroker
     race_manager: RaceManager
     timer_manager: TimerInterfaceManager
+    database_ctx: TortoiseContext
 
 
 class ContextMiddleware:
@@ -74,7 +77,8 @@ class ContextMiddleware:
         timer_manager_token = ctx.timer_manager_ctx.set(state["timer_manager"])
 
         try:
-            await self.app(scope, receive, send)
+            with state["database_ctx"]:
+                await self.app(scope, receive, send)
 
         finally:
             ctx.loop_ctx.reset(loop_token)
@@ -269,11 +273,35 @@ async def lifespan(_app: Starlette):
 
     logger.info("Starting Pulsarity...")
 
+    db_ctx = await Tortoise.init(
+        {
+            "connections": config.config_manager.database.model_dump(),
+            "apps": {
+                "system": {
+                    "models": ["pulsarity.database"],
+                    "default_connection": "system_db",
+                },
+                "event": {
+                    "models": ["pulsarity.database"],
+                    "default_connection": "event_db",
+                },
+            },
+            "use_tz": False,
+            "timezone": "UTC",
+        },
+    )
+
+    await Tortoise.generate_schemas(True)
+    await setup_default_objects()
+
+    logger.debug("Database started, %s", json.dumps(tuple(Tortoise.apps)))
+
     state = ContextState(
         loop=asyncio.get_running_loop(),
         event_broker=EventBroker(),
         race_manager=RaceManager(),
         timer_manager=TimerInterfaceManager(),
+        database_ctx=db_ctx,
     )
 
     loop_token = ctx.loop_ctx.set(state["loop"])
@@ -303,8 +331,6 @@ async def server_starup_workflow() -> None:
     """
     Startup workflow
     """
-
-    await database_startup()
     defaults.import_all_submodules()
     ctx.timer_manager_ctx.get().start()
 
@@ -319,34 +345,6 @@ async def server_shutdown_workflow() -> None:
     await ctx.timer_manager_ctx.get().shutdown(5)
     await background.shutdown(5)
     await database_shutdown()
-
-
-async def database_startup() -> None:
-    """
-    Initialize the database
-    """
-    await Tortoise.init(
-        {
-            "connections": config.config_manager.database.model_dump(),
-            "apps": {
-                "system": {
-                    "models": ["pulsarity.database"],
-                    "default_connection": "system_db",
-                },
-                "event": {
-                    "models": ["pulsarity.database"],
-                    "default_connection": "event_db",
-                },
-            },
-            "use_tz": False,
-            "timezone": "UTC",
-        }
-    )
-
-    await Tortoise.generate_schemas(True)
-    await setup_default_objects()
-
-    logger.debug("Database started, %s", json.dumps(tuple(Tortoise.apps)))
 
 
 async def database_shutdown() -> None:
