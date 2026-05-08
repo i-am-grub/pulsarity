@@ -1,3 +1,4 @@
 [submodule "src/pulsarity/frontend"]
 	path = src/pulsarity/frontend
-	url = https://github.com/i-am-grub/pulsarity-frontend.git
+	url = git@github.com:i-am-grub/pulsarity-frontend.git
+	branch = vue-demo

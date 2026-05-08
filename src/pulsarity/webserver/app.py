@@ -6,7 +6,6 @@ import asyncio
 import contextlib
 import json
 import logging
-from asyncio import Event
 from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict
@@ -18,7 +17,7 @@ from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.cors import CORSMiddleware
-from starlette.routing import Mount, Route
+from starlette.routing import Mount
 from starlette.staticfiles import StaticFiles
 from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddleware
 from tortoise import Tortoise
@@ -32,7 +31,6 @@ from pulsarity.race.manager import RaceManager
 from pulsarity.utils import background, config
 from pulsarity.utils.crypto import generate_self_signed_cert
 from pulsarity.webserver._auth import PulsarityAuthBackend
-from pulsarity.webserver._wrapper import endpoint
 from pulsarity.webserver.http import ROUTES as HTTP_ROUTES
 from pulsarity.webserver.websockets import ROUTES as WS_ROUTES
 
@@ -109,7 +107,7 @@ def _generate_static_files_application(path: str) -> SPAStaticFiles:
     :return: The file serving application
     """
     return SPAStaticFiles(
-        directory=Path(files("pulsarity.frontend.src") / path),  # type: ignore
+        directory=Path(files("pulsarity.frontend") / path),  # type: ignore
         html=True,
     )
 
@@ -167,7 +165,10 @@ def generate_webserver_application() -> Starlette:
         Mount(path="/api", app=generate_api_application(), name="api"),
         Mount(
             path="/",
-            app=_generate_static_files_application("client"),
+            app=SPAStaticFiles(
+                directory=Path(files("pulsarity.frontend") / "dist"),  # type: ignore
+                html=True,
+            ),
             name="root",
         ),
     ]
@@ -177,47 +178,6 @@ def generate_webserver_application() -> Starlette:
         lifespan=lifespan,
         middleware=middleware,
     )
-
-
-def generate_setup_application(shudown_evt: Event) -> Starlette:
-    """
-    Generates the "first time setup" application with CORS middlesware
-
-    File serving app is mounted to the root of the domain (`/`) and the
-    api application is mounted to (`/api`)
-
-    :return: The webserver application
-    """
-    middleware = [
-        Middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_methods=["GET", "POST"],
-            allow_headers=["*"],
-        )
-    ]
-
-    @endpoint(requires_auth=False)
-    async def save_settings():
-        """
-        Validate setting data and save to config file
-        """
-        # pylint: disable=W0511
-        # TODO: Process setup info
-        await config.config_manager.write_config_to_file_async()
-        shudown_evt.set()
-
-    api_routes = [Route("/save", endpoint=save_settings, methods=["POST"])]
-    routes = [
-        Mount(path="/api", routes=api_routes, name="api"),
-        Mount(
-            path="/",
-            app=_generate_static_files_application("startup"),
-            name="root",
-        ),
-    ]
-
-    return Starlette(routes=routes, middleware=middleware)
 
 
 def generate_webserver_coroutine(
