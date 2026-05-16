@@ -4,7 +4,6 @@ Webserver Components
 
 import asyncio
 import contextlib
-import json
 import logging
 from asyncio import Event
 from importlib.resources import files
@@ -22,6 +21,8 @@ from starlette.routing import Mount, Route
 from starlette.staticfiles import StaticFiles
 from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddleware
 from tortoise import Tortoise
+from tortoise.context import TortoiseContext
+from tortoise.context import _current_context as db_context
 
 from pulsarity import ctx, defaults
 from pulsarity.database import setup_default_objects
@@ -32,14 +33,12 @@ from pulsarity.race.manager import RaceManager
 from pulsarity.utils import background, config
 from pulsarity.utils.crypto import generate_self_signed_cert
 from pulsarity.webserver._auth import PulsarityAuthBackend
-from pulsarity.webserver._wrapper import endpoint
 from pulsarity.webserver.http import ROUTES as HTTP_ROUTES
 from pulsarity.webserver.websockets import ROUTES as WS_ROUTES
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
 
-    from tortoise.context import TortoiseContext
 
 logger = logging.getLogger(__name__)
 
@@ -75,16 +74,17 @@ class ContextMiddleware:
         event_token = ctx.event_broker_ctx.set(state["event_broker"])
         race_manager_token = ctx.race_manager_ctx.set(state["race_manager"])
         timer_manager_token = ctx.timer_manager_ctx.set(state["timer_manager"])
+        db_context_token = db_context.set(state["database_ctx"])
 
         try:
-            with state["database_ctx"]:
-                await self.app(scope, receive, send)
+            await self.app(scope, receive, send)
 
         finally:
             ctx.loop_ctx.reset(loop_token)
             ctx.event_broker_ctx.reset(event_token)
             ctx.race_manager_ctx.reset(race_manager_token)
             ctx.timer_manager_ctx.reset(timer_manager_token)
+            db_context.reset(db_context_token)
 
 
 class SPAStaticFiles(StaticFiles):
@@ -266,58 +266,59 @@ def generate_webserver_coroutine(
 @contextlib.asynccontextmanager
 async def lifespan(_app: Starlette):
     """
-    Startup and shutdown procedures for the webserver
-
-    :param _app: The application
+    Startup and shutdown procedures for the webserver. The states created
+    during the startup phase of the lifespan can be propagated to the
+    request via the `ContextState` dictionary.
     """
 
     logger.info("Starting Pulsarity...")
 
-    db_ctx = await Tortoise.init(
-        {
-            "connections": config.config_manager.database.model_dump(),
-            "apps": {
-                "system": {
-                    "models": ["pulsarity.database"],
-                    "default_connection": "system_db",
+    async with TortoiseContext() as db_ctx:
+        await db_ctx.init(
+            {
+                "connections": config.config_manager.database.model_dump(),
+                "apps": {
+                    "system": {
+                        "models": ["pulsarity.database"],
+                        "default_connection": "system_db",
+                    },
+                    "event": {
+                        "models": ["pulsarity.database"],
+                        "default_connection": "event_db",
+                    },
                 },
-                "event": {
-                    "models": ["pulsarity.database"],
-                    "default_connection": "event_db",
-                },
-            },
-            "use_tz": False,
-            "timezone": "UTC",
-        },
-    )
+                "use_tz": False,
+                "timezone": "UTC",
+            }
+        )
+        await db_ctx.generate_schemas(True)
 
-    await Tortoise.generate_schemas(True)
-    await setup_default_objects()
+        await setup_default_objects()
 
-    logger.debug("Database started, %s", json.dumps(tuple(Tortoise.apps)))
+        logger.debug("Databases started: %s", tuple(Tortoise.apps))
 
-    state = ContextState(
-        loop=asyncio.get_running_loop(),
-        event_broker=EventBroker(),
-        race_manager=RaceManager(),
-        timer_manager=TimerInterfaceManager(),
-        database_ctx=db_ctx,
-    )
+        state = ContextState(
+            loop=asyncio.get_running_loop(),
+            event_broker=EventBroker(),
+            race_manager=RaceManager(),
+            timer_manager=TimerInterfaceManager(),
+            database_ctx=db_ctx,
+        )
 
-    loop_token = ctx.loop_ctx.set(state["loop"])
-    event_token = ctx.event_broker_ctx.set(state["event_broker"])
-    race_manager_token = ctx.race_manager_ctx.set(state["race_manager"])
-    timer_manager_token = ctx.timer_manager_ctx.set(state["timer_manager"])
+        loop_token = ctx.loop_ctx.set(state["loop"])
+        event_token = ctx.event_broker_ctx.set(state["event_broker"])
+        race_manager_token = ctx.race_manager_ctx.set(state["race_manager"])
+        timer_manager_token = ctx.timer_manager_ctx.set(state["timer_manager"])
 
-    await server_starup_workflow()
+        await server_starup_workflow()
 
-    logger.info("Pulsarity startup completed...")
+        logger.info("Pulsarity startup completed...")
 
-    yield state
+        yield state
 
-    logger.info("Stopping Pulsarity...")
+        logger.info("Stopping Pulsarity...")
 
-    await server_shutdown_workflow()
+        await server_shutdown_workflow()
 
     ctx.loop_ctx.reset(loop_token)
     ctx.event_broker_ctx.reset(event_token)
@@ -344,7 +345,6 @@ async def server_shutdown_workflow() -> None:
     await ctx.event_broker_ctx.get().trigger(ServerShutdown())
     await ctx.timer_manager_ctx.get().shutdown(5)
     await background.shutdown(5)
-    await database_shutdown()
 
 
 async def database_shutdown() -> None:
