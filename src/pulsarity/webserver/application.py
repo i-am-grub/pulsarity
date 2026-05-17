@@ -5,19 +5,18 @@ Webserver Components
 import asyncio
 import contextlib
 import logging
-from asyncio import Event
 from importlib.resources import files
 from pathlib import Path
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, ClassVar, TypedDict
 
 from hypercorn.asyncio import serve
-from hypercorn.config import Config
+from hypercorn.config import Config as HypercornConfig
 from hypercorn.middleware import HTTPToHTTPSRedirectMiddleware
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
 from starlette.middleware.cors import CORSMiddleware
-from starlette.routing import Mount, Route
+from starlette.routing import Mount
 from starlette.staticfiles import StaticFiles
 from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddleware
 from tortoise import Tortoise
@@ -33,7 +32,6 @@ from pulsarity.race.manager import RaceManager
 from pulsarity.utils import background, config
 from pulsarity.utils.crypto import generate_self_signed_cert
 from pulsarity.webserver._auth import PulsarityAuthBackend
-from pulsarity.webserver._wrapper import endpoint
 from pulsarity.webserver.http import ROUTES as HTTP_ROUTES
 from pulsarity.webserver.websockets import ROUTES as WS_ROUTES
 
@@ -63,11 +61,13 @@ class ContextMiddleware:
 
     __slots__ = ("app",)
 
+    _context_request_types: ClassVar[set[str]] = {"http", "websocket"}
+
     def __init__(self, app) -> None:
         self.app = app
 
     async def __call__(self, scope, receive, send) -> None:
-        if scope["type"] not in ("http", "websocket"):
+        if scope["type"] not in self._context_request_types:
             return await self.app(scope, receive, send)
 
         state: ContextState = scope["state"]
@@ -103,18 +103,6 @@ class SPAStaticFiles(StaticFiles):
         return full_path, stat_result
 
 
-def _generate_static_files_application(path: str) -> SPAStaticFiles:
-    """
-    Generates the file serving application for SPAs.
-
-    :return: The file serving application
-    """
-    return SPAStaticFiles(
-        directory=Path(files("pulsarity.frontend.src") / path),  # type: ignore
-        html=True,
-    )
-
-
 def generate_api_application() -> Starlette:
     """
     Generates the api and timing application with session and
@@ -143,7 +131,7 @@ def generate_api_application() -> Starlette:
     )
 
 
-def generate_webserver_application() -> Starlette:
+def generate_full_application() -> Starlette:
     """
     Generates the Pulsarity application with CORS middlesware and
     routes to the sub application.
@@ -166,59 +154,26 @@ def generate_webserver_application() -> Starlette:
 
     routes = [
         Mount(path="/api", app=generate_api_application(), name="api"),
-        Mount(
-            path="/",
-            app=_generate_static_files_application("client"),
-            name="root",
-        ),
     ]
+
+    try:
+        spa_app = SPAStaticFiles(
+            directory=Path(files("pulsarity") / "frontend"),  # type: ignore
+            html=True,
+        )
+
+    except RuntimeError:
+        msg = "Servable front-end files were not found at pulsartiy.frontend. The application will run headless."
+        logger.warning(msg)
+
+    else:
+        routes.append(Mount(path="/", app=spa_app, name="root"))
 
     return Starlette(
         routes=routes,
         lifespan=lifespan,
         middleware=middleware,
     )
-
-
-def generate_setup_application(shudown_evt: Event) -> Starlette:
-    """
-    Generates the "first time setup" application with CORS middlesware
-
-    File serving app is mounted to the root of the domain (`/`) and the
-    api application is mounted to (`/api`)
-
-    :return: The webserver application
-    """
-    middleware = [
-        Middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_methods=["GET", "POST"],
-            allow_headers=["*"],
-        )
-    ]
-
-    @endpoint(requires_auth=False)
-    async def save_settings():
-        """
-        Validate setting data and save to config file
-        """
-        # pylint: disable=W0511
-        # TODO: Process setup info
-        await config.config_manager.write_config_to_file_async()
-        shudown_evt.set()
-
-    api_routes = [Route("/save", endpoint=save_settings, methods=["POST"])]
-    routes = [
-        Mount(path="/api", routes=api_routes, name="api"),
-        Mount(
-            path="/",
-            app=_generate_static_files_application("startup"),
-            name="root",
-        ),
-    ]
-
-    return Starlette(routes=routes, middleware=middleware)
 
 
 def generate_webserver_coroutine(
@@ -233,7 +188,7 @@ def generate_webserver_coroutine(
     :return: Webserver coroutine
     """
     configs = config.config_manager
-    webserver_config = Config()
+    webserver_config = HypercornConfig()
 
     host = configs.webserver.host
 

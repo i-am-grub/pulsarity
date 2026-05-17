@@ -16,7 +16,6 @@ from pulsarity.webserver import application
 
 logger = logging.getLogger(__name__)
 _shutdown_event = asyncio.Event()
-_shutdown_setup_event = asyncio.Event()
 
 
 def _setup_logging():
@@ -38,19 +37,6 @@ def _signal_shutdown(*_) -> None:
     """
     _shutdown_event.set()
     logger.debug("Server shutdown signaled")
-
-
-async def _setup_shutdown() -> None:
-    """
-    Await for the first shutdown event of the first
-    time setup application to be set
-    """
-
-    waiters = [
-        asyncio.create_task(_shutdown_event.wait()),
-        asyncio.create_task(_shutdown_setup_event.wait()),
-    ]
-    await asyncio.wait(waiters, return_when=asyncio.FIRST_COMPLETED)
 
 
 async def _webserver_shutdown() -> None:
@@ -85,23 +71,7 @@ async def _app() -> None:
         loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
         loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
-    if not config.config_manager.from_save:
-        logger.info("Starting first time setup application")
-        setup_app = application.generate_setup_application(_shutdown_setup_event)
-        coro = application.generate_webserver_coroutine(setup_app, _setup_shutdown)
-        await coro
-        logger.info("Stopped first time setup")
-
-    if _shutdown_event.is_set():
-        return
-
-    try:
-        app = application.generate_webserver_application()
-    except RuntimeError:
-        msg = "Front-end files not available. The front-end may need to be built before proceeding."
-        logger.warning(msg)
-        return
-
+    app = application.generate_full_application()
     coro = application.generate_webserver_coroutine(app, _webserver_shutdown)
     await coro
 
