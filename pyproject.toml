@@ -56,6 +56,10 @@ pulsarity = "pulsarity.__main__:main"
 requires = ["hatchling==1.29.0", "versioningit==3.3.0"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/pulsarity"]
+exclude = [".gitignore"]
+
 [tool.hatch.version]
 source = "versioningit"
 
