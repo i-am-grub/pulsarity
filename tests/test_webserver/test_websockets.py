@@ -11,7 +11,7 @@ from httpx import AsyncClient
 from httpx_ws.transport import ASGIWebSocketTransport
 
 from pulsarity._protobuf import http_pb2, websocket_pb2
-from pulsarity.webserver import app
+from pulsarity.webserver import application
 
 
 @pytest.mark.asyncio
@@ -19,7 +19,7 @@ async def test_server_websocket_unauth():
     """
     Test accessing a websocket route without being logged in
     """
-    transport = ASGIWebSocketTransport(app=app.generate_api_application())
+    transport = ASGIWebSocketTransport(app=application.generate_api_application())
     async with AsyncClient(transport=transport, base_url="https://localhost") as client:
         with pytest.raises(httpx_ws.WebSocketDisconnect):
             async with httpx_ws.aconnect_ws("/ws", client):
@@ -35,7 +35,7 @@ async def test_server_websocket_auth(user_creds: tuple[str, str]):
     evt.uuid = uuid.uuid4().bytes
     evt.event_id = websocket_pb2.EVENT_HEARTBEAT
 
-    transport = ASGIWebSocketTransport(app=app.generate_api_application())
+    transport = ASGIWebSocketTransport(app=application.generate_api_application())
     async with AsyncClient(transport=transport, base_url="https://localhost") as client:
         message = http_pb2.LoginRequest()
         message.username = user_creds[0]
