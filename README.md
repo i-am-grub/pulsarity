@@ -37,6 +37,13 @@ command in the root of the repo:
 uv sync
 ```
 
+To install the additional development dependencies the
+following command can be used:
+
+```
+uv sync ---group dev
+```
+
 To start the default webserver, the following command can
 be used:
 

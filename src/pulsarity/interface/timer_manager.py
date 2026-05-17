@@ -182,8 +182,7 @@ class TimerInterfaceManager:
         Registers an interface type to be used by the system
 
         :param interface: The
-        :raises RuntimeError: Interface with matching identifier has already been
-        registered
+        :raises RuntimeError: Interface with matching identifier has already been registered
         """
 
         if isinstance(interface, TimerInterface):

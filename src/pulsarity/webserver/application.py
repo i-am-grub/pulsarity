@@ -163,7 +163,10 @@ def generate_full_application() -> Starlette:
         )
 
     except RuntimeError:
-        msg = "Servable front-end files were not found at pulsartiy.frontend. The application will run headless."
+        msg = (
+            "Servable front-end files were not found at pulsartiy.frontend."
+            "The application will run headless."
+        )
         logger.warning(msg)
 
     else:
