@@ -1,6 +1,5 @@
 [project]
 name = "pulsarity"
-version = "0.1.0-dev"
 description = "A demonstrator project for a RotorHazard variant"
 authors = [
     { name = "Bryce Gruber", email = "dev@brycegruber.com"}
@@ -14,6 +13,7 @@ classifiers = [
     "Framework :: AsyncIO",
     "Programming Language :: Python :: 3.14"
 ]
+dynamic = ["version"]
 
 dependencies = [
     # Main dependencies
@@ -53,8 +53,16 @@ pgsql = [ "asyncpg==0.31.0" ]
 pulsarity = "pulsarity.__main__:main"
 
 [build-system]
-requires = ["uv_build==0.11.3"]
-build-backend = "uv_build"
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.uv-dynamic-versioning]
+vcs = "git"
+style = "pep440"
+bump = true
 
 [dependency-groups]
 dev = [
