@@ -53,16 +53,19 @@ pgsql = [ "asyncpg==0.31.0" ]
 pulsarity = "pulsarity.__main__:main"
 
 [build-system]
-requires = ["hatchling", "uv-dynamic-versioning"]
+requires = ["hatchling==1.29.0", "versioningit==3.3.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-source = "uv-dynamic-versioning"
+source = "versioningit"
 
-[tool.uv-dynamic-versioning]
-vcs = "git"
-style = "pep440"
-bump = true
+[tool.versioningit.vcs]
+method = "git"
+match = ["v*"]
+default-tag = "0.0.0"
+
+[tool.versioningit.next-version]
+method = "minor-release"
 
 [dependency-groups]
 dev = [
