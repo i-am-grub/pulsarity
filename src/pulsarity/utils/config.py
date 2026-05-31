@@ -65,6 +65,9 @@ class _WebserverConfig:
 
     @property
     def using_ssl(self):
+        """
+        Property defining if ssl is expected to be used based on the configuration file data
+        """
         return self.key_file is not None and self.cert_file is not None
 
 
