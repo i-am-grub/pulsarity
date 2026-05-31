@@ -24,7 +24,7 @@ dependencies = [
     "argon2-cffi==25.1.0",
     "tortoise-orm==1.1.7",
     "anyio==4.13.0",
-    "protobuf==7.34.1",
+    "protobuf==7.35.0",
 
     # Upstream Dependencies
     "cffi==2.0.0", # argon, cryptography
