@@ -9,6 +9,9 @@ import os
 import signal
 import sys
 
+from granian.log import LogLevels
+from granian.server.embed import Server
+
 import pulsarity
 from pulsarity.events.client import ClientServerRestart, ClientServerShutdown
 from pulsarity.utils import config
@@ -39,29 +42,31 @@ def _signal_shutdown(*_) -> None:
     logger.debug("Server shutdown signaled")
 
 
-async def _webserver_shutdown() -> None:
+def _generate_server() -> Server:
     """
-    Await for the first shutdown event of the
-    webserver application to be set
+    Package the Pulsarity application into a Granian server
     """
+    configs = config.config_manager
 
-    waiters = [
-        asyncio.create_task(ClientServerRestart.restart_evt.wait()),
-        asyncio.create_task(ClientServerShutdown.shutdown_evt.wait()),
-        asyncio.create_task(_shutdown_event.wait()),
-    ]
-    await asyncio.wait(waiters, return_when=asyncio.FIRST_COMPLETED)
+    app = application.generate_full_application()
+
+    return Server(
+        app,
+        address=configs.webserver.host,
+        port=configs.webserver.port,
+        interface="asgi",
+        log_enabled=True,
+        log_level=LogLevels.info,
+        ssl_key=configs.webserver.key_file,
+        ssl_cert=configs.webserver.cert_file,
+        ssl_key_password=configs.webserver.key_password,
+        ssl_ca=configs.webserver.ca_cert_file,
+    )
 
 
-async def _app() -> None:
+async def _server() -> None:
     """
-    Run the Pulsarity applications
-
-    A first time setup application will be initally served if the
-    config file is not present or parsable.
-
-    The main application will be served after the first time setup
-    check/setup
+    The Pulsarity webserver coroutine.
     """
     if sys.platform == "win32":
         signal.signal(signal.Signals.SIGINT, _signal_shutdown)
@@ -71,9 +76,24 @@ async def _app() -> None:
         loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
         loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
-    app = application.generate_full_application()
-    coro = application.generate_webserver_coroutine(app, _webserver_shutdown)
-    await coro
+    server = _generate_server()
+
+    async with asyncio.TaskGroup() as tg:
+        tg.create_task(server.serve())
+
+        events: list[asyncio.Future] = [
+            asyncio.create_task(ClientServerRestart.restart_evt.wait()),
+            tg.create_task(ClientServerShutdown.shutdown_evt.wait()),
+            tg.create_task(_shutdown_event.wait()),
+        ]
+
+        pending: set[asyncio.Future]
+        _, pending = await asyncio.wait(events, return_when=asyncio.FIRST_COMPLETED)
+
+        for task in pending:
+            task.cancel()
+
+        server.stop()
 
 
 def main() -> None:
@@ -83,7 +103,7 @@ def main() -> None:
     _setup_logging()
     logger.info("Server version: %s", pulsarity.__version__)
 
-    asyncio.run(_app())
+    asyncio.run(_server())
 
     if ClientServerShutdown.shutdown_evt.is_set():
         return
