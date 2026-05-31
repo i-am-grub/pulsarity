@@ -83,12 +83,11 @@ async def _server() -> None:
             tg.create_task(_shutdown_event.wait()),
         ]
 
-        pending: set[asyncio.Future]
-        _, pending = await asyncio.wait(events, return_when=asyncio.FIRST_COMPLETED)
+        await asyncio.wait(events, return_when=asyncio.FIRST_COMPLETED)
 
         logger.info("Server shutdown signaled...")
 
-        for task in pending:
+        for task in events:
             task.cancel()
 
         server.stop()
@@ -106,8 +105,7 @@ def main() -> None:
 
     if ClientServerRestart.restart_evt.is_set():
         logger.info("Automatically rebooting server")
-        args = [sys.executable, "-m", "pulsarity", *sys.argv]
-        os.execv(sys.executable, args)  # noqa: S606
+        os.execv(sys.executable, [sys.executable, *sys.argv])  # noqa: S606
 
 
 if __name__ == "__main__":
