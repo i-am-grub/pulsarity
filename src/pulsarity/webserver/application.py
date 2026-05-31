@@ -7,11 +7,8 @@ import contextlib
 import logging
 from importlib.resources import files
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar, TypedDict
+from typing import ClassVar, TypedDict
 
-from hypercorn.asyncio import serve
-from hypercorn.config import Config as HypercornConfig
-from hypercorn.middleware import HTTPToHTTPSRedirectMiddleware
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
@@ -30,14 +27,9 @@ from pulsarity.events.server import ServerShutdown, ServerStartup
 from pulsarity.interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.manager import RaceManager
 from pulsarity.utils import background, config
-from pulsarity.utils.crypto import generate_self_signed_cert
 from pulsarity.webserver._auth import PulsarityAuthBackend
 from pulsarity.webserver.http import ROUTES as HTTP_ROUTES
 from pulsarity.webserver.websockets import ROUTES as WS_ROUTES
-
-if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine
-
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +108,7 @@ def generate_api_application() -> Starlette:
         Middleware(
             SessionMiddleware,
             store=CookieStore(secret_key=configs.secrets.secret_key),
-            cookie_https_only=configs.webserver.force_redirects,
+            cookie_https_only=configs.webserver.using_ssl,
             rolling=True,
             lifetime=60 * 30,
             cookie_same_site="strict",
@@ -177,49 +169,6 @@ def generate_full_application() -> Starlette:
         lifespan=lifespan,
         middleware=middleware,
     )
-
-
-def generate_webserver_coroutine(
-    app: Starlette, shutdown_trigger: Callable | None = None
-) -> Coroutine[None, None, None]:
-    """
-    An awaitable task for the application deployed with a hypercorn ASGI server.
-
-    This task is configured by reading parameters from the pulsarity config file
-
-    :param app: Application to use for the webserver, defaults to None
-    :return: Webserver coroutine
-    """
-    configs = config.config_manager
-    webserver_config = HypercornConfig()
-
-    host = configs.webserver.host
-
-    port = configs.webserver.http_port
-    webserver_config.insecure_bind = [f"{host}:{port}"]
-
-    s_port = configs.webserver.https_port
-    secure_bind = [f"{host}:{s_port}"]
-    webserver_config.bind = secure_bind
-
-    key_file = configs.webserver.key_file
-    cert_file = configs.webserver.cert_file
-
-    if not (key_file.is_file() and cert_file.is_file()):
-        generate_self_signed_cert(key_file, cert_file)
-
-    webserver_config.keyfile = str(key_file)
-    webserver_config.certfile = str(cert_file)
-
-    ca_cert_file = configs.webserver.ca_cert_file
-    webserver_config.ca_certs = None if ca_cert_file is None else str(ca_cert_file)
-
-    webserver_config.keyfile_password = configs.webserver.key_password
-
-    if configs.webserver.force_redirects:
-        app = HTTPToHTTPSRedirectMiddleware(app, secure_bind[0])  # type: ignore
-
-    return serve(app, webserver_config, shutdown_trigger=shutdown_trigger)  # type: ignore
 
 
 @contextlib.asynccontextmanager

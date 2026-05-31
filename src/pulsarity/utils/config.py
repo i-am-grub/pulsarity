@@ -34,6 +34,10 @@ def _parse_types(params: list[tuple[str, Any]]):
             vals[key] = str(val)
         elif isinstance(val, datetime):
             vals[key] = val.isoformat()
+        else:
+            vals[key] = val
+
+    return vals
 
 
 @dataclass
@@ -45,20 +49,26 @@ class _SecretsConfig:
 
 @dataclass
 class _WebserverConfig:
-    host: str = "localhost"
-    http_port: int = 5000
-    https_port: int = 5443
-    force_redirects: bool = False
-    key_file: Path = field(default_factory=partial(Path, "key.pem"))
+    host: str = "127.0.0.1"
+    port: int = 5000
+    key_file: Path | None = None
     key_password: str | None = None
-    cert_file: Path = field(default_factory=partial(Path, "cert.pem"))
+    cert_file: Path | None = None
     ca_cert_file: Path | None = None
 
     def __post_init__(self):
-        self.key_file = Path(self.key_file)
-        self.cert_file = Path(self.cert_file)
-        if self.ca_cert_file is not None:
-            self.ca_cert_file = Path(self.ca_cert_file)
+        self.key_file = Path(self.key_file) if self.key_file is not None else None
+        self.cert_file = Path(self.cert_file) if self.cert_file is not None else None
+        self.ca_cert_file = (
+            Path(self.ca_cert_file) if self.ca_cert_file is not None else None
+        )
+
+    @property
+    def using_ssl(self):
+        """
+        Property defining if ssl is expected to be used based on the configuration file data
+        """
+        return self.key_file is not None and self.cert_file is not None
 
 
 @dataclass
@@ -137,7 +147,8 @@ class PulsarityConfig:
         """
         try:
             with filepath.open("rb") as file:
-                config = cls(**json.load(file))
+                data = json.load(file)
+                config = cls(**data)
                 config.from_save = True
                 return config
 
@@ -146,8 +157,10 @@ class PulsarityConfig:
             return cls()
 
         except FileNotFoundError:
-            logger.info("Config file not found. Loading defaults")
-            return cls()
+            logger.info("Config file not found. Creating default and file.")
+            config_file = cls()
+            config_file.write_config_to_file()
+            return config_file
 
     @property
     def from_save(self) -> bool:
