@@ -24,7 +24,7 @@ def generate_default_config() -> dict:
 
     return {
         "version": 1,
-        "disable_existing_loggers": True,
+        "disable_existing_loggers": False,
         "formatters": {
             "standard": {"format": "%(asctime)s [%(levelname)s]: %(message)s"},
             "detailed": {
@@ -61,6 +61,11 @@ def generate_default_config() -> dict:
         },
         "loggers": {
             "pulsarity": {
+                "handlers": ["queue_handler"],
+                "level": "INFO",
+                "propagate": False,
+            },
+            "_granian": {
                 "handlers": ["queue_handler"],
                 "level": "INFO",
                 "propagate": False,

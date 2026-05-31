@@ -55,6 +55,7 @@ class _WebserverConfig:
     key_password: str | None = None
     cert_file: Path | None = None
     ca_cert_file: Path | None = None
+    origins: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         self.key_file = Path(self.key_file) if self.key_file is not None else None
