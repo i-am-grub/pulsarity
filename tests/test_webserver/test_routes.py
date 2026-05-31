@@ -151,14 +151,14 @@ async def test_get_pilot(authed_client: AsyncClient):
     """
     await Pilot.bulk_create([Pilot(callsign="foo"), Pilot(callsign="bar")])
 
-    response = await authed_client.get("/pilots/1", headers=header)
+    response = await authed_client.get("/pilots/1")
     assert response.status_code == 200
 
     pilot = database_pb2.Pilot.FromString(response.content)
     assert pilot.id == 1
     assert pilot.display_callsign == "foo"
 
-    response = await authed_client.get("/pilots/2", headers=header)
+    response = await authed_client.get("/pilots/2")
     assert response.status_code == 200
 
     pilot = database_pb2.Pilot.FromString(response.content)

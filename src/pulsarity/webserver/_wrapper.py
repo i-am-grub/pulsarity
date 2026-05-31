@@ -218,36 +218,44 @@ async def _process_request(
     if val_models.request is not None:
         content_type = request.headers.get("content-type")
         if content_type != "application/x-protobuf":
-            raise HTTPException(status_code=415)
+            detail = "Headers for protocol buffers were not included"
+            raise HTTPException(415, detail)
 
         try:
             data = await request.body()
             kwargs["request"] = val_models.request.from_protobuf(data)
         except DecodeError as ex:
-            raise HTTPException(status_code=400) from ex
+            detail = "Unable to decode protocol buffer data"
+            raise HTTPException(400, detail) from ex
         except ValueError as ex:
-            raise HTTPException(status_code=422) from ex
+            detail = "Request data failed validation"
+            raise HTTPException(422, detail) from ex
 
     if val_models.query is not None:
         try:
             kwargs["query"] = val_models.query(**request.query_params)
         except TypeError as ex:
-            raise HTTPException(status_code=400) from ex
+            detail = "Query parameter data used improper types"
+            raise HTTPException(400, detail) from ex
         except ValueError as ex:
-            raise HTTPException(status_code=422) from ex
+            detail = "Query parameter data failed validation"
+            raise HTTPException(422, detail) from ex
 
     if val_models.path is not None:
         try:
             kwargs["path"] = val_models.path(**request.path_params)
         except TypeError as ex:
-            raise HTTPException(status_code=400) from ex
+            detail = "Request path data used improper types"
+            raise HTTPException(400, detail) from ex
         except ValueError as ex:
-            raise HTTPException(status_code=422) from ex
+            detail = "Request path data failed validation"
+            raise HTTPException(422, detail) from ex
 
     try:
         endpoint_result = await ensure_async(func, **kwargs)
     except ValueError as ex:
-        raise HTTPException(status_code=500) from ex
+        detail = "A server errored occured while processing the request"
+        raise HTTPException(500, detail) from ex
 
     if isinstance(endpoint_result, Response):
         return endpoint_result
