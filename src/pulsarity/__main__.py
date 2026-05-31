@@ -9,6 +9,7 @@ import os
 import signal
 import sys
 
+from granian.constants import Interfaces
 from granian.log import LogLevels
 from granian.server.embed import Server
 
@@ -54,7 +55,7 @@ def _generate_server() -> Server:
         app,
         address=configs.webserver.host,
         port=configs.webserver.port,
-        interface="asgi",
+        interface=Interfaces.ASGI,
         log_enabled=True,
         log_level=LogLevels.info,
         ssl_key=configs.webserver.key_file,

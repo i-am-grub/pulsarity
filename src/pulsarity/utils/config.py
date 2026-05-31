@@ -181,11 +181,6 @@ class PulsarityConfig:
         """
         self.general.last_modified_time = datetime.now()
 
-        print(self)
-        print(self.database)
-
-        print(asdict(self, dict_factory=_parse_types))
-
         with filepath.open("w", encoding="utf-8") as file:
             json.dump(asdict(self, dict_factory=_parse_types), file, indent=4)
 
