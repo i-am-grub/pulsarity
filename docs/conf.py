@@ -56,3 +56,9 @@ autodoc_typehints = "description"
 autodoc_typehints_description_target = "all"
 autodoc_typehints_format = "short"
 autosummary_generate = True
+
+
+# -- MySt  ---------------------------------------
+# https://myst-parser.readthedocs.io/en/stable/syntax/optional.html#syntax-extensions
+
+myst_enable_extensions = ["alert"]
