@@ -37,7 +37,7 @@ def _generate_server() -> Server:
     configs = config.config_manager
 
     app = application.generate_pulsarity_application()
-    app = CORSMiddleware(
+    app_with_cors = CORSMiddleware(
         app,
         allow_origins=configs.webserver.origins,
         allow_methods=("GET", "POST"),
@@ -45,7 +45,7 @@ def _generate_server() -> Server:
     )
 
     return Server(
-        app,
+        app_with_cors,
         address=configs.webserver.host,
         port=configs.webserver.port,
         interface=Interfaces.ASGI,
