@@ -12,7 +12,6 @@ from typing import ClassVar, TypedDict
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
-from starlette.middleware.cors import CORSMiddleware
 from starlette.routing import Mount
 from starlette.staticfiles import StaticFiles
 from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddleware
@@ -123,7 +122,7 @@ def generate_api_application() -> Starlette:
     )
 
 
-def generate_full_application() -> Starlette:
+def generate_pulsarity_application() -> Starlette:
     """
     Generates the Pulsarity application with CORS middlesware and
     routes to the sub application.
@@ -135,12 +134,6 @@ def generate_full_application() -> Starlette:
     """
 
     middleware = [
-        Middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_methods=["GET", "POST"],
-            allow_headers=["*"],
-        ),
         Middleware(ContextMiddleware),
     ]
 

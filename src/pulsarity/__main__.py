@@ -12,6 +12,7 @@ import sys
 from granian.constants import Interfaces
 from granian.log import LogLevels
 from granian.server.embed import Server
+from starlette.middleware.cors import CORSMiddleware
 
 import pulsarity
 from pulsarity.events.client import ClientServerRestart, ClientServerShutdown
@@ -49,7 +50,13 @@ def _generate_server() -> Server:
     """
     configs = config.config_manager
 
-    app = application.generate_full_application()
+    app = application.generate_pulsarity_application()
+    app = CORSMiddleware(
+        app,
+        allow_origins=configs.webserver.origins,
+        allow_methods=("GET", "POST"),
+        allow_headers=("Authorization", "Content-Type"),
+    )
 
     return Server(
         app,
