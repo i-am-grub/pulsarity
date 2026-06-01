@@ -7,6 +7,7 @@ import logging
 import os
 import signal
 import sys
+from typing import TYPE_CHECKING
 
 from granian.constants import Interfaces
 from granian.log import LogLevels
@@ -17,6 +18,9 @@ import pulsarity
 from pulsarity.events.client import ClientServerRestart, ClientServerShutdown
 from pulsarity.utils import config
 from pulsarity.webserver import application
+
+if TYPE_CHECKING:
+    from starlette.types import ASGIApp
 
 logger = logging.getLogger(__name__)
 _shutdown_event = asyncio.Event()
@@ -36,8 +40,9 @@ def _generate_server() -> Server:
     """
     configs = config.config_manager
 
-    app = application.generate_pulsarity_application()
-    app_with_cors = CORSMiddleware(
+    app: ASGIApp = application.generate_pulsarity_application()
+
+    app = CORSMiddleware(
         app,
         allow_origins=configs.webserver.origins,
         allow_methods=("GET", "POST"),
@@ -45,7 +50,7 @@ def _generate_server() -> Server:
     )
 
     return Server(
-        app_with_cors,
+        app,
         address=configs.webserver.host,
         port=configs.webserver.port,
         interface=Interfaces.ASGI,
