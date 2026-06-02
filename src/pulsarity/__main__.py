@@ -7,6 +7,7 @@ import logging
 import os
 import signal
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from granian.constants import Interfaces
@@ -102,6 +103,7 @@ def main() -> None:
     """
     Run the default Pulsarity server
     """
+    Path("logs").mkdir(exist_ok=True)
 
     asyncio.run(_server())
 
