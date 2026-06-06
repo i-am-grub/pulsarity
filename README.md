@@ -29,7 +29,7 @@ current release of Debian.
 
 The project currently uses the
 [uv project manager](https://docs.astral.sh/uv/). With uv
-installed as a command line tool, the standard and development
+installed as a command line tool, the standard _and_ development
 dependencies can be installed with running the following
 command in the root of the repo:
 
@@ -37,12 +37,19 @@ command in the root of the repo:
 uv sync
 ```
 
-To install the additional development dependencies the
-following command can be used:
+> [!NOTE] 
+> This automatially installs the basic dependencies needed to
+> run the application as well as the development dependencies 
+> located under the `dev` dependency group found in the 
+> `pyproject.toml` file.
 
-```
-uv sync ---group dev
-```
+> [!NOTE] 
+> Additional extra dependencies or dependency groups can also be 
+> install by either including the `--extra` or `--group` arguments.
+> 
+> E.g. To install the `pgsql` extra dependencies, append `--extra pgsql`
+>
+> E.g. To install the `docs` dependency group, append `--group docs`
 
 To start the default webserver, the following command can
 be used:
@@ -53,14 +60,27 @@ uv run pulsarity
 
 ### Venv and Pip Environment
 
-The standard venv and pip packages can be used as well.
+The standard venv and pip packages can be used as well, but
+do not provide automatially install the additional dependencies
+recommended to have installed during development.
 Install your python virtual environment at the root of
 the repo and use the following command to install the
 dependencies and an editable version of the project into
 the virtual environment:
 
 ```
-python -m pip install -e .
+python -m pip install . -e
+```
+
+> [!Note] 
+> This only installs the basic dependencies needed to
+> run the application.
+
+To install the the application with the `pgsql` extra dependency,
+use the following command instead:
+
+```
+python -m pip install .[pgsql] -e
 ```
 
 To start the default webserver, the following command can
