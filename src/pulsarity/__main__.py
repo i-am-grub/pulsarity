@@ -84,7 +84,7 @@ async def _server() -> None:
         tg.create_task(server.serve())
 
         events: list[asyncio.Future] = [
-            asyncio.create_task(ClientServerRestart.restart_evt.wait()),
+            tg.create_task(ClientServerRestart.restart_evt.wait()),
             tg.create_task(ClientServerShutdown.shutdown_evt.wait()),
             tg.create_task(_shutdown_event.wait()),
         ]
