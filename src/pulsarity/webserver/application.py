@@ -172,7 +172,7 @@ async def lifespan(_app: Starlette):
     request via the `ContextState` dictionary.
     """
 
-    logger.info("Starting Pulsarity...")
+    logger.info("Starting application")
 
     async with TortoiseContext() as db_ctx:
         await db_ctx.init(
@@ -196,7 +196,8 @@ async def lifespan(_app: Starlette):
 
         await setup_default_objects()
 
-        logger.debug("Databases started: %s", tuple(Tortoise.apps))
+        logger.debug("Using databases: %s", tuple(Tortoise.apps))
+        logger.info("Database connections started")
 
         state = ContextState(
             loop=asyncio.get_running_loop(),
@@ -213,20 +214,22 @@ async def lifespan(_app: Starlette):
 
         await server_starup_workflow()
 
-        logger.info("Pulsarity startup completed...")
+        logger.info("Application startup completed")
 
         yield state
 
-        logger.info("Stopping Pulsarity...")
+        logger.info("Stopping application")
 
         await server_shutdown_workflow()
+
+    logger.info("Database connections closed")
 
     ctx.loop_ctx.reset(loop_token)
     ctx.event_broker_ctx.reset(event_token)
     ctx.race_manager_ctx.reset(race_manager_token)
     ctx.timer_manager_ctx.reset(timer_manager_token)
 
-    logger.info("Pulsarity shutdown completed...")
+    logger.info("Application shutdown completed")
 
 
 async def server_starup_workflow() -> None:
@@ -246,12 +249,3 @@ async def server_shutdown_workflow() -> None:
     await ctx.event_broker_ctx.get().trigger(ServerShutdown())
     await ctx.timer_manager_ctx.get().shutdown(5)
     await background.shutdown(5)
-
-
-async def database_shutdown() -> None:
-    """
-    Shutdown the database
-    """
-    await Tortoise.close_connections()
-
-    logger.debug("Database shutdown")

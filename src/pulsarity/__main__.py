@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import granian
 from granian.constants import Interfaces
 from granian.log import LogLevels
 from granian.server.embed import Server
@@ -78,7 +79,8 @@ async def _server() -> None:
 
     server = _generate_server()
 
-    logger.info("Server version: %s", pulsarity.__version__)
+    logger.debug("Granian server version: %s", granian.__version__)
+    logger.info("Pulsarity application version: %s", pulsarity.__version__)
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(server.serve())
@@ -91,12 +93,14 @@ async def _server() -> None:
 
         await asyncio.wait(events, return_when=asyncio.FIRST_COMPLETED)
 
-        logger.info("Server shutdown signaled...")
+        logger.info("Server shutdown signaled")
 
         for task in events:
             task.cancel()
 
         server.stop()
+
+    logger.info("Server shutdown completed")
 
 
 def main() -> None:
