@@ -28,7 +28,7 @@ dependencies = [
 
     # Upstream Dependencies
     "cffi==2.0.0", # argon, cryptography
-    "idna==3.15", # anyio, httpx
+    "idna==3.18", # anyio, httpx
     "argon2-cffi-bindings==25.1.0", # argon
     "pycparser==3.0", # cffi
     "click==8.4.1", # granian
