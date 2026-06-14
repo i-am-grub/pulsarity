@@ -26,7 +26,7 @@ class SortedKeysView(KeysView[U]):
         return self._mapping.list[index]
 
 
-class SortedValuesView(ValuesView[U]):
+class SortedValuesView(ValuesView[V]):
     """Sorted values view of `ValueSortedDict`"""
 
     def __init__(self, mapping: ValueSortedDict):
@@ -34,9 +34,9 @@ class SortedValuesView(ValuesView[U]):
         self._mapping = mapping
 
     @overload
-    def __getitem__(self, i: int) -> U: ...
+    def __getitem__(self, i: int) -> V: ...
     @overload
-    def __getitem__(self, s: slice) -> list[U]: ...
+    def __getitem__(self, s: slice) -> list[V]: ...
     def __getitem__(self, index):
         if isinstance(index, slice):
             keys = self._mapping.list[index]
@@ -72,11 +72,10 @@ class ValueSortedDict(dict[U, V]):
     __slots__ = ("list",)
     __marker = object()
 
-    def __init__(self, iterable: Iterable[tuple[U, V]] | None = None):
+    def __init__(self, iterable: Iterable[tuple[U, V]] = ()):
         self.list: list[U] = []
-        if iterable is None:
-            super().__init__()
-        elif isinstance(iterable, Iterable):
+
+        if isinstance(iterable, Iterable):
             super().__init__(iterable)
             self.list = sorted(super().keys(), key=self._by_value_key)
         else:
@@ -93,7 +92,7 @@ class ValueSortedDict(dict[U, V]):
 
         super().__setitem__(key, item)
 
-        if not self.list or self[key] >= self[self.list[-1]]:
+        if not self.list or item >= self[self.list[-1]]:
             self.list.append(key)
         else:
             bisect.insort_right(self.list, key, key=self._by_value_key)
@@ -138,9 +137,8 @@ class ValueSortedDict(dict[U, V]):
 
     @override
     def update(self, mapping):
-        super_ = super()
-        super_.update(mapping)
-        self.list = sorted(super_.keys(), key=self._by_value_key)
+        super().update(mapping)
+        self.list = sorted(super().keys(), key=self._by_value_key)
 
     @override
     def copy(self):
@@ -158,7 +156,7 @@ class ValueSortedDict(dict[U, V]):
 
     @override
     def __repr__(self):
-        vals = [f"{key}: {self[key]}" for key in self.list]
+        vals = (f"{key}: {self[key]}" for key in self.list)
         return f"{{{', '.join(vals)}}}"
 
     @override
@@ -173,7 +171,6 @@ class ValueSortedDict(dict[U, V]):
 
     @override
     def __ior__(self, other):
-        super_ = super()
-        super_.__ior__(other)
-        self.list = sorted(super_.keys(), key=self._by_value_key)
+        super().__ior__(other)
+        self.list = sorted(super().keys(), key=self._by_value_key)
         return self
