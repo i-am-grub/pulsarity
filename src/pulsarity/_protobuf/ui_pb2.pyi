@@ -55,8 +55,8 @@ class UIButtonField(_message.Message):
 class UIButtonFields(_message.Message):
     __slots__ = ["fields"]
     FIELDS_FIELD_NUMBER: _ClassVar[int]
-    fields: _containers.RepeatedCompositeFieldContainer[UIMarkdownField]
-    def __init__(self, fields: _Optional[_Iterable[_Union[UIMarkdownField, _Mapping]]] = ...) -> None: ...
+    fields: _containers.RepeatedCompositeFieldContainer[UIButtonField]
+    def __init__(self, fields: _Optional[_Iterable[_Union[UIButtonField, _Mapping]]] = ...) -> None: ...
 
 class UIETreeMapping(_message.Message):
     __slots__ = ["mapping"]

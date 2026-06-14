@@ -156,9 +156,12 @@ class UIValueField(UIElement, ABC):
     """
 
     type_ = ui_pb2.ELEMENT_TYPE_FIELD
-    _store = {}
+    _store: ClassVar[dict[int, Self]] = {}
 
     field_type: ClassVar[ui_pb2.FieldType]
+
+    @abstractmethod
+    def model_dump(self) -> ui_pb2.UIValueField: ...
 
     @classmethod
     def dump_serialized_store(cls):

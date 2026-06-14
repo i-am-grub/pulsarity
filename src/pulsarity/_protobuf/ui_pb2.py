@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x08ui.proto\x12\x0cpulsarity.ui\x1a\x1fgoogle/protobuf/timestamp.proto\"S\n\x12UIElementTreeEntry\x12)\n\x04type\x18\x01 \x01(\x0e\x32\x1b.pulsarity.ui.UIElementType\x12\x12\n\nelement_id\x18\x02 \x01(\x05\"W\n\rUIElementTree\x12\x12\n\nelement_id\x18\x01 \x01(\x05\x12\x32\n\x08\x65lements\x18\x02 \x03(\x0b\x32 .pulsarity.ui.UIElementTreeEntry\"=\n\x0eUIElementTrees\x12+\n\x06\x65trees\x18\x01 \x03(\x0b\x32\x1b.pulsarity.ui.UIElementTree\")\n\x12MappedElementTrees\x12\x13\n\x0b\x65lement_ids\x18\x01 \x03(\x05\"\x9e\x01\n\x0eUIETreeMapping\x12:\n\x07mapping\x18\x01 \x03(\x0b\x32).pulsarity.ui.UIETreeMapping.MappingEntry\x1aP\n\x0cMappingEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12/\n\x05value\x18\x02 \x01(\x0b\x32 .pulsarity.ui.MappedElementTrees:\x02\x38\x01\"3\n\x0fUIMarkdownField\x12\x12\n\nelement_id\x18\x01 \x01(\x05\x12\x0c\n\x04text\x18\x02 \x01(\t\"A\n\x10UIMarkdownFields\x12-\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x1d.pulsarity.ui.UIMarkdownField\"1\n\rUIButtonField\x12\x12\n\nelement_id\x18\x01 \x01(\x05\x12\x0c\n\x04text\x18\x02 \x01(\t\"?\n\x0eUIButtonFields\x12-\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x1d.pulsarity.ui.UIMarkdownField\"R\n\tRangeData\x12\x0b\n\x03min\x18\x01 \x01(\x02\x12\x0b\n\x03max\x18\x02 \x01(\x02\x12\r\n\x05value\x18\x03 \x01(\x02\x12\x12\n\x05scale\x18\x04 \x01(\x02H\x00\x88\x01\x01\x42\x08\n\x06_scale\"\xfb\x01\n\x0cUIValueField\x12\x12\n\nelement_id\x18\x01 \x01(\x05\x12+\n\nfield_type\x18\x02 \x01(\x0e\x32\x17.pulsarity.ui.FieldType\x12\x0e\n\x04text\x18\x03 \x01(\tH\x00\x12\x11\n\x07\x62oolean\x18\x04 \x01(\x08H\x00\x12\x11\n\x07integar\x18\x05 \x01(\x05H\x00\x12\x11\n\x07\x64\x65\x63imal\x18\x06 \x01(\x02H\x00\x12.\n\x08\x64\x61tetime\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x12(\n\x05range\x18\x08 \x01(\x0b\x32\x17.pulsarity.ui.RangeDataH\x00\x42\x07\n\x05value\";\n\rUIValueFields\x12*\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x1a.pulsarity.ui.UIValueField*\x8d\x01\n\rUIElementType\x12\x18\n\x14\x45LEMENT_TYPE_UNKNOWN\x10\x00\x12\x16\n\x12\x45LEMENT_TYPE_ETREE\x10\x01\x12\x19\n\x15\x45LEMENT_TYPE_MARKDOWN\x10\x02\x12\x17\n\x13\x45LEMENT_TYPE_BUTTON\x10\x03\x12\x16\n\x12\x45LEMENT_TYPE_FIELD\x10\x04*\xc9\x02\n\tFieldType\x12\x16\n\x12\x46IELD_TYPE_UNKNOWN\x10\x00\x12\x13\n\x0f\x46IELD_TYPE_TEXT\x10\x01\x12\x18\n\x14\x46IELD_TYPE_BASIC_INT\x10\x02\x12\x15\n\x11\x46IELD_TYPE_NUMBER\x10\x03\x12\x14\n\x10\x46IELD_TYPE_RANGE\x10\x04\x12\x15\n\x11\x46IELD_TYPE_SELECT\x10\x05\x12\x17\n\x13\x46IELD_TYPE_CHECKBOX\x10\x06\x12\x17\n\x13\x46IELD_TYPE_PASSWORD\x10\x07\x12\x13\n\x0f\x46IELD_TYPE_DATE\x10\x08\x12\x13\n\x0f\x46IELD_TYPE_TIME\x10\t\x12\x17\n\x13\x46IELD_TYPE_DATETIME\x10\x10\x12\x14\n\x10\x46IELD_TYPE_EMAIL\x10\x11\x12\x12\n\x0e\x46IELD_TYPE_TEL\x10\x12\x12\x12\n\x0e\x46IELD_TYPE_URL\x10\x13\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x08ui.proto\x12\x0cpulsarity.ui\x1a\x1fgoogle/protobuf/timestamp.proto\"S\n\x12UIElementTreeEntry\x12)\n\x04type\x18\x01 \x01(\x0e\x32\x1b.pulsarity.ui.UIElementType\x12\x12\n\nelement_id\x18\x02 \x01(\x05\"W\n\rUIElementTree\x12\x12\n\nelement_id\x18\x01 \x01(\x05\x12\x32\n\x08\x65lements\x18\x02 \x03(\x0b\x32 .pulsarity.ui.UIElementTreeEntry\"=\n\x0eUIElementTrees\x12+\n\x06\x65trees\x18\x01 \x03(\x0b\x32\x1b.pulsarity.ui.UIElementTree\")\n\x12MappedElementTrees\x12\x13\n\x0b\x65lement_ids\x18\x01 \x03(\x05\"\x9e\x01\n\x0eUIETreeMapping\x12:\n\x07mapping\x18\x01 \x03(\x0b\x32).pulsarity.ui.UIETreeMapping.MappingEntry\x1aP\n\x0cMappingEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12/\n\x05value\x18\x02 \x01(\x0b\x32 .pulsarity.ui.MappedElementTrees:\x02\x38\x01\"3\n\x0fUIMarkdownField\x12\x12\n\nelement_id\x18\x01 \x01(\x05\x12\x0c\n\x04text\x18\x02 \x01(\t\"A\n\x10UIMarkdownFields\x12-\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x1d.pulsarity.ui.UIMarkdownField\"1\n\rUIButtonField\x12\x12\n\nelement_id\x18\x01 \x01(\x05\x12\x0c\n\x04text\x18\x02 \x01(\t\"=\n\x0eUIButtonFields\x12+\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x1b.pulsarity.ui.UIButtonField\"R\n\tRangeData\x12\x0b\n\x03min\x18\x01 \x01(\x02\x12\x0b\n\x03max\x18\x02 \x01(\x02\x12\r\n\x05value\x18\x03 \x01(\x02\x12\x12\n\x05scale\x18\x04 \x01(\x02H\x00\x88\x01\x01\x42\x08\n\x06_scale\"\xfb\x01\n\x0cUIValueField\x12\x12\n\nelement_id\x18\x01 \x01(\x05\x12+\n\nfield_type\x18\x02 \x01(\x0e\x32\x17.pulsarity.ui.FieldType\x12\x0e\n\x04text\x18\x03 \x01(\tH\x00\x12\x11\n\x07\x62oolean\x18\x04 \x01(\x08H\x00\x12\x11\n\x07integar\x18\x05 \x01(\x05H\x00\x12\x11\n\x07\x64\x65\x63imal\x18\x06 \x01(\x02H\x00\x12.\n\x08\x64\x61tetime\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x12(\n\x05range\x18\x08 \x01(\x0b\x32\x17.pulsarity.ui.RangeDataH\x00\x42\x07\n\x05value\";\n\rUIValueFields\x12*\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x1a.pulsarity.ui.UIValueField*\x8d\x01\n\rUIElementType\x12\x18\n\x14\x45LEMENT_TYPE_UNKNOWN\x10\x00\x12\x16\n\x12\x45LEMENT_TYPE_ETREE\x10\x01\x12\x19\n\x15\x45LEMENT_TYPE_MARKDOWN\x10\x02\x12\x17\n\x13\x45LEMENT_TYPE_BUTTON\x10\x03\x12\x16\n\x12\x45LEMENT_TYPE_FIELD\x10\x04*\xc9\x02\n\tFieldType\x12\x16\n\x12\x46IELD_TYPE_UNKNOWN\x10\x00\x12\x13\n\x0f\x46IELD_TYPE_TEXT\x10\x01\x12\x18\n\x14\x46IELD_TYPE_BASIC_INT\x10\x02\x12\x15\n\x11\x46IELD_TYPE_NUMBER\x10\x03\x12\x14\n\x10\x46IELD_TYPE_RANGE\x10\x04\x12\x15\n\x11\x46IELD_TYPE_SELECT\x10\x05\x12\x17\n\x13\x46IELD_TYPE_CHECKBOX\x10\x06\x12\x17\n\x13\x46IELD_TYPE_PASSWORD\x10\x07\x12\x13\n\x0f\x46IELD_TYPE_DATE\x10\x08\x12\x13\n\x0f\x46IELD_TYPE_TIME\x10\t\x12\x17\n\x13\x46IELD_TYPE_DATETIME\x10\x10\x12\x14\n\x10\x46IELD_TYPE_EMAIL\x10\x11\x12\x12\n\x0e\x46IELD_TYPE_TEL\x10\x12\x12\x12\n\x0e\x46IELD_TYPE_URL\x10\x13\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'ui_pb2', globals())
@@ -23,10 +23,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   _UIETREEMAPPING_MAPPINGENTRY._options = None
   _UIETREEMAPPING_MAPPINGENTRY._serialized_options = b'8\001'
-  _UIELEMENTTYPE._serialized_start=1136
-  _UIELEMENTTYPE._serialized_end=1277
-  _FIELDTYPE._serialized_start=1280
-  _FIELDTYPE._serialized_end=1609
+  _UIELEMENTTYPE._serialized_start=1134
+  _UIELEMENTTYPE._serialized_end=1275
+  _FIELDTYPE._serialized_start=1278
+  _FIELDTYPE._serialized_end=1607
   _UIELEMENTTREEENTRY._serialized_start=59
   _UIELEMENTTREEENTRY._serialized_end=142
   _UIELEMENTTREE._serialized_start=144
@@ -46,11 +46,11 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _UIBUTTONFIELD._serialized_start=620
   _UIBUTTONFIELD._serialized_end=669
   _UIBUTTONFIELDS._serialized_start=671
-  _UIBUTTONFIELDS._serialized_end=734
-  _RANGEDATA._serialized_start=736
-  _RANGEDATA._serialized_end=818
-  _UIVALUEFIELD._serialized_start=821
-  _UIVALUEFIELD._serialized_end=1072
-  _UIVALUEFIELDS._serialized_start=1074
-  _UIVALUEFIELDS._serialized_end=1133
+  _UIBUTTONFIELDS._serialized_end=732
+  _RANGEDATA._serialized_start=734
+  _RANGEDATA._serialized_end=816
+  _UIVALUEFIELD._serialized_start=819
+  _UIVALUEFIELD._serialized_end=1070
+  _UIVALUEFIELDS._serialized_start=1072
+  _UIVALUEFIELDS._serialized_end=1131
 # @@protoc_insertion_point(module_scope)
