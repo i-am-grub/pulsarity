@@ -5,7 +5,7 @@ ORM classes for heat data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Generic
+from typing import TYPE_CHECKING, Generic, Iterable, Self
 
 from tortoise import fields
 
@@ -73,7 +73,7 @@ class Heat(_PulsarityRaceBase):
         attrs = (attr.to_message() for attr in self.attributes)
         return database_pb2.Heat(id=self.id, heat_num=self.heat_num, attributes=attrs)
 
-    @staticmethod
-    def iterable_to_message(iterable):
+    @classmethod
+    def iterable_to_message(cls, iterable: Iterable[Self]):
         heats = (heat.to_message() for heat in iterable)
         return database_pb2.Heats(heats=heats)

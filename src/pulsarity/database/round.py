@@ -5,7 +5,7 @@ ORM classes for round data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Generic
+from typing import TYPE_CHECKING, Generic, Iterable, Self
 
 from tortoise import fields
 from tortoise.functions import Max
@@ -100,7 +100,7 @@ class Round(_PulsarityRaceBase):
             id=self.id, round_num=self.round_num, attributes=attrs
         )
 
-    @staticmethod
-    def iterable_to_message(iterable) -> database_pb2.Rounds:
+    @classmethod
+    def iterable_to_message(cls, iterable: Iterable[Self]) -> database_pb2.Rounds:
         rounds = (round_.to_message() for round_ in iterable)
         return database_pb2.Rounds(rounds=rounds)

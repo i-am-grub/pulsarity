@@ -570,9 +570,11 @@ class RaceRulesetManager:
         :raises RuntimeError: Class already registered
         """
 
-        if issubclass(ruleset_class, RaceRuleset) and not inspect.isabstract(
-            ruleset_class,
-        ):
+        if issubclass(ruleset_class, RaceRuleset):
+            if inspect.isabstract(ruleset_class):
+                msg = "Attempted to register an abstract race ruleset"
+                raise TypeError(msg)
+
             uid = ruleset_class.Meta.uid
             if uid in cls._registered_ruleset:
                 msg = "Interface type with matching identifier already registered"

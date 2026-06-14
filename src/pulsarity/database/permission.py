@@ -48,7 +48,7 @@ class Permission(_PulsarityBase):
 
         permissions: set[str] = set(await cls.all().values_list("value", flat=True))  # type: ignore
 
-        await cls.bulk_create(generate_permissions())
+        await cls.bulk_create(generate_permissions())  # pyright: ignore[reportArgumentType]
 
 
 class UserPermission(StrEnum):

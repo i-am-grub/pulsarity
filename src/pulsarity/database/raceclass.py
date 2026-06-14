@@ -5,7 +5,7 @@ ORM classes for race class data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Generic
+from typing import TYPE_CHECKING, Generic, Iterable, Self
 
 from tortoise import fields
 from tortoise.functions import Max
@@ -116,7 +116,7 @@ class RaceClass(_PulsarityRaceBase):
         attrs = (attribute.to_message() for attribute in self.attributes)
         return database_pb2.RaceClass(id=self.id, name=self.name, attributes=attrs)
 
-    @staticmethod
-    def iterable_to_message(iterable) -> database_pb2.RaceClasses:
+    @classmethod
+    def iterable_to_message(cls, iterable: Iterable[Self]) -> database_pb2.RaceClasses:
         raceclasses = (raceclasses.to_message() for raceclasses in iterable)
         return database_pb2.RaceClasses(raceclasses=raceclasses)

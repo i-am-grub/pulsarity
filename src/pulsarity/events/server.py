@@ -238,8 +238,8 @@ class PilotAdd(SystemEventData):
 
     pilot_id: int
 
-    @override
     @functools.cached_property
+    @override
     def dumped_model(self) -> bytes:
         pilot_data = websocket_pb2.PilotAddData(pilot_id=self.pilot_id)
         return websocket_pb2.WebsocketEvent(
@@ -261,8 +261,8 @@ class PilotAlter(SystemEventData):
 
     pilot_id: int
 
-    @override
     @functools.cached_property
+    @override
     def dumped_model(self) -> bytes:
         pilot_data = websocket_pb2.PilotAlterData(pilot_id=self.pilot_id)
         return websocket_pb2.WebsocketEvent(
@@ -284,8 +284,8 @@ class PilotDelete(SystemEventData):
 
     pilot_id: int
 
-    @override
     @functools.cached_property
+    @override
     def dumped_model(self) -> bytes:
         pilot_data = websocket_pb2.PilotDeleteData(pilot_id=self.pilot_id)
         return websocket_pb2.WebsocketEvent(

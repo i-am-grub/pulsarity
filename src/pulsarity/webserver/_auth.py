@@ -35,7 +35,7 @@ class PulsarityCredentials:
 
     __slots__ = ("scopes",)
 
-    def __init__(self, scopes: Sequence[str] | None = None):
+    def __init__(self, scopes: Iterable[str] | None = None):
         self.scopes = set() if scopes is None else set(scopes)
 
 

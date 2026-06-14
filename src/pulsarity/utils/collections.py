@@ -21,9 +21,9 @@ class SortedKeysView(KeysView[U]):
     @overload
     def __getitem__(self, i: int) -> U: ...
     @overload
-    def __getitem__(self, s: slice) -> list[U]: ...
-    def __getitem__(self, index):
-        return self._mapping.list[index]
+    def __getitem__(self, i: slice) -> list[U]: ...
+    def __getitem__(self, i):
+        return self._mapping.list[i]
 
 
 class SortedValuesView(ValuesView[V]):
@@ -36,13 +36,13 @@ class SortedValuesView(ValuesView[V]):
     @overload
     def __getitem__(self, i: int) -> V: ...
     @overload
-    def __getitem__(self, s: slice) -> list[V]: ...
-    def __getitem__(self, index):
-        if isinstance(index, slice):
-            keys = self._mapping.list[index]
+    def __getitem__(self, i: slice) -> list[V]: ...
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            keys = self._mapping.list[i]
             return [self._mapping[key] for key in keys]
 
-        key = self._mapping.list[index]
+        key = self._mapping.list[i]
         return self._mapping[key]
 
 
@@ -56,13 +56,13 @@ class SortedItemsView(ItemsView[U, V]):
     @overload
     def __getitem__(self, i: int) -> tuple[U, V]: ...
     @overload
-    def __getitem__(self, s: slice) -> list[tuple[U, V]]: ...
-    def __getitem__(self, index):
-        if isinstance(index, slice):
-            keys = self._mapping.list[index]
+    def __getitem__(self, i: slice) -> list[tuple[U, V]]: ...
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            keys = self._mapping.list[i]
             return [(key, self._mapping[key]) for key in keys]
 
-        key = self._mapping.list[index]
+        key = self._mapping.list[i]
         return key, self._mapping[key]
 
 
@@ -72,7 +72,7 @@ class ValueSortedDict(dict[U, V]):
     __slots__ = ("list",)
     __marker = object()
 
-    def __init__(self, iterable: Iterable[tuple[U, V]] = ()):
+    def __init__(self, iterable: Iterable[tuple[U, V]] | dict[U, V] = ()):
         self.list: list[U] = []
 
         if isinstance(iterable, Iterable):

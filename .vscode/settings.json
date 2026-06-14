@@ -24,4 +24,7 @@
   "pylint.importStrategy": "fromEnvironment",
   "ruff.importStrategy": "fromEnvironment",
   "python.languageServer": "None",
+  "basedpyright.analysis.exclude": [
+    "**/_protobuf"
+  ],
 }

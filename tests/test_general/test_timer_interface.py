@@ -5,7 +5,7 @@ import uuid
 import pytest
 
 from pulsarity.interface import BasicLapData, BasicSignalData
-from pulsarity.interface.timer_manager import TimerInterfaceManager
+from pulsarity.interface.timer_manager import TimerInterfaceManager, TimerInterface
 
 
 @pytest.fixture(name="interface_manager")
@@ -13,10 +13,10 @@ def _interface_manager():
     yield TimerInterfaceManager()
 
 
-class BadTimerInterface: ...
+class BadTimerInterface(TimerInterface): ...
 
 
-class TestTimerInterface:
+class TestTimerInterface(TimerInterface):
     identifier = "test_interface"
     display_name = "Test Interface"
     nodes = []
@@ -45,7 +45,7 @@ class TestTimerInterface:
     def add_lap(self):
         if self.lap_queue is not None:
             data = BasicLapData(
-                timestamp=time.monotonic(),
+                timedelta=time.monotonic(),
                 node_index=0,
                 timer_identifier=self.identifier,
             )
@@ -55,7 +55,7 @@ class TestTimerInterface:
     def add_signal(self, value: float):
         if self.signal_queue is not None:
             data = BasicSignalData(
-                timestamp=time.monotonic(),
+                timedelta=time.monotonic(),
                 node_index=0,
                 value=value,
                 timer_identifier=self.identifier,
@@ -69,7 +69,9 @@ def test_register_interface_error(interface_manager: TimerInterfaceManager):
     Test for registration of a bad interface
     """
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(
+        TypeError, match="Attempted to register an abstract timing interface type"
+    ):
         interface_manager.register(BadTimerInterface)
 
 
@@ -79,7 +81,9 @@ def test_register_interface_duplicate_error(interface_manager: TimerInterfaceMan
     """
 
     interface_manager.register(TestTimerInterface)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(
+        RuntimeError, match="Interface type with matching identifier already registered"
+    ):
         interface_manager.register(TestTimerInterface)
 
 

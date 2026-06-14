@@ -60,7 +60,9 @@ def test_register_ruleset_error():
     Test for registration of a bad interface
     """
 
-    with pytest.raises(TypeError):
+    with pytest.raises(
+        TypeError, match="Attempted to register an abstract race ruleset"
+    ):
         RaceRulesetManager.register(Badruleset)
 
 
@@ -70,7 +72,9 @@ def test_register_ruleset_duplicate_error():
     """
 
     RaceRulesetManager.register(_Testruleset)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(
+        RuntimeError, match="Interface type with matching identifier already registered"
+    ):
         RaceRulesetManager.register(_Testruleset)
 
 

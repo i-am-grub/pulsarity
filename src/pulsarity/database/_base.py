@@ -66,9 +66,9 @@ class PulsarityRaceBase(PulsarityMessageBase):
         """
         return await cls.get_or_none(id=id_).prefetch_related("attributes")
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def iterable_to_message(iterable: Iterable[PulsarityRaceBase]) -> Message:
+    def iterable_to_message(cls, iterable: Iterable[Self]) -> Message:
         """
         Convert iterable to protocol buffer structure
         """

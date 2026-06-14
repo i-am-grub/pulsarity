@@ -4,7 +4,7 @@ ORM classes for event data
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, Self
+from typing import TYPE_CHECKING, Generic, Iterable, Self
 
 from google.protobuf import timestamp_pb2
 from tortoise import fields
@@ -113,8 +113,8 @@ class RaceEvent(_PulsarityRaceBase):
             id=self.id, name=self.name, date=date, attributes=attrs
         )
 
-    @staticmethod
-    def iterable_to_message(iterable) -> database_pb2.RaceEvents:
+    @classmethod
+    def iterable_to_message(cls, iterable: Iterable[Self]) -> database_pb2.RaceEvents:
         """
         Convert iterable to protocol buffer structure
         """

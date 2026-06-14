@@ -8,7 +8,7 @@ from uuid import UUID
 from starlette.background import BackgroundTask, BackgroundTasks
 from starlette.responses import Response
 from starlette.routing import Route
-from starsessions.session import regenerate_session_id
+from starsessions import session
 
 from pulsarity import ctx
 from pulsarity._protobuf import http_pb2
@@ -20,10 +20,10 @@ from pulsarity.database.raceevent import RaceEvent
 from pulsarity.database.round import Round
 from pulsarity.database.user import User
 from pulsarity.webserver._wrapper import (
-    PathDataModel,
+    PathDataModelType,
     ProtobufResponse,
-    QueryDataModel,
-    RequestModel,
+    QueryDataModelType,
+    RequestModelType,
     endpoint,
     http_route_dataclass,
 )
@@ -46,7 +46,7 @@ async def check_auth() -> Response:
 
 
 @http_route_dataclass
-class _LoginRequest(RequestModel):
+class _LoginRequest(RequestModelType):
     """
     Request to login to the server
     """
@@ -72,7 +72,7 @@ async def login(request: _LoginRequest) -> Response:
     if user is not None and await user.verify_password(request.password):
         request_ = ctx.request_ctx.get()
         request_.session.update({"auth_id": user.auth_id.hex})
-        regenerate_session_id(request_)
+        session.regenerate_session_id(request_)
 
         logger.info("%s has been authenticated to the server", user.auth_id.hex)
 
@@ -102,7 +102,7 @@ async def logout() -> Response:
 
 
 @http_route_dataclass
-class _ResetPasswordRequest(RequestModel):
+class _ResetPasswordRequest(RequestModelType):
     """
     Request to reset a user's password
     """
@@ -140,7 +140,7 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
 
 
 @http_route_dataclass
-class _LookupParams(PathDataModel):
+class _LookupParams(PathDataModelType):
     """
     Model for parsing object id path params
     """
@@ -172,7 +172,7 @@ async def get_pilot(path: _LookupParams) -> Response:
 
 
 @http_route_dataclass
-class _PaginationParams(QueryDataModel):
+class _PaginationParams(QueryDataModelType):
     """
     Model for parsing pagination query parameters
     """

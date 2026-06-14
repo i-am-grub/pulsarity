@@ -19,8 +19,7 @@ from tortoise import Tortoise
 from tortoise.context import TortoiseContext
 from tortoise.context import _current_context as db_context
 
-from pulsarity import ctx, defaults
-from pulsarity.database import setup_default_objects
+from pulsarity import ctx, database, defaults
 from pulsarity.events import EventBroker
 from pulsarity.events.server import ServerShutdown, ServerStartup
 from pulsarity.interface.timer_manager import TimerInterfaceManager
@@ -194,7 +193,7 @@ async def lifespan(_app: Starlette):
         )
         await db_ctx.generate_schemas(True)
 
-        await setup_default_objects()
+        await database.setup_default_objects()
 
         logger.debug("Using databases: %s", tuple(Tortoise.apps))
         logger.info("Database connections started")

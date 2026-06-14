@@ -105,7 +105,7 @@ class _DatabaseConfig:
     def __post_init__(self):
         if isinstance(self.system_db, dict):
             self.system_db = _SystemDatabaseConfig(**self.system_db)
-        if isinstance(self.system_db, dict):
+        if isinstance(self.event_db, dict):
             self.event_db = _EventDatabaseConfig(**self.event_db)
 
     def model_dump(self) -> dict:

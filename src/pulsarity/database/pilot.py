@@ -4,7 +4,7 @@ ORM classes for Pilot data
 
 from __future__ import annotations
 
-from typing import Generic
+from typing import Generic, Iterable, Self
 
 from tortoise import fields
 
@@ -120,7 +120,7 @@ class Pilot(_PulsarityRaceBase):
             attributes=attrs,
         )
 
-    @staticmethod
-    def iterable_to_message(iterable):
+    @classmethod
+    def iterable_to_message(cls, iterable: Iterable[Self]):
         pilots = (pilot.to_message() for pilot in iterable)
         return database_pb2.Pilots(pilots=pilots)

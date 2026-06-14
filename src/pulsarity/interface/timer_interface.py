@@ -2,6 +2,7 @@
 Abstract timer interface
 """
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from typing import (
@@ -10,7 +11,6 @@ from typing import (
     NamedTuple,
     Protocol,
     TypeVar,
-    runtime_checkable,
 )
 
 if TYPE_CHECKING:
@@ -76,7 +76,6 @@ class Action:
     """The callback to associate with the action"""
 
 
-@runtime_checkable
 class NodeInterface(Protocol):
     """
     Protocol for defining how nodes on a timing interface should
@@ -89,8 +88,7 @@ class NodeInterface(Protocol):
     """Individual node settings"""
 
 
-@runtime_checkable
-class TimerInterface(Protocol):
+class TimerInterface(ABC):
     """
     Protocol for defining how timers should be integrated
     into the server.
@@ -111,6 +109,7 @@ class TimerInterface(Protocol):
     connected: bool
     """Connection status"""
 
+    @abstractmethod
     def subscribe(
         self,
         lap_queue: Queue[BasicLapData],
@@ -123,6 +122,7 @@ class TimerInterface(Protocol):
         :param signal_queue: The queue to provide for recieving signal data
         """
 
+    @abstractmethod
     def shutdown(self):
         """
         Shutdown the interface connection. When called, prevent adding more data to

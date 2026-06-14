@@ -82,21 +82,21 @@ def http_route_dataclass(cls: type[_HttpModel]) -> type[_HttpModel]:
 
 
 @http_route_dataclass
-class QueryDataModel(_HttpModel):
+class QueryDataModelType(_HttpModel):
     """
     Dataclass for query parameter data
     """
 
 
 @http_route_dataclass
-class PathDataModel(_HttpModel):
+class PathDataModelType(_HttpModel):
     """
     Dataclass for request path data
     """
 
 
 @http_route_dataclass
-class RequestModel(_HttpModel, ABC):
+class RequestModelType(_HttpModel, ABC):
     """
     Dataclass for post/put request data
     """
@@ -110,17 +110,17 @@ class RequestModel(_HttpModel, ABC):
 
 
 class _ValModels(NamedTuple):
-    request: type[RequestModel] | None
-    query: type[QueryDataModel] | None
-    path: type[PathDataModel] | None
+    request: type[RequestModelType] | None
+    query: type[QueryDataModelType] | None
+    path: type[PathDataModelType] | None
 
 
 def endpoint(
     *permissions: UserPermission,
     requires_auth: bool = True,
-    request_model: type[RequestModel] | None = None,
-    query_model: type[QueryDataModel] | None = None,
-    path_model: type[PathDataModel] | None = None,
+    request_model: type[RequestModelType] | None = None,
+    query_model: type[QueryDataModelType] | None = None,
+    path_model: type[PathDataModelType] | None = None,
 ):
     """
     Decorator for validating request data, user permissions, and
@@ -134,7 +134,7 @@ def endpoint(
     """
 
     def inner(
-        func: Callable[..., Response],
+        func: Callable[..., Coroutine[None, None, Response]],
     ) -> Callable[[Request], Coroutine[None, None, Response]]:
         # pylint: disable=R0912
 
@@ -164,18 +164,18 @@ def endpoint(
             @functools.wraps(func)
             @requires(SystemDefaultPerms.AUTHENTICATED, status_code=401)
             @requires(permissions, status_code=403)
-            async def wrapper(request: Request) -> Response:
+            async def auth_wrapper(request: Request) -> Response:
                 with ctx.request_ctx.set(request), ctx.user_ctx.set(request.user):
                     return await _process_request(func, request, models)
 
-        else:
+            return auth_wrapper
 
-            @functools.wraps(func)
-            async def wrapper(request: Request) -> Response:
-                with ctx.request_ctx.set(request), ctx.user_ctx.set(request.user):
-                    return await _process_request(func, request, models)
+        @functools.wraps(func)
+        async def no_auth_wrapper(request: Request) -> Response:
+            with ctx.request_ctx.set(request), ctx.user_ctx.set(request.user):
+                return await _process_request(func, request, models)
 
-        return wrapper
+        return no_auth_wrapper
 
     return inner
 

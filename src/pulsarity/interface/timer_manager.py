@@ -3,6 +3,7 @@ Manage timer interfaces
 """
 
 import asyncio
+import inspect
 import logging
 import uuid
 from dataclasses import dataclass
@@ -177,7 +178,7 @@ class TimerInterfaceManager:
             race_manager.status_aware_signal_record(outgoing)
 
     @classmethod
-    def register(cls, interface: type[TimerInterface]) -> None:
+    def register(cls, interface: type[TimerInterface]) -> type[TimerInterface]:
         """
         Registers an interface type to be used by the system
 
@@ -185,7 +186,11 @@ class TimerInterfaceManager:
         :raises RuntimeError: Interface with matching identifier has already been registered
         """
 
-        if isinstance(interface, TimerInterface):
+        if issubclass(interface, TimerInterface):
+            if inspect.isabstract(interface):
+                msg = "Attempted to register an abstract timing interface type"
+                raise TypeError(msg)
+
             if interface.identifier in cls._interfaces:
                 msg = "Interface type with matching identifier already registered"
                 raise RuntimeError(msg)
@@ -195,7 +200,7 @@ class TimerInterfaceManager:
             return interface
 
         msg = "Attempted to register an invalid timer interface type"
-        raise RuntimeError(msg)
+        raise TypeError(msg)
 
     @classmethod
     def clear_registered(cls) -> None:
