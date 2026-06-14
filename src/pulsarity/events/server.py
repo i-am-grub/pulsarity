@@ -7,7 +7,7 @@ import itertools
 import uuid as _uuid
 from abc import ABC
 from dataclasses import dataclass, field
-from enum import Enum, unique
+from enum import IntEnum, unique
 from typing import ClassVar, Self, dataclass_transform, override
 from uuid import UUID
 
@@ -35,7 +35,7 @@ def system_event(cls: type[SystemEventData]) -> type[SystemEventData]:
 
 
 @unique
-class EvtPriority(Enum):
+class EvtPriority(IntEnum):
     """
     The priority of the event over other events that may
     be queued. By default, this is does not determine the
@@ -52,11 +52,8 @@ class EvtPriority(Enum):
     LOWER = 6
     LOWEST = 7
 
-    def __lt__(self, other: Self):
-        return self.value < other.value
 
-
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True)
 class SystemEventData(ABC):
     """
     ABC for event data originating on the server
@@ -70,9 +67,9 @@ class SystemEventData(ABC):
     """Outgoing required client permission"""
 
     _counter: ClassVar[itertools.count] = itertools.count()
-    _id: int = field(default_factory=functools.partial(next, _counter))
+    _id: int = field(default_factory=functools.partial(next, _counter), init=False)
 
-    uuid: UUID = field(default_factory=_uuid.uuid4)
+    uuid: UUID = field(default_factory=_uuid.uuid4, kw_only=True)
     """Unique instance identifier"""
 
     @functools.cached_property
@@ -147,6 +144,17 @@ class ServerRestart(SystemEventData):
     event_id = websocket_pb2.EVENT_RESTART
     priority = EvtPriority.LOW
     permission = SystemDefaultPerms.EVENT_WEBSOCKET
+
+
+@system_event
+class ServerUIUpdate(SystemEventData):
+    """
+    User Interface Update event
+    """
+
+    event_id = websocket_pb2.EVENT_UI_UPDATE
+    priority = EvtPriority.MEDUIUM
+    permission = SystemDefaultPerms.SYSTEM_CONTROL
 
 
 @system_event
@@ -232,7 +240,7 @@ class PilotAdd(SystemEventData):
     Pilot Add event
     """
 
-    event_id: ClassVar[websocket_pb2.EventID] = websocket_pb2.EVENT_PILOT_ADD
+    event_id = websocket_pb2.EVENT_PILOT_ADD
     priority = EvtPriority.MEDUIUM
     permission = SystemDefaultPerms.READ_PILOTS
 
@@ -255,7 +263,7 @@ class PilotAlter(SystemEventData):
     Pilot alter event
     """
 
-    event_id: ClassVar[websocket_pb2.EventID] = websocket_pb2.EVENT_PILOT_ALTER
+    event_id = websocket_pb2.EVENT_PILOT_ALTER
     priority = EvtPriority.MEDUIUM
     permission = SystemDefaultPerms.READ_PILOTS
 

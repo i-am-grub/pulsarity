@@ -52,11 +52,12 @@ class ClientEventData(ABC):
     """Unique identifier"""
 
     @classmethod
-    @abstractmethod
     def from_ws_event(cls, msg: websocket_pb2.WebsocketEvent) -> Self:
         """
         Parse event from websocket data
         """
+        uuid = UUID(bytes=msg.uuid)
+        return cls(uuid)
 
     @abstractmethod
     async def run_handler(self):
@@ -73,11 +74,6 @@ class ClientHeartbeat(ClientEventData):
 
     event_id = websocket_pb2.EVENT_HEARTBEAT
     permission = SystemDefaultPerms.EVENT_WEBSOCKET
-
-    @classmethod
-    def from_ws_event(cls, msg):
-        uuid = UUID(bytes=msg.uuid)
-        return cls(uuid)
 
     async def run_handler(self):
         websocket = ctx.websocket_ctx.get()
@@ -96,11 +92,6 @@ class ClientServerShutdown(ClientEventData):
 
     shutdown_evt: ClassVar[asyncio.Event] = asyncio.Event()
 
-    @classmethod
-    def from_ws_event(cls, msg):
-        uuid = UUID(bytes=msg.uuid)
-        return cls(uuid)
-
     async def run_handler(self):
         self.shutdown_evt.set()
 
@@ -116,13 +107,21 @@ class ClientServerRestart(ClientEventData):
 
     restart_evt: ClassVar[asyncio.Event] = asyncio.Event()
 
-    @classmethod
-    def from_ws_event(cls, msg):
-        uuid = UUID(bytes=msg.uuid)
-        return cls(uuid)
-
     async def run_handler(self):
         self.restart_evt.set()
+
+
+@client_event
+class ClientUIUpdate(ClientEventData):
+    """
+    Client commanded system restart
+    """
+
+    event_id = websocket_pb2.EVENT_UI_UPDATE
+    permission = SystemDefaultPerms.SYSTEM_CONTROL
+
+    async def run_handler(self):
+        raise NotImplementedError
 
 
 @client_event
@@ -133,11 +132,6 @@ class ClientScheduleRace(ClientEventData):
 
     event_id = websocket_pb2.EVENT_RACE_SCHEDULE
     permission = SystemDefaultPerms.RACE_CONTROL
-
-    @classmethod
-    def from_ws_event(cls, msg):
-        uuid = UUID(bytes=msg.uuid)
-        return cls(uuid)
 
     async def run_handler(self):
         raise NotImplementedError
@@ -151,11 +145,6 @@ class ClientStopRace(ClientEventData):
 
     event_id = websocket_pb2.EVENT_RACE_STOP
     permission = SystemDefaultPerms.RACE_CONTROL
-
-    @classmethod
-    def from_ws_event(cls, msg):
-        uuid = UUID(bytes=msg.uuid)
-        return cls(uuid)
 
     async def run_handler(self):
         ctx.race_manager_ctx.get().stop_race()

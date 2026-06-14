@@ -43,7 +43,7 @@ class ProtobufResponse(Response):
     Response sending protocol buffer data
     """
 
-    # pylint: disable=R0913,R0917
+    # : disable=R0913,R0917
 
     __slots__ = ("background", "body", "status_code")
 
@@ -136,7 +136,7 @@ def endpoint(
     def inner(
         func: Callable[..., Response],
     ) -> Callable[[Request], Coroutine[None, None, Response]]:
-        # pylint: disable=R0912
+        # : disable=R0912
 
         base_kwargs = {"request", "query", "path"}
         function_kwargs = set(inspect.signature(func).parameters.keys())
