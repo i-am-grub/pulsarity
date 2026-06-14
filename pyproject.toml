@@ -19,7 +19,7 @@ dependencies = [
     # Main dependencies
     "starlette==1.0.1",
     "starsessions==2.2.1",
-    "granian==2.7.5",
+    "granian==2.7.6",
     "cryptography==48.0.0",
     "argon2-cffi==25.1.0",
     "tortoise-orm==1.1.7",
