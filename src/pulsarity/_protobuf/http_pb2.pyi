@@ -26,6 +26,14 @@ class ResetPasswordRequest(_message.Message):
     old_password: str
     def __init__(self, old_password: _Optional[str] = ..., new_password: _Optional[str] = ...) -> None: ...
 
+class ServerData(_message.Message):
+    __slots__ = ["server_name", "version"]
+    SERVER_NAME_FIELD_NUMBER: _ClassVar[int]
+    VERSION_FIELD_NUMBER: _ClassVar[int]
+    server_name: str
+    version: str
+    def __init__(self, version: _Optional[str] = ..., server_name: _Optional[str] = ...) -> None: ...
+
 class StatusResponse(_message.Message):
     __slots__ = ["status"]
     STATUS_FIELD_NUMBER: _ClassVar[int]

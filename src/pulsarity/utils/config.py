@@ -74,6 +74,7 @@ class _WebserverConfig:
 
 @dataclass
 class _GeneralConfig:
+    server_name: str = "Pulsarity"
     last_modified_time: datetime = field(default_factory=datetime.now)
 
     def __post_init__(self):

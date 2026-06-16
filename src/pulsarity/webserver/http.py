@@ -10,6 +10,7 @@ from starlette.responses import Response
 from starlette.routing import Route
 from starsessions import session
 
+import pulsarity
 from pulsarity import ctx
 from pulsarity._protobuf import http_pb2
 from pulsarity.database.heat import Heat
@@ -19,6 +20,7 @@ from pulsarity.database.raceclass import RaceClass
 from pulsarity.database.raceevent import RaceEvent
 from pulsarity.database.round import Round
 from pulsarity.database.user import User
+from pulsarity.utils import config
 from pulsarity.webserver._wrapper import (
     PathDataModelType,
     ProtobufResponse,
@@ -340,6 +342,20 @@ async def get_heats_for_round(
     return ProtobufResponse(Heat.iterable_to_message(heats))
 
 
+@endpoint(requires_auth=False)
+async def get_server_info() -> Response:
+    """
+    Gets general server information
+    """
+    configs = config.config_manager
+
+    message = http_pb2.ServerData(
+        version=pulsarity.__version__, server_name=configs.general.server_name
+    )
+
+    return ProtobufResponse(message)
+
+
 ROUTES = [
     Route("/login", endpoint=login, methods=["POST"]),
     Route("/logout", endpoint=logout),
@@ -355,4 +371,5 @@ ROUTES = [
     Route("/rounds/{id:int}", endpoint=get_round),
     Route("/rounds/{id:int}/heats", endpoint=get_heats_for_round),
     Route("/heats/{id:int}", endpoint=get_heat),
+    Route("/server-info", endpoint=get_server_info),
 ]
