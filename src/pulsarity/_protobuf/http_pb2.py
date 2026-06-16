@@ -13,21 +13,23 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nhttp.proto\x12\x0epulsarity.http\" \n\x0eStatusResponse\x12\x0e\n\x06status\x18\x01 \x01(\x08\"2\n\x0cLoginRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"0\n\rLoginResponse\x12\x1f\n\x17password_reset_required\x18\x01 \x01(\x08\"B\n\x14ResetPasswordRequest\x12\x14\n\x0cold_password\x18\x01 \x01(\t\x12\x14\n\x0cnew_password\x18\x02 \x01(\t\"2\n\nServerData\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x13\n\x0bserver_name\x18\x02 \x01(\tb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nhttp.proto\x12\x0epulsarity.http\"W\n\x08UserInfo\x12\x0f\n\x07\x61uth_id\x18\x01 \x01(\t\x12\x10\n\x08username\x18\x02 \x01(\t\x12\x13\n\x0b\x64ispay_name\x18\x03 \x01(\t\x12\x13\n\x0bpermissions\x18\x04 \x03(\t\"S\n\x15\x41uthenticatedResponse\x12\x0e\n\x06status\x18\x01 \x01(\x08\x12*\n\x08userinfo\x18\x02 \x01(\x0b\x32\x18.pulsarity.http.UserInfo\"2\n\x0cLoginRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"\\\n\rLoginResponse\x12\x1f\n\x17password_reset_required\x18\x01 \x01(\x08\x12*\n\x08userinfo\x18\x02 \x01(\x0b\x32\x18.pulsarity.http.UserInfo\"B\n\x14ResetPasswordRequest\x12\x14\n\x0cold_password\x18\x01 \x01(\t\x12\x14\n\x0cnew_password\x18\x02 \x01(\t\"2\n\nServerData\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x13\n\x0bserver_name\x18\x02 \x01(\tb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'http_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _STATUSRESPONSE._serialized_start=30
-  _STATUSRESPONSE._serialized_end=62
-  _LOGINREQUEST._serialized_start=64
-  _LOGINREQUEST._serialized_end=114
-  _LOGINRESPONSE._serialized_start=116
-  _LOGINRESPONSE._serialized_end=164
-  _RESETPASSWORDREQUEST._serialized_start=166
-  _RESETPASSWORDREQUEST._serialized_end=232
-  _SERVERDATA._serialized_start=234
-  _SERVERDATA._serialized_end=284
+  _USERINFO._serialized_start=30
+  _USERINFO._serialized_end=117
+  _AUTHENTICATEDRESPONSE._serialized_start=119
+  _AUTHENTICATEDRESPONSE._serialized_end=202
+  _LOGINREQUEST._serialized_start=204
+  _LOGINREQUEST._serialized_end=254
+  _LOGINRESPONSE._serialized_start=256
+  _LOGINRESPONSE._serialized_end=348
+  _RESETPASSWORDREQUEST._serialized_start=350
+  _RESETPASSWORDREQUEST._serialized_end=416
+  _SERVERDATA._serialized_start=418
+  _SERVERDATA._serialized_end=468
 # @@protoc_insertion_point(module_scope)

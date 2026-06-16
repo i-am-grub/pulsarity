@@ -201,6 +201,17 @@ class User(_PulsarityBase):
         return await cls.get_or_none(username=username)
 
     @classmethod
+    async def get_by_username_prefetch(cls, username: str) -> Self | None:
+        """
+        Attempt to retrieve a user by username
+
+        :param username: The username to search for
+        """
+        return await cls.get_or_none(username=username).prefetch_related(
+            "roles__permissions",
+        )
+
+    @classmethod
     async def verify_persistant(cls) -> None:
         """
         Verify all system roles are in the user database.

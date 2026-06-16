@@ -43,7 +43,17 @@ async def check_auth() -> Response:
     :return: The user's authentication status
     """
     auth_user = ctx.user_ctx.get()
-    response = http_pb2.StatusResponse(status=auth_user.is_authenticated)
+
+    if auth_user.is_authenticated:
+        user_info = http_pb2.UserInfo(
+            auth_id=auth_user.identity,
+            username=auth_user.username,
+            dispay_name=auth_user.display_name,
+            permissions=await auth_user.get_permissions(),
+        )
+        response = http_pb2.AuthenticatedResponse(status=True, userinfo=user_info)
+    else:
+        response = http_pb2.AuthenticatedResponse(status=False, userinfo=None)
     return ProtobufResponse(response)
 
 
@@ -69,7 +79,7 @@ async def login(request: _LoginRequest) -> Response:
 
     :return: JSON containing the status of the request
     """
-    user = await User.get_or_none(username=request.username)
+    user = await User.get_by_username_prefetch(request.username)
 
     if user is not None and await user.verify_password(request.password):
         request_ = ctx.request_ctx.get()
@@ -78,7 +88,16 @@ async def login(request: _LoginRequest) -> Response:
 
         logger.info("%s has been authenticated to the server", user.auth_id.hex)
 
-        response = http_pb2.LoginResponse(password_reset_required=user.reset_required)
+        user_info = http_pb2.UserInfo(
+            auth_id=user.auth_id.hex,
+            username=user.username,
+            dispay_name=user.display_name,
+            permissions=user.permissions,
+        )
+
+        response = http_pb2.LoginResponse(
+            password_reset_required=user.reset_required, userinfo=user_info
+        )
         background = BackgroundTasks(
             (
                 BackgroundTask(user.update_user_login_time),

@@ -134,11 +134,11 @@ class PulsarityUser(BaseUser):
     User of the authentication system
     """
 
-    __slots__ = ("_auth_id", "_display_name", "_username")
+    __slots__ = ("_auth_id", "_display_name", "username")
 
     def __init__(self, db_user: User):
         self._auth_id = db_user.auth_id.hex
-        self._username = db_user.username
+        self.username = db_user.username
         self._display_name = db_user.display_name
 
     @property
