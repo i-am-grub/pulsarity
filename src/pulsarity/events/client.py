@@ -72,7 +72,7 @@ class ClientHeartbeat(ClientEventData):
     """
 
     event_id = websocket_pb2.EVENT_HEARTBEAT
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
     @classmethod
     def from_ws_event(cls, msg):

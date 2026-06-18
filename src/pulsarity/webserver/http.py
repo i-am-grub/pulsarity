@@ -43,17 +43,17 @@ async def check_auth() -> Response:
     :return: The user's authentication status
     """
     auth_user = ctx.user_ctx.get()
+    user_perms: set[str] = ctx.request_ctx.get().auth.scopes
 
-    if auth_user.is_authenticated:
-        user_info = http_pb2.UserInfo(
-            auth_id=auth_user.identity,
-            username=auth_user.username,
-            dispay_name=auth_user.display_name,
-            permissions=await auth_user.get_permissions(),
-        )
-        response = http_pb2.AuthenticatedResponse(status=True, userinfo=user_info)
-    else:
-        response = http_pb2.AuthenticatedResponse(status=False, userinfo=None)
+    user_info = http_pb2.UserInfo(
+        authenticated=auth_user.is_authenticated,
+        auth_id=auth_user.identity,
+        username=auth_user.username,
+        dispay_name=auth_user.display_name,
+        permissions=user_perms,
+    )
+    response = http_pb2.AuthenticatedResponse(status=True, userinfo=user_info)
+
     return ProtobufResponse(response)
 
 
@@ -89,6 +89,7 @@ async def login(request: _LoginRequest) -> Response:
         logger.info("%s has been authenticated to the server", user.auth_id.hex)
 
         user_info = http_pb2.UserInfo(
+            authenticated=True,
             auth_id=user.auth_id.hex,
             username=user.username,
             dispay_name=user.display_name,

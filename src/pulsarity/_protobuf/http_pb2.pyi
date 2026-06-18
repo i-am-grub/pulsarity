@@ -46,13 +46,15 @@ class ServerData(_message.Message):
     def __init__(self, version: _Optional[str] = ..., server_name: _Optional[str] = ...) -> None: ...
 
 class UserInfo(_message.Message):
-    __slots__ = ["auth_id", "dispay_name", "permissions", "username"]
+    __slots__ = ["auth_id", "authenticated", "dispay_name", "permissions", "username"]
+    AUTHENTICATED_FIELD_NUMBER: _ClassVar[int]
     AUTH_ID_FIELD_NUMBER: _ClassVar[int]
     DISPAY_NAME_FIELD_NUMBER: _ClassVar[int]
     PERMISSIONS_FIELD_NUMBER: _ClassVar[int]
     USERNAME_FIELD_NUMBER: _ClassVar[int]
     auth_id: str
+    authenticated: bool
     dispay_name: str
     permissions: _containers.RepeatedScalarFieldContainer[str]
     username: str
-    def __init__(self, auth_id: _Optional[str] = ..., username: _Optional[str] = ..., dispay_name: _Optional[str] = ..., permissions: _Optional[_Iterable[str]] = ...) -> None: ...
+    def __init__(self, authenticated: bool = ..., auth_id: _Optional[str] = ..., username: _Optional[str] = ..., dispay_name: _Optional[str] = ..., permissions: _Optional[_Iterable[str]] = ...) -> None: ...

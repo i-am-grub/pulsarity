@@ -22,14 +22,14 @@ from pulsarity.database.permission import SystemDefaultPerms
 class LowPriorityEvent(SystemEventData):
     event_id = -1
     priority = EvtPriority.LOW
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
 class HighPriorityEvent(SystemEventData):
     event_id = -2
     priority = EvtPriority.HIGH
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 async def broker_subscriber(broker: EventBroker, test_values: Iterable[int]):
