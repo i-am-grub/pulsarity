@@ -10,6 +10,7 @@ from starlette.responses import Response
 from starlette.routing import Route
 from starsessions import session
 
+import pulsarity
 from pulsarity import ctx
 from pulsarity._protobuf import http_pb2
 from pulsarity.database.heat import Heat
@@ -19,6 +20,7 @@ from pulsarity.database.raceclass import RaceClass
 from pulsarity.database.raceevent import RaceEvent
 from pulsarity.database.round import Round
 from pulsarity.database.user import User
+from pulsarity.utils import config
 from pulsarity.webserver._wrapper import (
     PathDataModelType,
     ProtobufResponse,
@@ -41,7 +43,17 @@ async def check_auth() -> Response:
     :return: The user's authentication status
     """
     auth_user = ctx.user_ctx.get()
-    response = http_pb2.StatusResponse(status=auth_user.is_authenticated)
+    user_perms: set[str] = ctx.request_ctx.get().auth.scopes
+
+    user_info = http_pb2.UserInfo(
+        authenticated=auth_user.is_authenticated,
+        auth_id=auth_user.identity,
+        username=auth_user.username,
+        dispay_name=auth_user.display_name,
+        permissions=user_perms,
+    )
+    response = http_pb2.AuthenticatedResponse(status=True, userinfo=user_info)
+
     return ProtobufResponse(response)
 
 
@@ -67,7 +79,7 @@ async def login(request: _LoginRequest) -> Response:
 
     :return: JSON containing the status of the request
     """
-    user = await User.get_or_none(username=request.username)
+    user = await User.get_by_username_prefetch(request.username)
 
     if user is not None and await user.verify_password(request.password):
         request_ = ctx.request_ctx.get()
@@ -76,7 +88,17 @@ async def login(request: _LoginRequest) -> Response:
 
         logger.info("%s has been authenticated to the server", user.auth_id.hex)
 
-        response = http_pb2.LoginResponse(password_reset_required=user.reset_required)
+        user_info = http_pb2.UserInfo(
+            authenticated=True,
+            auth_id=user.auth_id.hex,
+            username=user.username,
+            dispay_name=user.display_name,
+            permissions=user.permissions,
+        )
+
+        response = http_pb2.LoginResponse(
+            password_reset_required=user.reset_required, userinfo=user_info
+        )
         background = BackgroundTasks(
             (
                 BackgroundTask(user.update_user_login_time),
@@ -340,6 +362,20 @@ async def get_heats_for_round(
     return ProtobufResponse(Heat.iterable_to_message(heats))
 
 
+@endpoint(requires_auth=False)
+async def get_server_info() -> Response:
+    """
+    Gets general server information
+    """
+    configs = config.config_manager
+
+    message = http_pb2.ServerData(
+        version=pulsarity.__version__, server_name=configs.general.server_name
+    )
+
+    return ProtobufResponse(message)
+
+
 ROUTES = [
     Route("/login", endpoint=login, methods=["POST"]),
     Route("/logout", endpoint=logout),
@@ -355,4 +391,5 @@ ROUTES = [
     Route("/rounds/{id:int}", endpoint=get_round),
     Route("/rounds/{id:int}/heats", endpoint=get_heats_for_round),
     Route("/heats/{id:int}", endpoint=get_heat),
+    Route("/server-info", endpoint=get_server_info),
 ]

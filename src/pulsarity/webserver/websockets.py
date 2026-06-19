@@ -26,15 +26,15 @@ P = ParamSpec("P")
 logger = logging.getLogger(__name__)
 
 
-@requires(SystemDefaultPerms.EVENT_WEBSOCKET)
-async def server_event_ws(websocket: WebSocket):
+@requires(SystemDefaultPerms.DUPLEX_WEBSOCKET)
+async def duplex_ws(websocket: WebSocket):
     """
     The full duplex event websocket connection for clients
     """
     await websocket.accept()
 
     user: PulsarityUser = websocket.user
-    permissions = await user.get_permissions()
+    permissions = websocket.auth.scopes
 
     websocket_token = ctx.websocket_ctx.set(websocket)
     user_token = ctx.user_ctx.set(user)
@@ -61,7 +61,7 @@ async def _recieve_event_data() -> None:
     Handles recieved data over the websocket
     """
     websocket = ctx.websocket_ctx.get()
-    user = ctx.user_ctx.get()
+    permissions: set[str] = websocket.auth.scopes
 
     while True:
         data = await websocket.receive_bytes()
@@ -80,7 +80,7 @@ async def _recieve_event_data() -> None:
             )
             continue
 
-        if not user.has_permission(cls.permission):
+        if cls.permission not in permissions:
             logger.debug("User does not have permission for event: %s", event)
             continue
 
@@ -100,23 +100,16 @@ async def _send_event_data() -> None:
     """
     event_broker = ctx.event_broker_ctx.get()
     websocket = ctx.websocket_ctx.get()
-    user = ctx.user_ctx.get()
     permissions = ctx.user_permsissions_ctx.get()
 
     async for event in event_broker.subscribe():
         if permissions is None:
             continue
 
-        if event.event_id == websocket_pb2.EVENT_PERMISSIONS_UPDATE:
-            temp = await user.get_permissions()
-            permissions.clear()
-            permissions.update(temp)
-            await websocket.send_bytes(event.model_dump_protobuf())
-
-        elif event.permission in permissions:
+        if event.permission in permissions:
             await websocket.send_bytes(event.model_dump_protobuf())
 
 
 ROUTES = [
-    WebSocketRoute("/ws", endpoint=server_event_ws),
+    WebSocketRoute("/duplex-ws", endpoint=duplex_ws),
 ]

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from tortoise import fields
 
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
-from pulsarity.database.permission import Permission
+from pulsarity.database.permission import Permission, SystemDefaultPerms
 
 if TYPE_CHECKING:
     from pulsarity.database.user import User
@@ -65,3 +65,19 @@ class Role(_PulsarityBase):
         permissions = await Permission.all()
 
         await admin_role.permissions.add(*permissions)
+
+        unauth_role, created = await cls.get_or_create(
+            name="UNAUTHENTICATED", persistent=True
+        )
+
+        if created:
+            perm_values = [
+                SystemDefaultPerms.READ_PILOTS,
+                SystemDefaultPerms.READ_EVENTS,
+                SystemDefaultPerms.READ_RACECLASS,
+                SystemDefaultPerms.READ_ROUND,
+                SystemDefaultPerms.READ_HEAT,
+                SystemDefaultPerms.SIMPLEX_WEBSOCKET,
+            ]
+            permissions = await Permission.filter(value__in=perm_values)
+            await unauth_role.permissions.add(*permissions)

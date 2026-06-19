@@ -4,6 +4,7 @@ Authorization and permission enforcement
 
 import functools
 import inspect
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ParamSpec
 from urllib.parse import urlencode
 from uuid import UUID
@@ -11,19 +12,18 @@ from uuid import UUID
 from starlette.authentication import (
     AuthenticationBackend,
     BaseUser,
-    UnauthenticatedUser,
 )
 from starlette.exceptions import HTTPException
 from starlette.requests import HTTPConnection, Request
 from starlette.responses import RedirectResponse
 from starlette.websockets import WebSocket
 
+from pulsarity.database import Role
 from pulsarity.database.user import User
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
 
-    from pulsarity.database.permission import UserPermission
 
 _P = ParamSpec("_P")
 
@@ -129,14 +129,27 @@ def requires(
     return decorator
 
 
-class PulsarityUser(BaseUser):
+class PulsarityUser(BaseUser, ABC):
     """
-    User of the authentication system
+    Abstract base class for user authentication
+    """
+
+    @property
+    @abstractmethod
+    def username(self) -> str:
+        """
+        Username of the authenticated user
+        """
+
+
+class PulsarityAuthenticatedUser(PulsarityUser):
+    """
+    Container for an authenticated user
     """
 
     __slots__ = ("_auth_id", "_display_name", "_username")
 
-    def __init__(self, db_user: User):
+    def __init__(self, db_user: User) -> None:
         self._auth_id = db_user.auth_id.hex
         self._username = db_user.username
         self._display_name = db_user.display_name
@@ -153,35 +166,36 @@ class PulsarityUser(BaseUser):
     def identity(self) -> str:
         return self._auth_id
 
-    async def get_permissions(self) -> set[str]:
+    @property
+    def username(self) -> str:
         """
-        Get the permissions for the user
+        _summary_
 
-        :return: The set of permissions
+        :return: _description_
         """
+        return self._username
 
-        if self._auth_id is None:
-            return set()
 
-        uuid = UUID(hex=self._auth_id)
-        user = await User.get_by_uuid_prefetch(uuid)
+class PulsarityUnauthenticatedUser(PulsarityUser):
+    """
+    An unauthenticated user
+    """
 
-        if user is None:
-            return set()
+    @property
+    def is_authenticated(self) -> bool:
+        return False
 
-        return user.permissions
+    @property
+    def display_name(self) -> str:
+        return ""
 
-    async def has_permission(self, permission: UserPermission) -> bool:
-        """
-        Check a user for valid permissions
+    @property
+    def identity(self) -> str:
+        return ""
 
-        :param permission: The user permission to check for
-        :return: Status of the user have the permission. Returning
-        True verifies that the permission has been granted.
-        """
-
-        permissions = await self.get_permissions()
-        return permission in permissions
+    @property
+    def username(self) -> str:
+        return ""
 
 
 class PulsarityAuthBackend(AuthenticationBackend):
@@ -200,6 +214,10 @@ class PulsarityAuthBackend(AuthenticationBackend):
             user = await User.get_by_uuid_prefetch(user_uuid)
 
             if user is not None:
-                return PulsarityCredentials(user.permissions), PulsarityUser(user)
+                return PulsarityCredentials(
+                    user.permissions
+                ), PulsarityAuthenticatedUser(user)
 
-        return PulsarityCredentials(), UnauthenticatedUser()
+        role = await Role.get(name="UNAUTHENTICATED").prefetch_related("permissions")
+        unauth_perms = await role.get_permissions()
+        return PulsarityCredentials(unauth_perms), PulsarityUnauthenticatedUser()

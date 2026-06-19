@@ -102,7 +102,7 @@ class SystemHeartBeatEcho(SystemEventData):
 
     event_id = websocket_pb2.EVENT_HEARTBEAT
     priority = EvtPriority.LOW
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
@@ -113,7 +113,7 @@ class SystemPermissionUpdate(SystemEventData):
 
     event_id = websocket_pb2.EVENT_PERMISSIONS_UPDATE
     priority = EvtPriority.HIGH
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
@@ -124,7 +124,7 @@ class ServerStartup(SystemEventData):
 
     event_id = websocket_pb2.EVENT_STARTUP
     priority = EvtPriority.HIGHEST
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
@@ -135,7 +135,7 @@ class ServerShutdown(SystemEventData):
 
     event_id = websocket_pb2.EVENT_SHUTDOWN
     priority = EvtPriority.HIGHEST
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
@@ -146,7 +146,7 @@ class ServerRestart(SystemEventData):
 
     event_id = websocket_pb2.EVENT_RESTART
     priority = EvtPriority.LOW
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
@@ -157,7 +157,7 @@ class RaceSchedule(SystemEventData):
 
     event_id = websocket_pb2.EVENT_RACE_SCHEDULE
     priority = EvtPriority.HIGHEST
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
@@ -168,7 +168,7 @@ class RaceStage(SystemEventData):
 
     event_id = websocket_pb2.EVENT_RACE_STAGE
     priority = EvtPriority.HIGHEST
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
@@ -179,7 +179,7 @@ class RaceStart(SystemEventData):
 
     event_id = websocket_pb2.EVENT_RACE_START
     priority = EvtPriority.HIGHEST
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
@@ -190,7 +190,7 @@ class RaceFinish(SystemEventData):
 
     event_id = websocket_pb2.EVENT_RACE_FINISH
     priority = EvtPriority.HIGHEST
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
@@ -201,7 +201,7 @@ class RaceStop(SystemEventData):
 
     event_id = websocket_pb2.EVENT_RACE_STOP
     priority = EvtPriority.HIGHEST
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
@@ -212,7 +212,7 @@ class RacePause(SystemEventData):
 
     event_id = websocket_pb2.EVENT_RACE_PAUSE
     priority = EvtPriority.HIGHEST
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
@@ -223,7 +223,7 @@ class RaceResume(SystemEventData):
 
     event_id = websocket_pb2.EVENT_RACE_RESUME
     priority = EvtPriority.HIGHEST
-    permission = SystemDefaultPerms.EVENT_WEBSOCKET
+    permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
