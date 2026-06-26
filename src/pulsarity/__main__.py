@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import granian
+import pulsarity_localization
 from granian.constants import Interfaces
 from granian.log import LogLevels
 from granian.server.embed import Server
@@ -81,6 +82,7 @@ async def _server() -> None:
 
     logger.debug("Granian server version: %s", granian.__version__)
     logger.info("Pulsarity application version: %s", pulsarity.__version__)
+    logger.info("Pulsarity Languages version: %s", pulsarity_localization.__version__)
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(server.serve())
