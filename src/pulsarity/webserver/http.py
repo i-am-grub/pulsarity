@@ -5,6 +5,7 @@ HTTP Rest API Routes
 import logging
 from uuid import UUID
 
+import pulsarity_localization
 from starlette.background import BackgroundTask, BackgroundTasks
 from starlette.responses import Response
 from starlette.routing import Route
@@ -369,11 +370,47 @@ async def get_server_info() -> Response:
     """
     configs = config.config_manager
 
+    packs = pulsarity_localization.get_language_packs()
+
     message = http_pb2.ServerData(
-        version=pulsarity.__version__, server_name=configs.general.server_name
+        version=pulsarity.__version__,
+        server_name=configs.general.server_name,
+        language_version=pulsarity_localization.__version__,
+        language_packs=packs,
     )
 
     return ProtobufResponse(message)
+
+
+@http_route_dataclass
+class _LocalizationPack(PathDataModelType):
+    """
+    Model for parsing object id path params
+    """
+
+    key: str
+
+
+_local_cache: dict[str, http_pb2.LocalizationData] = {}
+
+
+@endpoint(requires_auth=False, path_model=_LocalizationPack)
+async def get_localization_pack(path: _LocalizationPack) -> Response:
+    """
+    Gets a localization pack for the key in the path
+    """
+    if path.key in _local_cache:
+        return ProtobufResponse(_local_cache[path.key])
+
+    pack = await pulsarity_localization.load_language_pack_async(path.key)
+
+    if pack is not None:
+        _local_cache[path.key] = http_pb2.LocalizationData(
+            messages=pack["messages"], pluralization=pack["pluralization"]
+        )
+        return ProtobufResponse(_local_cache[path.key])
+
+    return Response(status_code=204)
 
 
 ROUTES = [
@@ -392,4 +429,5 @@ ROUTES = [
     Route("/rounds/{id:int}/heats", endpoint=get_heats_for_round),
     Route("/heats/{id:int}", endpoint=get_heat),
     Route("/server-info", endpoint=get_server_info),
+    Route("/localization-pack/{key:str}", endpoint=get_localization_pack),
 ]

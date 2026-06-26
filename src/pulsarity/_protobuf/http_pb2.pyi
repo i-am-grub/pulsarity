@@ -13,6 +13,28 @@ class AuthenticatedResponse(_message.Message):
     userinfo: UserInfo
     def __init__(self, status: bool = ..., userinfo: _Optional[_Union[UserInfo, _Mapping]] = ...) -> None: ...
 
+class LocalizationData(_message.Message):
+    __slots__ = ["messages", "pluralization"]
+    class MessagesEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+    class PluralizationEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+    MESSAGES_FIELD_NUMBER: _ClassVar[int]
+    PLURALIZATION_FIELD_NUMBER: _ClassVar[int]
+    messages: _containers.ScalarMap[str, str]
+    pluralization: _containers.ScalarMap[str, str]
+    def __init__(self, messages: _Optional[_Mapping[str, str]] = ..., pluralization: _Optional[_Mapping[str, str]] = ...) -> None: ...
+
 class LoginRequest(_message.Message):
     __slots__ = ["password", "username"]
     PASSWORD_FIELD_NUMBER: _ClassVar[int]
@@ -38,12 +60,16 @@ class ResetPasswordRequest(_message.Message):
     def __init__(self, old_password: _Optional[str] = ..., new_password: _Optional[str] = ...) -> None: ...
 
 class ServerData(_message.Message):
-    __slots__ = ["server_name", "version"]
+    __slots__ = ["language_packs", "language_version", "server_name", "version"]
+    LANGUAGE_PACKS_FIELD_NUMBER: _ClassVar[int]
+    LANGUAGE_VERSION_FIELD_NUMBER: _ClassVar[int]
     SERVER_NAME_FIELD_NUMBER: _ClassVar[int]
     VERSION_FIELD_NUMBER: _ClassVar[int]
+    language_packs: _containers.RepeatedScalarFieldContainer[str]
+    language_version: str
     server_name: str
     version: str
-    def __init__(self, version: _Optional[str] = ..., server_name: _Optional[str] = ...) -> None: ...
+    def __init__(self, version: _Optional[str] = ..., server_name: _Optional[str] = ..., language_version: _Optional[str] = ..., language_packs: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class UserInfo(_message.Message):
     __slots__ = ["auth_id", "authenticated", "dispay_name", "permissions", "username"]

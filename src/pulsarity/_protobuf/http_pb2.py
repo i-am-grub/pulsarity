@@ -13,13 +13,17 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nhttp.proto\x12\x0epulsarity.http\"n\n\x08UserInfo\x12\x15\n\rauthenticated\x18\x01 \x01(\x08\x12\x0f\n\x07\x61uth_id\x18\x02 \x01(\t\x12\x10\n\x08username\x18\x03 \x01(\t\x12\x13\n\x0b\x64ispay_name\x18\x04 \x01(\t\x12\x13\n\x0bpermissions\x18\x05 \x03(\t\"S\n\x15\x41uthenticatedResponse\x12\x0e\n\x06status\x18\x01 \x01(\x08\x12*\n\x08userinfo\x18\x02 \x01(\x0b\x32\x18.pulsarity.http.UserInfo\"2\n\x0cLoginRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"\\\n\rLoginResponse\x12\x1f\n\x17password_reset_required\x18\x01 \x01(\x08\x12*\n\x08userinfo\x18\x02 \x01(\x0b\x32\x18.pulsarity.http.UserInfo\"B\n\x14ResetPasswordRequest\x12\x14\n\x0cold_password\x18\x01 \x01(\t\x12\x14\n\x0cnew_password\x18\x02 \x01(\t\"2\n\nServerData\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x13\n\x0bserver_name\x18\x02 \x01(\tb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nhttp.proto\x12\x0epulsarity.http\"n\n\x08UserInfo\x12\x15\n\rauthenticated\x18\x01 \x01(\x08\x12\x0f\n\x07\x61uth_id\x18\x02 \x01(\t\x12\x10\n\x08username\x18\x03 \x01(\t\x12\x13\n\x0b\x64ispay_name\x18\x04 \x01(\t\x12\x13\n\x0bpermissions\x18\x05 \x03(\t\"S\n\x15\x41uthenticatedResponse\x12\x0e\n\x06status\x18\x01 \x01(\x08\x12*\n\x08userinfo\x18\x02 \x01(\x0b\x32\x18.pulsarity.http.UserInfo\"2\n\x0cLoginRequest\x12\x10\n\x08username\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"\\\n\rLoginResponse\x12\x1f\n\x17password_reset_required\x18\x01 \x01(\x08\x12*\n\x08userinfo\x18\x02 \x01(\x0b\x32\x18.pulsarity.http.UserInfo\"B\n\x14ResetPasswordRequest\x12\x14\n\x0cold_password\x18\x01 \x01(\t\x12\x14\n\x0cnew_password\x18\x02 \x01(\t\"d\n\nServerData\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x13\n\x0bserver_name\x18\x02 \x01(\t\x12\x18\n\x10language_version\x18\x03 \x01(\t\x12\x16\n\x0elanguage_packs\x18\x04 \x03(\t\"\x87\x02\n\x10LocalizationData\x12@\n\x08messages\x18\x01 \x03(\x0b\x32..pulsarity.http.LocalizationData.MessagesEntry\x12J\n\rpluralization\x18\x02 \x03(\x0b\x32\x33.pulsarity.http.LocalizationData.PluralizationEntry\x1a/\n\rMessagesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x34\n\x12PluralizationEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'http_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
+  _LOCALIZATIONDATA_MESSAGESENTRY._options = None
+  _LOCALIZATIONDATA_MESSAGESENTRY._serialized_options = b'8\001'
+  _LOCALIZATIONDATA_PLURALIZATIONENTRY._options = None
+  _LOCALIZATIONDATA_PLURALIZATIONENTRY._serialized_options = b'8\001'
   _USERINFO._serialized_start=30
   _USERINFO._serialized_end=140
   _AUTHENTICATEDRESPONSE._serialized_start=142
@@ -31,5 +35,11 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _RESETPASSWORDREQUEST._serialized_start=373
   _RESETPASSWORDREQUEST._serialized_end=439
   _SERVERDATA._serialized_start=441
-  _SERVERDATA._serialized_end=491
+  _SERVERDATA._serialized_end=541
+  _LOCALIZATIONDATA._serialized_start=544
+  _LOCALIZATIONDATA._serialized_end=807
+  _LOCALIZATIONDATA_MESSAGESENTRY._serialized_start=706
+  _LOCALIZATIONDATA_MESSAGESENTRY._serialized_end=753
+  _LOCALIZATIONDATA_PLURALIZATIONENTRY._serialized_start=755
+  _LOCALIZATIONDATA_PLURALIZATIONENTRY._serialized_end=807
 # @@protoc_insertion_point(module_scope)
