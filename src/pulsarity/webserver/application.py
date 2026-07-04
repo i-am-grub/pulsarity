@@ -21,13 +21,12 @@ from tortoise.context import _current_context as db_context
 
 from pulsarity import ctx, database, defaults
 from pulsarity.events import EventBroker
-from pulsarity.events.server import ServerShutdown, ServerStartup
+from pulsarity.events.server import ServerShutdown, ServerStartup, SystemHeartBeat
 from pulsarity.interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.manager import RaceManager
 from pulsarity.utils import background, config
+from pulsarity.webserver import http, websockets
 from pulsarity.webserver._auth import PulsarityAuthBackend
-from pulsarity.webserver.http import ROUTES as HTTP_ROUTES
-from pulsarity.webserver.websockets import ROUTES as WS_ROUTES
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +115,7 @@ def generate_api_application() -> Starlette:
     ]
 
     return Starlette(
-        routes=HTTP_ROUTES + WS_ROUTES,  # type: ignore
+        routes=http.ROUTES + websockets.ROUTES,
         middleware=middleware,
     )
 
@@ -161,6 +160,27 @@ def generate_pulsarity_application() -> Starlette:
         lifespan=lifespan,
         middleware=middleware,
     )
+
+
+async def heatbeat_task():
+    """
+    Publish a heartbeat event at 15 second intervals
+    """
+
+    event_borker = ctx.event_broker_ctx.get()
+    loop = ctx.loop_ctx.get()
+
+    evt = asyncio.Event()
+    next_time = loop.time()
+
+    while True:
+        evt.clear()
+        event_borker.publish(SystemHeartBeat())
+        logger.debug("Server heartbeat...")
+
+        next_time += 15.0
+        loop.call_at(next_time, evt.set)
+        await evt.wait()
 
 
 @contextlib.asynccontextmanager
@@ -211,6 +231,10 @@ async def lifespan(_app: Starlette):
         race_manager_token = ctx.race_manager_ctx.set(state["race_manager"])
         timer_manager_token = ctx.timer_manager_ctx.set(state["timer_manager"])
 
+        heartbeat_task = ctx.loop_ctx.get().create_task(
+            heatbeat_task(), name="heartbeat_task"
+        )
+
         await server_starup_workflow()
 
         logger.info("Application startup completed")
@@ -219,7 +243,12 @@ async def lifespan(_app: Starlette):
 
         logger.info("Stopping application")
 
+        heartbeat_task.cancel()
+
         await server_shutdown_workflow()
+
+        with contextlib.suppress(asyncio.CancelledError):
+            await heartbeat_task
 
     logger.info("Database connections closed")
 
@@ -237,7 +266,6 @@ async def server_starup_workflow() -> None:
     """
     defaults.import_all_submodules()
     ctx.timer_manager_ctx.get().start()
-
     await ctx.event_broker_ctx.get().trigger(ServerStartup())
 
 
@@ -247,4 +275,5 @@ async def server_shutdown_workflow() -> None:
     """
     await ctx.event_broker_ctx.get().trigger(ServerShutdown())
     await ctx.timer_manager_ctx.get().shutdown(5)
+    websockets.ws_shutdown_evt.set()
     await background.shutdown(5)

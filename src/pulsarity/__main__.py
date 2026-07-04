@@ -20,13 +20,35 @@ from starlette.middleware.cors import CORSMiddleware
 import pulsarity
 from pulsarity.events.client import ClientServerRestart, ClientServerShutdown
 from pulsarity.utils import config
-from pulsarity.webserver import application
+from pulsarity.webserver import application, websockets
 
 if TYPE_CHECKING:
     from starlette.types import ASGIApp
 
+# pylint: disable=w0223
+
 logger = logging.getLogger(__name__)
 _shutdown_event = asyncio.Event()
+
+
+class PulsarityServer(Server):
+    """
+    Pulsarity ASGI webserver
+    """
+
+    async def shutdown_server(self):
+        """
+        Cleanly shutdown the webserver.
+
+        This method will shutdown parts of the server
+        that can not be cleaned up before the
+        Granian server is signalled to shutdown.
+        """
+
+        websockets.ws_shutdown_evt.set()
+        await websockets.conn_tracker.wait_all_closed()
+
+        self.stop()
 
 
 def _signal_shutdown(*_) -> None:
@@ -37,7 +59,7 @@ def _signal_shutdown(*_) -> None:
     logger.debug("Server shutdown signaled")
 
 
-def _generate_server() -> Server:
+def _generate_server() -> PulsarityServer:
     """
     Serve the Pulsarity application from a Granian server
     """
@@ -52,7 +74,7 @@ def _generate_server() -> Server:
         allow_headers=("Authorization", "Content-Type"),
     )
 
-    return Server(
+    return PulsarityServer(
         app,
         address=configs.webserver.host,
         port=configs.webserver.port,
@@ -87,7 +109,7 @@ async def _server() -> None:
     async with asyncio.TaskGroup() as tg:
         tg.create_task(server.serve())
 
-        events: list[asyncio.Future] = [
+        events = [
             tg.create_task(ClientServerRestart.restart_evt.wait()),
             tg.create_task(ClientServerShutdown.shutdown_evt.wait()),
             tg.create_task(_shutdown_event.wait()),
@@ -100,7 +122,7 @@ async def _server() -> None:
         for task in events:
             task.cancel()
 
-        server.stop()
+        await server.shutdown_server()
 
     logger.info("Server shutdown completed")
 
