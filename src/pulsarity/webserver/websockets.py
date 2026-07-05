@@ -154,7 +154,7 @@ async def ws_connection(
     """
     close_info = 1000, "standard client disconnect"
 
-    await websocket.accept(headers=((b"Content-Type", b"application/x-protobuf"),))
+    await websocket.accept(headers=[(b"Content-Type", b"application/x-protobuf")])
 
     user: PulsarityUser = websocket.user
     permissions = websocket.auth.scopes

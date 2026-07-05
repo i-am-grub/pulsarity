@@ -27,6 +27,29 @@ async def test_server_websocket_unauth():
 
 
 @pytest.mark.asyncio
+async def test_server_simplex_websocket_auth(user_creds: tuple[str, str]):
+    """
+    Test accessing a websocket route while being logged in
+    """
+    evt = websocket_pb2.WebsocketEvent()
+    evt.uuid = uuid.uuid4().bytes
+    evt.event_id = websocket_pb2.EVENT_HEARTBEAT
+
+    transport = ASGIWebSocketTransport(app=application.generate_api_application())
+    async with AsyncClient(transport=transport, base_url="https://localhost") as client:
+        message = http_pb2.LoginRequest()
+        message.username = user_creds[0]
+        message.password = user_creds[1]
+
+        header = {"Content-Type": "application/x-protobuf"}
+        response = await client.post(
+            "/login", content=message.SerializeToString(), headers=header
+        )
+
+        assert response.status_code == 200
+
+
+@pytest.mark.asyncio
 async def test_server_websocket_auth(user_creds: tuple[str, str]):
     """
     Test accessing a websocket route while being logged in
@@ -48,11 +71,15 @@ async def test_server_websocket_auth(user_creds: tuple[str, str]):
 
         assert response.status_code == 200
 
-        async with httpx_ws.aconnect_ws("/duplex-ws", client) as ws:
+        async with httpx_ws.aconnect_ws("/ws/simplex", client) as ws:
+            # Send data to the server - the data shouldn't be processed
+            await ws.send_bytes(evt.SerializeToString())
+
+        async with httpx_ws.aconnect_ws("/ws/duplex", client) as ws:
             await ws.send_bytes(evt.SerializeToString())
 
             async with asyncio.timeout(5.0):
-                # Simulate reading JSON as the client
+                # Simulate reading data as the client
                 data = await ws.receive_bytes()
                 recieved = websocket_pb2.WebsocketEvent.FromString(data)
 
