@@ -95,7 +95,7 @@ class SystemEventData(ABC):
 
 
 @system_event
-class SystemHeartBeatEcho(SystemEventData):
+class SystemHeartBeat(SystemEventData):
     """
     Heartbeat echo
     """

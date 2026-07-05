@@ -21,8 +21,11 @@ async def test_server_websocket_unauth():
     """
     transport = ASGIWebSocketTransport(app=application.generate_api_application())
     async with AsyncClient(transport=transport, base_url="https://localhost") as client:
-        with pytest.raises(httpx_ws.WebSocketDisconnect):
-            async with httpx_ws.aconnect_ws("/duplex-ws", client):
+        with pytest.raises(
+            httpx_ws.WebSocketDisconnect,
+            check=lambda x: x.code == 1000 and x.reason == "",
+        ):
+            async with httpx_ws.aconnect_ws("/ws/duplex", client):
                 ...
 
 
@@ -48,11 +51,15 @@ async def test_server_websocket_auth(user_creds: tuple[str, str]):
 
         assert response.status_code == 200
 
-        async with httpx_ws.aconnect_ws("/duplex-ws", client) as ws:
+        async with httpx_ws.aconnect_ws("/ws/simplex", client) as ws:
+            # Send data to the server - the data shouldn't be processed
+            await ws.send_bytes(evt.SerializeToString())
+
+        async with httpx_ws.aconnect_ws("/ws/duplex", client) as ws:
             await ws.send_bytes(evt.SerializeToString())
 
             async with asyncio.timeout(5.0):
-                # Simulate reading JSON as the client
+                # Simulate reading data as the client
                 data = await ws.receive_bytes()
                 recieved = websocket_pb2.WebsocketEvent.FromString(data)
 

@@ -11,7 +11,7 @@ from uuid import UUID
 from pulsarity import ctx
 from pulsarity._protobuf import websocket_pb2
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
-from pulsarity.events.server import SystemHeartBeatEcho
+from pulsarity.events.server import SystemHeartBeat
 
 # pylint: disable=E1121
 
@@ -81,7 +81,7 @@ class ClientHeartbeat(ClientEventData):
 
     async def run_handler(self):
         websocket = ctx.websocket_ctx.get()
-        response = SystemHeartBeatEcho(uuid=self.uuid).model_dump_protobuf()
+        response = SystemHeartBeat(uuid=self.uuid).model_dump_protobuf()
         await websocket.send_bytes(response)
 
 

@@ -8,7 +8,7 @@ from uuid import UUID
 import pulsarity_localization
 from starlette.background import BackgroundTask, BackgroundTasks
 from starlette.responses import Response
-from starlette.routing import Route
+from starlette.routing import BaseRoute, Route
 from starsessions import session
 
 import pulsarity
@@ -413,7 +413,7 @@ async def get_localization_pack(path: _LocalizationPack) -> Response:
     return Response(status_code=204)
 
 
-ROUTES = [
+ROUTES: list[BaseRoute] = [
     Route("/login", endpoint=login, methods=["POST"]),
     Route("/logout", endpoint=logout),
     Route("/auth-check", endpoint=check_auth),
