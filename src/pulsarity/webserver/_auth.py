@@ -41,9 +41,11 @@ class PulsarityCredentials:
 
 def has_required_scope(conn: HTTPConnection, scopes: Iterable[str]) -> bool:
     """
-    Reimplementation of starlette's `has_required_scope`
+    Reimplementation of starlette's `has_required_scope`. Assumes that the 
+    connection scope container is set based.
     """
-    return set(scopes).issubset(conn.auth.scopes)
+    connection_scopes:set = conn.auth.scopes
+    return connection_scopes.issuperset(scopes)
 
 
 def requires(
@@ -55,7 +57,7 @@ def requires(
     Reimplementation of starlette's `requires` decorator
     """
     # pylint: disable=W0719
-    scopes_set = {scopes} if isinstance(scopes, str) else set(scopes)
+    scopes_list = (scopes,) if isinstance(scopes, str) else tuple(scopes)
 
     def decorator(
         func: Callable[_P, Any],
@@ -79,7 +81,7 @@ def requires(
                     "websocket", args[idx] if idx < len(args) else None
                 )
                 if isinstance(websocket, WebSocket):
-                    if not has_required_scope(websocket, scopes_set):
+                    if not has_required_scope(websocket, scopes_list):
                         await websocket.close()
                     else:
                         await func(*args, **kwargs)
@@ -95,7 +97,7 @@ def requires(
             async def async_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
                 request = kwargs.get("request", args[idx] if idx < len(args) else None)
                 if isinstance(request, Request):
-                    if not has_required_scope(request, scopes_set):
+                    if not has_required_scope(request, scopes_list):
                         if redirect is not None:
                             orig_request_qparam = urlencode({"next": str(request.url)})
                             next_url = (
@@ -113,7 +115,7 @@ def requires(
         def sync_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> Any:
             request = kwargs.get("request", args[idx] if idx < len(args) else None)
             if isinstance(request, Request):
-                if not has_required_scope(request, scopes_set):
+                if not has_required_scope(request, scopes_list):
                     if redirect is not None:
                         orig_request_qparam = urlencode({"next": str(request.url)})
                         next_url = f"{request.url_for(redirect)}?{orig_request_qparam}"
