@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Callable, Coroutine
 
 from google.protobuf.message import DecodeError
 from starlette.authentication import requires
-from starlette.routing import WebSocketRoute
+from starlette.routing import BaseRoute, WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from pulsarity import ctx
@@ -231,7 +231,7 @@ async def duplex_ws(websocket: WebSocket):
         await ws_connection(websocket, duplex_recieve_event_data)
 
 
-ROUTES = [
+ROUTES: list[BaseRoute] = [
     WebSocketRoute("/ws/simplex", endpoint=simplex_ws),
     WebSocketRoute("/ws/duplex", endpoint=duplex_ws),
 ]
