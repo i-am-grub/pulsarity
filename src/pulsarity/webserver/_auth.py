@@ -41,10 +41,10 @@ class PulsarityCredentials:
 
 def has_required_scope(conn: HTTPConnection, scopes: Iterable[str]) -> bool:
     """
-    Reimplementation of starlette's `has_required_scope`. Assumes that the 
+    Reimplementation of starlette's `has_required_scope`. Assumes that the
     connection scope container is set based.
     """
-    connection_scopes:set = conn.auth.scopes
+    connection_scopes: set = conn.auth.scopes
     return connection_scopes.issuperset(scopes)
 
 
