@@ -73,14 +73,8 @@ class ValueSortedDict(dict[U, V]):
     __marker = object()
 
     def __init__(self, iterable: Iterable[tuple[U, V]] | dict[U, V] = ()):
-        self.list: list[U] = []
-
-        if isinstance(iterable, Iterable):
-            super().__init__(iterable)
-            self.list = sorted(super().keys(), key=self._by_value_key)
-        else:
-            msg = f"{type(iterable)} object is not iterable"
-            raise TypeError(msg)
+        super().__init__(iterable)
+        self.list: list[U] = sorted(super().keys(), key=self._by_value_key)
 
     def _by_value_key(self, key: U) -> V:
         return self[key]
@@ -142,9 +136,7 @@ class ValueSortedDict(dict[U, V]):
 
     @override
     def copy(self):
-        copy_ = self.__class__()
-        copy_.update(self)
-        return copy_
+        return self.__class__(self)
 
     @override
     def __iter__(self):
