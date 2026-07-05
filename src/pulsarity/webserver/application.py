@@ -4,6 +4,7 @@ Webserver Components
 
 import asyncio
 import contextlib
+import itertools
 import logging
 from importlib.resources import files
 from pathlib import Path
@@ -162,25 +163,21 @@ def generate_pulsarity_application() -> Starlette:
     )
 
 
-async def heatbeat_task():
+async def heartbeat_coroutine():
     """
     Publish a heartbeat event at 15 second intervals
     """
-
-    event_borker = ctx.event_broker_ctx.get()
+    event_broker = ctx.event_broker_ctx.get()
     loop = ctx.loop_ctx.get()
-
     evt = asyncio.Event()
-    next_time = loop.time()
 
-    while True:
-        evt.clear()
-        event_borker.publish(SystemHeartBeat())
-        logger.debug("Server heartbeat...")
-
-        next_time += 15.0
-        loop.call_at(next_time, evt.set)
+    for i in itertools.count(start=loop.time(), step=15.0):
+        loop.call_at(i, evt.set)
         await evt.wait()
+        evt.clear()
+
+        event_broker.publish(SystemHeartBeat())
+        logger.debug("Server heartbeat...")
 
 
 @contextlib.asynccontextmanager
@@ -232,7 +229,7 @@ async def lifespan(_app: Starlette):
         timer_manager_token = ctx.timer_manager_ctx.set(state["timer_manager"])
 
         heartbeat_task = ctx.loop_ctx.get().create_task(
-            heatbeat_task(), name="heartbeat_task"
+            heartbeat_coroutine(), name="heartbeat_task"
         )
 
         await server_starup_workflow()
