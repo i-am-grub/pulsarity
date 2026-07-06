@@ -99,8 +99,5 @@ config.toml
 *.pem
 logs
 
-# uv
-uv.lock
-
 # ruff
 .ruff_cache

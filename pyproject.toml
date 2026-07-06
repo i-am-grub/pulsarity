@@ -25,7 +25,7 @@ dependencies = [
     "tortoise-orm==1.1.7",
     "anyio==4.14.0",
     "protobuf==7.35.0",
-    "pulsarity-localization", # Added repo as source until an offical repease is made
+    "pulsarity-localization", # Added repo as source until an offical release is made
     # Upstream Dependencies
     "cffi==2.0.0", # argon, cryptography
     "idna==3.18", # anyio, httpx
@@ -40,9 +40,6 @@ dependencies = [
 
 [project.urls]
 repository = "https://github.com/i-am-grub/pulsarity"
-
-[project.optional-dependencies]
-pgsql = [ "asyncpg==0.31.0" ]
 
 [project.scripts]
 pulsarity = "pulsarity.__main__:main"
