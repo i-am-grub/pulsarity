@@ -214,12 +214,14 @@ class PulsarityAuthBackend(AuthenticationBackend):
         """
         if (uuid_hex := conn.session.get("auth_id")) is not None:
             user_uuid = UUID(hex=uuid_hex)
-            user = await User.get_by_uuid_prefetch(user_uuid)
+            user: User | None = await User.get_by_uuid_prefetch(user_uuid)
 
             if user is not None:
                 return PulsarityCredentials(
                     user.permissions,
                 ), PulsarityAuthenticatedUser(user)
+
+            User.get_by_uuid_prefetch.cache_invalidate(user_uuid)
 
         role = await Role.get(name="UNAUTHENTICATED").prefetch_related("permissions")
         unauth_perms = await role.get_permissions()

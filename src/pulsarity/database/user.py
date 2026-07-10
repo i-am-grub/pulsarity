@@ -5,9 +5,11 @@ ORM classes for User data
 import asyncio
 import logging
 from datetime import UTC, datetime
+from functools import cached_property
 from typing import Self
 from uuid import UUID, uuid4
 
+import async_lru
 from argon2 import PasswordHasher
 from argon2.exceptions import (
     HashingError,
@@ -93,7 +95,7 @@ class User(_PulsarityBase):
 
         return self.username
 
-    @property
+    @cached_property
     def permissions(self) -> set[str]:
         """
         Gets the permissions for the user. Can only be used when roles
@@ -180,6 +182,7 @@ class User(_PulsarityBase):
         return await cls.get_or_none(auth_id=uuid)
 
     @classmethod
+    @async_lru.alru_cache()
     async def get_by_uuid_prefetch(cls, uuid: UUID) -> Self | None:
         """
         Attempt to retrieve a user by uuid. A successful retrieval will

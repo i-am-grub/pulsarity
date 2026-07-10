@@ -25,6 +25,7 @@ dependencies = [
     "tortoise-orm==1.1.7",
     "anyio==4.14.0",
     "protobuf==7.35.0",
+    "async-lru=2.3.0",
     "pulsarity-localization", # Added repo as source until an offical release is made
     # Upstream Dependencies
     "cffi==2.0.0", # argon, cryptography

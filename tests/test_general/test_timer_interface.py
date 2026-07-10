@@ -117,7 +117,7 @@ async def test_manager_lifespan(interface_manager: TimerInterfaceManager):
     Tests the lifespan of the interface manager
     """
     interface_manager.start()
-    await interface_manager.shutdown(0.5)
+    await interface_manager.shutdown()
 
 
 @pytest.mark.asyncio
