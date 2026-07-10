@@ -77,32 +77,12 @@ dev = [
     "pytest-asyncio==1.4.0",
     "pytest-cov==7.1.0",
     "pytest-randomly==4.1.0",
-
     # Linting
     "mypy==2.1.0",
     "pylint==4.0.6",
     "types-protobuf==7.34.1.20260518",
     "ruff==0.15.17",
-
-    # Upstream Dependencies
-    "certifi==v2026.4.22", # httpx
-    "httpcore==1.0.9", # httpx
-    "wsproto==1.3.2", # httpx-ws
-    "h11==0.16.0", # httpx-ws
-    "librt==0.11.0", # mypy
-    "mypy-extensions==1.1.0", # mypy
-    "pathspec==1.1.1", # mypy
-    "astroid==4.0.2", # pylint
-    "dill==0.4.1", # pylint
-    "isort==8.0.1", # pylint
-    "mccabe==0.7.0", # pylint
-    "platformdirs==4.9.6", # pylint
-    "tomlkit==0.15.0", # pylint
-    "iniconfig==2.3.0", # pytest
-    "packaging==26.1", # pytest
-    "pluggy==1.6.0", # pytest
-    "pygments==2.20.0", # pytest
-    "coverage==7.14.1", # pytest-cov
+    "basedpyright>=1.39.9",
 ]
 docs = [
     "myst-parser==5.1.0",
@@ -130,43 +110,56 @@ disable = [
 [tool.ruff.lint]
 exclude = ["tests/*", "docs/*", ".mypy_cache", "env", "src/pulsarity/_protobuf/*"]
 select = [
-    # defaults
-    "E4", "E7", "E9", "F",
-
-    # extras
     "A",        # don't shadow builtins
+    "ASYNC",    # flake8-async
+    "ARG",      # flake8-unused-arguments
     "B",        # enable bugbear
     "BLE",      # blind exception checks
     "C4",       # use comprehensions
+    "C90",      # mccabe
     "COM",      # catch weird comma situations
+    "DTZ",      # flake8-datetimez
+    "E",        # pycodestyle error
     "EM",       # error message standards
     "ERA",      # commented out code
     "EXE",      # shebang and permissions checks
+    "F",        # pyflakes
     "FA",       # validate __future__ annotate usage
+    "FIX",      # flake8-fixme
     "FURB",     # refurbishment & modernization
+    "FLY",      # flynt
+    "G",        # flake8-logging-format
     "I",        # isort
+    "ICN",      # flake8-import-conventions
     "INP",      # packages should have __init__.py
+    "INT",      # flake8-gettext
+    "ISC",      # flake8-implicit-str-concat
+    "LOG",      # flake8-logging
     "N",        # pep8 object naming rules
     "PERF",     # performance hits
     "PIE",      # flake8-pie misc. checks
-    "PLC",      # pylint conventions
-    "PLE",      # pylint errors
-    "PLW",      # pylint warnings
+    "PL",       # pylint
     "PT",       # pytest style control
+    "PTH",      # flake8-use-pathlib
     "Q",        # quote controls
+    "RSE",      # flake8-raise
     "RET",      # check usage of return
     "RUF",      # ruff-specific rules
     "S",        # bandit (security checks)
     "SIM",      # code simplicity
+    "SLOT",     # flaske8-slots
     "T10",      # don't leave debugger breakpoints around
     "T20",      # don't leave print() or pprint() around
-    "TC",       # type checking quality stuff (that mypy doesn't check for)[
+    "TC",       # type checking quality stuff (that mypy doesn't check for)
+    "TD",       # flake8-todos
+    "TID",      # flake8-tidy-imports
     "TRY",      # better handling of exceptions
     "W",        # pycodestyle warnings
     "YTT",      # year2020: python3 version checks
+    "UP",       # pyupgrade
 ]
 ignore = [
-    "COM812",
+    # "ASYNC109"
 ]
 
 [tool.ruff.format]

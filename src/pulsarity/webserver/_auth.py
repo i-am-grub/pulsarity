@@ -48,7 +48,7 @@ def has_required_scope(conn: HTTPConnection, scopes: Iterable[str]) -> bool:
     return connection_scopes.issuperset(scopes)
 
 
-def requires(
+def requires(  # noqa: C901
     scopes: str | Sequence[str],
     status_code: int = 403,
     redirect: str | None = None,
@@ -59,7 +59,7 @@ def requires(
     # pylint: disable=W0719
     scopes_list = (scopes,) if isinstance(scopes, str) else tuple(scopes)
 
-    def decorator(
+    def decorator(  # noqa: C901
         func: Callable[_P, Any],
     ) -> Callable[_P, Any]:
         sig = inspect.signature(func)
@@ -78,7 +78,8 @@ def requires(
             @functools.wraps(func)
             async def websocket_wrapper(*args: _P.args, **kwargs: _P.kwargs) -> None:
                 websocket = kwargs.get(
-                    "websocket", args[idx] if idx < len(args) else None
+                    "websocket",
+                    args[idx] if idx < len(args) else None,
                 )
                 if isinstance(websocket, WebSocket):
                     if not has_required_scope(websocket, scopes_list):
@@ -217,7 +218,7 @@ class PulsarityAuthBackend(AuthenticationBackend):
 
             if user is not None:
                 return PulsarityCredentials(
-                    user.permissions
+                    user.permissions,
                 ), PulsarityAuthenticatedUser(user)
 
         role = await Role.get(name="UNAUTHENTICATED").prefetch_related("permissions")

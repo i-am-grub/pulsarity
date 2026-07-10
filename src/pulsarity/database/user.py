@@ -4,7 +4,7 @@ ORM classes for User data
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Self
 from uuid import UUID, uuid4
 
@@ -21,7 +21,7 @@ from pulsarity.database._base import PulsarityBase as _PulsarityBase
 from pulsarity.database.role import Role
 from pulsarity.utils import config
 
-logger = logging.Logger(__name__)
+logger = logging.getLogger(__name__)
 
 _PH = PasswordHasher()
 
@@ -249,7 +249,7 @@ class User(_PulsarityBase):
         """
         Update a user's `last_login` time.
         """
-        await self.filter(id=self.id).update(last_login=datetime.now())
+        await self.filter(id=self.id).update(last_login=datetime.now(tz=UTC))
 
     async def update_password_required(self, status: bool) -> None:
         """

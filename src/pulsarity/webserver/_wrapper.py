@@ -13,7 +13,6 @@ from typing import (
     TYPE_CHECKING,
     NamedTuple,
     Self,
-    TypeVar,
     dataclass_transform,
 )
 
@@ -30,9 +29,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
 
     from starlette.requests import Request
-
-
-T = TypeVar("T")
 
 
 logger = logging.getLogger(__name__)
@@ -127,10 +123,10 @@ def endpoint(
     response data for a route
 
     :param permission: The permissions required to access the route
-    :param requires_auth: Whether the endpoint request authentication or nots, defaults to True
-    :param request_model: The model to use to validate the request, defaults to None
-    :param query_model: The adapter model to use to validate the query parameters, defaults to None
-    :param path_model: The adapter model to use to validate the query parameters, defaults to None
+    :param requires_auth: Whether the endpoint request authentication or not
+    :param request_model: The model to use to validate the request
+    :param query_model: The adapter model to use to validate the query parameters
+    :param path_model: The adapter model to use to validate the query parameters
     """
 
     def inner(
@@ -181,7 +177,10 @@ def endpoint(
 
 
 def _validate_compatibility(
-    func: Callable, model: type[_HttpModel] | None, used_kwargs: set[str], arg_id: str
+    func: Callable,
+    model: type[_HttpModel] | None,
+    used_kwargs: set[str],
+    arg_id: str,
 ):
     """
     Validate the compatibility between the function and provided model
@@ -196,7 +195,7 @@ def _validate_compatibility(
             raise KeyError(msg)
 
         if not issubclass(model, _HttpModel):
-            msg = f"{func.__name__} query model is not a subclass of {_HttpModel.__name__}"
+            msg = f"{func.__name__} query is not a subclass of {_HttpModel.__name__}"
             raise ValueError(msg)
 
     elif arg_id in used_kwargs:
@@ -207,8 +206,10 @@ def _validate_compatibility(
         raise KeyError(msg)
 
 
-async def _process_request(
-    func: Callable, request: Request, val_models: _ValModels
+async def _process_request(  # noqa: C901
+    func: Callable,
+    request: Request,
+    val_models: _ValModels,
 ) -> Response:
     """
     Processes the incoming request

@@ -37,7 +37,7 @@ class RaceStatus(Flag):
     PAUSED = auto()
     """Racing is paused"""
     STOPPED = auto()
-    """System no longer listening for lap crossings; Race results must be saved or discarded"""
+    """System no longer listening for lap crossings"""
     UNDERWAY = RACING | OVERTIME
     """Shortcut for `RACING` or `OVERTIME`"""
     FINISHED = OVERTIME | STOPPED
@@ -210,7 +210,9 @@ class RaceStateManager:
         if self.status is RaceStatus.READY:
             self._format = format_
             self._program_handle = ctx.loop_ctx.get().call_at(
-                assigned_start, self._stage, start_time
+                assigned_start,
+                self._stage,
+                start_time,
             )
             self._set_status(RaceStatus.SCHEDULED)
 
@@ -303,7 +305,8 @@ class RaceStateManager:
         elif (time_ := self.get_race_time()) < self._format.race_time_sec:
             remaining_duration = self._format.race_time_sec - time_
             self._program_handle = ctx.loop_ctx.get().call_later(
-                remaining_duration, self._finish
+                remaining_duration,
+                self._finish,
             )
             self._set_status(RaceStatus.RACING)
 
@@ -312,7 +315,8 @@ class RaceStateManager:
                 self._format.race_time_sec + self._format.overtime_sec - time_
             )
             self._program_handle = ctx.loop_ctx.get().call_later(
-                remaining_duration, self._stop
+                remaining_duration,
+                self._stop,
             )
             self._set_status(RaceStatus.OVERTIME)
 
@@ -353,7 +357,8 @@ class RaceStateManager:
 
         if not self._format.unlimited_time:
             self._program_handle = ctx.loop_ctx.get().call_later(
-                self._format.race_time_sec, self._finish
+                self._format.race_time_sec,
+                self._finish,
             )
 
         else:
@@ -375,7 +380,8 @@ class RaceStateManager:
 
         if self._format.overtime_sec > 0:
             self._program_handle = ctx.loop_ctx.get().call_later(
-                self._format.overtime_sec, self._stop
+                self._format.overtime_sec,
+                self._stop,
             )
 
             self._set_status(RaceStatus.OVERTIME)

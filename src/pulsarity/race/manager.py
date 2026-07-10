@@ -209,7 +209,8 @@ class RaceManager:
         def signal_history_protobuf(signal_data: list[_SignalRecord]):
             for record in signal_data:
                 yield database_pb2.SignalRecord(
-                    timedelta=record.timedelta, value=record.value
+                    timedelta=record.timedelta,
+                    value=record.value,
                 )
 
         def get_slot_data():

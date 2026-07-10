@@ -4,7 +4,7 @@ ORM classes for signal data
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Self, TypeVar
 
 from google.protobuf.message import Message
 from tortoise import Model, fields
@@ -13,6 +13,8 @@ from pulsarity._protobuf import database_pb2
 from pulsarity.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from pulsarity.database.slot import Slot
 
 
@@ -54,7 +56,7 @@ class _EncodedBinaryField(fields.Field[_T]):  # type: ignore
     def to_db_value(
         self,
         value: _T | bytes,
-        instance: type[Model] | Model,
+        instance: type[Model] | Model,  # noqa: ARG002
     ) -> bytes:
         if isinstance(value, bytes):
             return value
@@ -79,7 +81,8 @@ class SignalHistory(_PulsarityBase):
         unique_together = (("slot", "timer_index"),)
 
     slot: fields.ForeignKeyRelation[Slot] = fields.ForeignKeyField(
-        "event.Slot", "history"
+        "event.Slot",
+        "history",
     )
     """The slot the history belongs to"""
     timer_identifier = fields.CharField(32)

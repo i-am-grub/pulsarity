@@ -3,12 +3,14 @@ Abstract definition of database classes
 """
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Iterable, Self, TypeVar
+from typing import TYPE_CHECKING, Self, TypeVar
 
 from tortoise import fields
 from tortoise.models import Model
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from google.protobuf.message import Message
 
 JsonParsable = bool | str | int | float | None

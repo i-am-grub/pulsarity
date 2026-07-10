@@ -7,11 +7,13 @@
     },
     "editor.defaultFormatter": "charliermarsh.ruff"
   },
-  "python.testing.pytestArgs": ["tests"],
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "python.analysis.exclude": [
-    "src/pulsarity/_protobuf",
+    "**/_protobuf",
     "**/node_modules",
     "**/__pycache__",
     "**/.*",
@@ -25,6 +27,12 @@
   "ruff.importStrategy": "fromEnvironment",
   "python.languageServer": "None",
   "basedpyright.analysis.exclude": [
-    "**/_protobuf"
+    "**/_protobuf",
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    ".venv"
   ],
+  "ruff.nativeServer": "on",
+  "basedpyright.analysis.typeCheckingMode": "basic",
 }

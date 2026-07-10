@@ -17,6 +17,7 @@ from pulsarity.interface.timer_interface import (
     TimerInterface,
 )
 from pulsarity.utils import background
+from pulsarity.utils.asyncio import wait_task_cancellation
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +184,7 @@ class TimerInterfaceManager:
         Registers an interface type to be used by the system
 
         :param interface: The
-        :raises RuntimeError: Interface with matching identifier has already been registered
+        :raises RuntimeError: Interface with matching identifier has already registered
         """
 
         if issubclass(interface, TimerInterface):
@@ -260,7 +261,7 @@ class TimerInterfaceManager:
             msg = "Interface with identifer not instantiated"
             raise RuntimeError(msg)
 
-    async def shutdown(self, timeout: float | None = None) -> None:
+    async def shutdown(self) -> None:
         """
         Shutdown all interfaces
         """
@@ -274,15 +275,9 @@ class TimerInterfaceManager:
         self._active_interfaces.clear()
         self._shutdown_evt.set()
 
-        try:
-            async with asyncio.Timeout(timeout):
-                await asyncio.gather(*self._tasks)
-
-        except asyncio.TimeoutError as ex:
-            await background.handle_timeout_trigger(ex, self._tasks)
-
-        finally:
-            self._tasks = None
+        msg = "Error encountered in timer background task"
+        await wait_task_cancellation(self._tasks, msg, timeout=0.0)
+        self._tasks = None
 
 
 def register_interface(interface_class: type[TimerInterface]) -> type[TimerInterface]:

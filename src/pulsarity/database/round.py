@@ -5,22 +5,23 @@ ORM classes for round data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Generic, Iterable, Self
+from typing import TYPE_CHECKING, Self
 
 from tortoise import fields
 from tortoise.functions import Max
 
 from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
 from pulsarity.database._base import PulsarityRaceBase as _PulsarityRaceBase
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from pulsarity.database.heat import Heat
     from pulsarity.database.raceclass import RaceClass
 
 
-class RoundAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
+class RoundAttribute[ATTRIBUTE](_PulsarityMessageBase):
     """
     Unique and stored individually stored values for each round.
     """
@@ -34,7 +35,8 @@ class RoundAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
 
     name = fields.CharField(max_length=80)
     round: fields.ForeignKeyRelation[Round] = fields.ForeignKeyField(
-        "event.Round", related_name="attributes"
+        "event.Round",
+        related_name="attributes",
     )
     value = fields.JSONField[ATTRIBUTE]()
 
@@ -58,7 +60,8 @@ class Round(_PulsarityRaceBase):
     """Use when claiming a new `round_num` during initial creation"""
 
     raceclass: fields.ForeignKeyRelation[RaceClass] = fields.ForeignKeyField(
-        "event.RaceClass", related_name="rounds"
+        "event.RaceClass",
+        related_name="rounds",
     )
     """The class the round is assigned to"""
     round_num = fields.IntField(null=False)
@@ -97,7 +100,9 @@ class Round(_PulsarityRaceBase):
     def to_message(self) -> database_pb2.Round:
         attrs = (attr.to_message() for attr in self.attributes)
         return database_pb2.Round(
-            id=self.id, round_num=self.round_num, attributes=attrs
+            id=self.id,
+            round_num=self.round_num,
+            attributes=attrs,
         )
 
     @classmethod

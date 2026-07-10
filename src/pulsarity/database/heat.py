@@ -5,21 +5,22 @@ ORM classes for heat data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Generic, Iterable, Self
+from typing import TYPE_CHECKING, Self
 
 from tortoise import fields
 
 from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
 from pulsarity.database._base import PulsarityRaceBase as _PulsarityRaceBase
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from pulsarity.database.round import Round
     from pulsarity.database.slot import Slot
 
 
-class HeatAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
+class HeatAttribute[ATTRIBUTE](_PulsarityMessageBase):
     """
     Unique and stored individually stored values for each heat.
     """
@@ -33,7 +34,8 @@ class HeatAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
 
     name = fields.CharField(max_length=80)
     heat: fields.ForeignKeyRelation[Heat] = fields.ForeignKeyField(
-        "event.Heat", related_name="attributes"
+        "event.Heat",
+        related_name="attributes",
     )
     value = fields.JSONField[ATTRIBUTE]()
 
@@ -57,7 +59,8 @@ class Heat(_PulsarityRaceBase):
     """Use when claiming a new `heat_num` during initial creation"""
 
     round: fields.ForeignKeyRelation[Round] = fields.ForeignKeyField(
-        "event.Round", related_name="heats"
+        "event.Round",
+        related_name="heats",
     )
     """The round the heat is assigned to"""
     heat_num = fields.IntField(null=False)

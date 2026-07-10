@@ -180,7 +180,7 @@ class EventBroker:
 
     async def subscribe(
         self,
-    ) -> AsyncGenerator[SystemEventData, None]:
+    ) -> AsyncGenerator[SystemEventData]:
         """
         Subscribe to recieve server events. Typically used for client connections
 

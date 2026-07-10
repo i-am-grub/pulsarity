@@ -7,17 +7,13 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
-    Generic,
     NamedTuple,
     Protocol,
-    TypeVar,
 )
 
 if TYPE_CHECKING:
     from asyncio import Queue
     from collections.abc import Callable, Sequence
-
-T = TypeVar("T", bound=int | str | bool | Enum)
 
 
 class BasicSignalData(NamedTuple):
@@ -51,7 +47,7 @@ class BasicLapData(NamedTuple):
 
 
 @dataclass(frozen=True, slots=True)
-class TimerSetting(Generic[T]):
+class TimerSetting[T: int | str | bool | Enum]:
     """
     Interface settings
     """

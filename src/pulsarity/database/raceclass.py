@@ -5,23 +5,24 @@ ORM classes for race class data
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Generic, Iterable, Self
+from typing import TYPE_CHECKING, Self
 
 from tortoise import fields
 from tortoise.functions import Max
 
 from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
 from pulsarity.database._base import PulsarityRaceBase as _PulsarityRaceBase
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from pulsarity.database.raceevent import RaceEvent
     from pulsarity.database.raceformat import RaceFormat
     from pulsarity.database.round import Round
 
 
-class RaceClassAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
+class RaceClassAttribute[ATTRIBUTE](_PulsarityMessageBase):
     """
     Unique and stored individually stored values for each race class.
     """
@@ -35,7 +36,8 @@ class RaceClassAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
 
     name = fields.CharField(max_length=80)
     raceclass: fields.ForeignKeyRelation[RaceClass] = fields.ForeignKeyField(
-        "event.RaceClass", related_name="attributes"
+        "event.RaceClass",
+        related_name="attributes",
     )
     value = fields.JSONField[ATTRIBUTE]()
 
@@ -61,7 +63,8 @@ class RaceClass(_PulsarityRaceBase):
     name_ = fields.CharField(max_length=120)
     """The name of the raceclass"""
     event: fields.ForeignKeyRelation[RaceEvent] = fields.ForeignKeyField(
-        "event.RaceEvent", related_name="raceclasses"
+        "event.RaceEvent",
+        related_name="raceclasses",
     )
     """The event the raceclass is assigned to"""
     raceclass_num = fields.IntField()
@@ -69,7 +72,7 @@ class RaceClass(_PulsarityRaceBase):
     rounds: fields.ReverseRelation[Round]
     """The rounds assigned to the race class"""
     raceformat: fields.ForeignKeyRelation[RaceFormat] = fields.ForeignKeyField(
-        "event.RaceFormat"
+        "event.RaceFormat",
     )
     attributes: fields.ReverseRelation[RaceClassAttribute]
     """The attributes assigned to the race class"""

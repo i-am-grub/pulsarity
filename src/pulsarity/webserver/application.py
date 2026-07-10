@@ -206,7 +206,7 @@ async def lifespan(_app: Starlette):
                 },
                 "use_tz": False,
                 "timezone": "UTC",
-            }
+            },
         )
         await db_ctx.generate_schemas(True)
 
@@ -229,7 +229,8 @@ async def lifespan(_app: Starlette):
         timer_manager_token = ctx.timer_manager_ctx.set(state["timer_manager"])
 
         heartbeat_task = ctx.loop_ctx.get().create_task(
-            heartbeat_coroutine(), name="heartbeat_task"
+            heartbeat_coroutine(),
+            name="heartbeat_task",
         )
 
         await server_starup_workflow()
@@ -271,6 +272,6 @@ async def server_shutdown_workflow() -> None:
     Shutdown workflow
     """
     await ctx.event_broker_ctx.get().trigger(ServerShutdown())
-    await ctx.timer_manager_ctx.get().shutdown(5)
+    await ctx.timer_manager_ctx.get().shutdown()
     websockets.ws_shutdown_evt.set()
     await background.shutdown(5)

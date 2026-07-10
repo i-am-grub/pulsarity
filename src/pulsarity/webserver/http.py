@@ -98,13 +98,14 @@ async def login(request: _LoginRequest) -> Response:
         )
 
         response = http_pb2.LoginResponse(
-            password_reset_required=user.reset_required, userinfo=user_info
+            password_reset_required=user.reset_required,
+            userinfo=user_info,
         )
         background = BackgroundTasks(
             (
                 BackgroundTask(user.update_user_login_time),
                 BackgroundTask(user.check_for_rehash, request.password),
-            )
+            ),
         )
         return ProtobufResponse(response, background=background)
 
@@ -280,7 +281,8 @@ async def get_racelass(path: _LookupParams) -> Response:
     query_model=_PaginationParams,
 )
 async def get_raceclasses_for_event(
-    path: _LookupParams, query: _PaginationParams
+    path: _LookupParams,
+    query: _PaginationParams,
 ) -> Response:
     """
     A route for getting all raceclasses currently stored in the
@@ -316,7 +318,8 @@ async def get_round(path: _LookupParams) -> Response:
     query_model=_PaginationParams,
 )
 async def get_rounds_for_raceclass(
-    path: _LookupParams, query: _PaginationParams
+    path: _LookupParams,
+    query: _PaginationParams,
 ) -> Response:
     """
     Gets all rounds for a specific racelass
@@ -349,7 +352,8 @@ async def get_heat(path: _LookupParams) -> Response:
     query_model=_PaginationParams,
 )
 async def get_heats_for_round(
-    path: _LookupParams, query: _PaginationParams
+    path: _LookupParams,
+    query: _PaginationParams,
 ) -> Response:
     """
     Gets all heats for a specific round
@@ -406,7 +410,8 @@ async def get_localization_pack(path: _LocalizationPack) -> Response:
 
     if pack is not None:
         _local_cache[path.key] = http_pb2.LocalizationData(
-            messages=pack["messages"], pluralization=pack["pluralization"]
+            messages=pack["messages"],
+            pluralization=pack["pluralization"],
         )
         return ProtobufResponse(_local_cache[path.key])
 

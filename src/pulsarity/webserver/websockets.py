@@ -4,7 +4,7 @@ Webserver Websocket Connections
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Callable, Coroutine
+from typing import TYPE_CHECKING
 
 from google.protobuf.message import DecodeError
 from starlette.authentication import requires
@@ -18,6 +18,8 @@ from pulsarity.events import client
 from pulsarity.utils import background
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine
+
     from pulsarity.webserver._auth import PulsarityUser
 
 
@@ -140,7 +142,8 @@ async def duplex_recieve_event_data() -> None:
 
 
 async def ws_connection(
-    websocket: WebSocket, rev_coro_func: Callable[[], Coroutine[None, None, None]]
+    websocket: WebSocket,
+    rev_coro_func: Callable[[], Coroutine[None, None, None]],
 ) -> None:
     """
     Websocket client connection.
@@ -177,7 +180,8 @@ async def ws_connection(
 
     except* WebSocketDisconnect:
         logger.debug(
-            "Client disconnected from websocket (id=%s)", ctx.user_ctx.get().identity
+            "Client disconnected from websocket (id=%s)",
+            ctx.user_ctx.get().identity,
         )
 
     except* BaseException:

@@ -31,7 +31,9 @@ class Role(_PulsarityBase):
     users: fields.ManyToManyRelation[User]
     """Users role is assigned to"""
     permissions: fields.ManyToManyRelation[Permission] = fields.ManyToManyField(
-        "system.Permission", related_name="roles", through="role_permission"
+        "system.Permission",
+        related_name="roles",
+        through="role_permission",
     )
     """Permissions granted to a role"""
     persistent = fields.BooleanField(default=False)
@@ -67,7 +69,8 @@ class Role(_PulsarityBase):
         await admin_role.permissions.add(*permissions)
 
         unauth_role, created = await cls.get_or_create(
-            name="UNAUTHENTICATED", persistent=True
+            name="UNAUTHENTICATED",
+            persistent=True,
         )
 
         if created:

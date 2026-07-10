@@ -4,22 +4,23 @@ ORM classes for event data
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, Iterable, Self
+from typing import TYPE_CHECKING, Self
 
 from google.protobuf import timestamp_pb2
 from tortoise import fields
 from tortoise.functions import Max
 
 from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
 from pulsarity.database._base import PulsarityRaceBase as _PulsarityRaceBase
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from pulsarity.database.raceclass import RaceClass
 
 
-class RaceEventAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
+class RaceEventAttribute[ATTRIBUTE](_PulsarityMessageBase):
     """
     Unique and stored individually stored values for each event.
     """
@@ -33,7 +34,8 @@ class RaceEventAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
 
     name = fields.CharField(max_length=80)
     event: fields.ForeignKeyRelation[RaceEvent] = fields.ForeignKeyField(
-        "event.RaceEvent", related_name="attributes"
+        "event.RaceEvent",
+        related_name="attributes",
     )
     value = fields.JSONField[ATTRIBUTE]()
 
@@ -56,7 +58,7 @@ class RaceEvent(_PulsarityRaceBase):
     """The name of the event"""
     date = fields.DatetimeField(auto_now_add=True)
     """The date of the event"""
-    raceclasses: fields.ReverseRelation["RaceClass"]
+    raceclasses: fields.ReverseRelation[RaceClass]
     """The race classes assigned to the event"""
     attributes: fields.ReverseRelation[RaceEventAttribute]
     """The attributes assigned to the event"""
@@ -110,7 +112,10 @@ class RaceEvent(_PulsarityRaceBase):
         date = timestamp_pb2.Timestamp()
         date.FromDatetime(self.date)
         return database_pb2.RaceEvent(
-            id=self.id, name=self.name, date=date, attributes=attrs
+            id=self.id,
+            name=self.name,
+            date=date,
+            attributes=attrs,
         )
 
     @classmethod

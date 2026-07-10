@@ -81,7 +81,8 @@ class SystemEventData(ABC):
         Cached serialized message
         """
         return websocket_pb2.WebsocketEvent(
-            uuid=self.uuid.bytes, event_id=self.event_id
+            uuid=self.uuid.bytes,
+            event_id=self.event_id,
         ).SerializeToString()
 
     def model_dump_protobuf(self) -> bytes:

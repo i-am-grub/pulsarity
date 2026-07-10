@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
 from secrets import token_urlsafe
@@ -67,7 +67,7 @@ class _WebserverConfig:
     @property
     def using_ssl(self):
         """
-        Property defining if ssl is expected to be used based on the configuration file data
+        Property defining if ssl is expected to be used based on the configuration file
         """
         return self.key_file is not None and self.cert_file is not None
 
@@ -184,7 +184,7 @@ class PulsarityConfig:
 
         :param filepath: The filepath to save the config to
         """
-        self.general.last_modified_time = datetime.now()
+        self.general.last_modified_time = datetime.now(tz=UTC)
 
         with filepath.open("w", encoding="utf-8") as file:
             json.dump(asdict(self, dict_factory=_parse_types), file, indent=4)
@@ -199,11 +199,11 @@ class PulsarityConfig:
         :param filepath: The filepath to save the config to
         """
         async with self._lock:
-            self.general.last_modified_time = datetime.now()
+            self.general.last_modified_time = datetime.now(tz=UTC)
 
             async with await anyio.open_file(filepath, "w", encoding="utf-8") as file:
                 await file.write(
-                    json.dumps(asdict(self, dict_factory=_parse_types), indent=4)
+                    json.dumps(asdict(self, dict_factory=_parse_types), indent=4),
                 )
 
 

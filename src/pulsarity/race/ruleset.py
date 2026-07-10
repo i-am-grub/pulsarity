@@ -11,30 +11,24 @@ from collections import ChainMap, deque
 from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
-    Callable,
     ClassVar,
-    Generic,
-    Iterable,
     NamedTuple,
     Self,
-    Sequence,
-    TypeVar,
 )
 
 from pulsarity.interface.timer_manager import FullLapData, TimerMode
 from pulsarity.utils.collections import ValueSortedDict
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Sequence
+
     from _typeshed import SupportsAllComparisons, SupportsBool
 
     from pulsarity.database._base import JsonParsable
     from pulsarity.database.raceformat import RaceFormat
 
-# pylint: disable=R1730
 
 logger = logging.getLogger(__name__)
-
-T = TypeVar("T")
 
 
 class SafeRaceFormat(NamedTuple):
@@ -91,7 +85,7 @@ class CombinedMetrics(NamedTuple):
 
 
 @dataclass(frozen=True, slots=True)
-class SlotResult(Generic[T]):
+class SlotResult[T]:
     """
     Basic class for representing race data.
 
@@ -304,8 +298,7 @@ class LapsManager(ABC):
             time_diff = lap.timedelta - prev_time
             prev_time = lap.timedelta
 
-            if time_diff < fastest_time:
-                fastest_time = time_diff
+            fastest_time = min(fastest_time, time_diff)
 
         if not num_laps:
             return None
@@ -377,13 +370,11 @@ class LapsManager(ABC):
             total_time += time_diff
             prev_time = lap.timedelta
 
-            if time_diff < fastest_time:
-                fastest_time = time_diff
+            fastest_time = min(fastest_time, time_diff)
 
             if len(store) > consec_laps:
                 windowed_time -= store.popleft()
-                if windowed_time < fastest_consec_time:
-                    fastest_consec_time = windowed_time
+                fastest_consec_time = min(fastest_consec_time, windowed_time)
             else:
                 fastest_consec_time = windowed_time
 
@@ -455,7 +446,7 @@ class LapsManager(ABC):
         return object.__hash__(self)
 
 
-class RulesetFieldData(NamedTuple, Generic[T]):
+class RulesetFieldData[T](NamedTuple):
     """
     Custom field data for ruleset
     """
@@ -466,7 +457,7 @@ class RulesetFieldData(NamedTuple, Generic[T]):
     default: T
 
 
-class RaceRuleset(ABC, Generic[T]):
+class RaceRuleset[T](ABC):
     """
     Abstract base class for processing race data.
     Can be used to enforce custom rulesets

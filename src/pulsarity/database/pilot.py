@@ -4,17 +4,19 @@ ORM classes for Pilot data
 
 from __future__ import annotations
 
-from typing import Generic, Iterable, Self
+from typing import TYPE_CHECKING, Self
 
 from tortoise import fields
 
 from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import ATTRIBUTE
 from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
 from pulsarity.database._base import PulsarityRaceBase as _PulsarityRaceBase
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
-class PilotAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
+
+class PilotAttribute[ATTRIBUTE](_PulsarityMessageBase):
     """
     Unique and stored individually stored values for each pilot.
     """
@@ -28,7 +30,8 @@ class PilotAttribute(_PulsarityMessageBase, Generic[ATTRIBUTE]):
 
     name = fields.CharField(max_length=80)
     pilot: fields.ForeignKeyRelation[Pilot] = fields.ForeignKeyField(
-        "event.Pilot", related_name="attributes"
+        "event.Pilot",
+        related_name="attributes",
     )
     value = fields.JSONField[ATTRIBUTE]()
 

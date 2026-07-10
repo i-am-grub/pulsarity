@@ -30,7 +30,7 @@ def generate_self_signed_cert(key_file: Path, cert_file: Path) -> None:
     subject = issuer = x509.Name(
         [
             x509.NameAttribute(NameOID.COMMON_NAME, "Pulsarity Webserver"),
-        ]
+        ],
     )
 
     cert = (
@@ -39,10 +39,9 @@ def generate_self_signed_cert(key_file: Path, cert_file: Path) -> None:
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime.now(datetime.timezone.utc))
+        .not_valid_before(datetime.datetime.now(datetime.UTC))
         .not_valid_after(
-            datetime.datetime.now(datetime.timezone.utc)
-            + datetime.timedelta(days=365 * 10)
+            datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=365 * 10),
         )
         .add_extension(
             x509.BasicConstraints(ca=True, path_length=None),
@@ -75,7 +74,7 @@ def generate_self_signed_cert(key_file: Path, cert_file: Path) -> None:
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PrivateFormat.PKCS8,
                 encryption_algorithm=serialization.NoEncryption(),
-            )
+            ),
         )
 
     with cert_file.open("wb") as cert_file_:
