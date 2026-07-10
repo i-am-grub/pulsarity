@@ -109,7 +109,7 @@ async def login(request: _LoginRequest) -> Response:
         )
         return ProtobufResponse(response, background=background)
 
-    return Response(status_code=400)
+    return Response(status_code=401)
 
 
 @endpoint()
@@ -160,7 +160,7 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
 
         return Response(status_code=200, background=background)
 
-    return Response(status_code=400)
+    return Response(status_code=401)
 
 
 @http_route_dataclass
