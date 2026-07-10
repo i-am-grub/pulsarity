@@ -76,7 +76,7 @@ async def test_webserver_login_invalid(
         "/login", content=message.SerializeToString(), headers=header
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -101,7 +101,7 @@ async def test_password_reset_invalid(client: AsyncClient, user_creds: tuple[str
     response = await client.post(
         "/reset-password", content=message.SerializeToString(), headers=header
     )
-    assert response.status_code == 400
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio

@@ -28,8 +28,9 @@ def generate_default_config() -> dict:
         "formatters": {
             "standard": {"format": "%(asctime)s [%(levelname)s]: %(message)s"},
             "detailed": {
-                "format": ("%(asctime)s [%(levelname)s|%(module)s|L%(lineno)d]: "
-                "%(message)s"),
+                "format": (
+                    "%(asctime)s [%(levelname)s|%(module)s|L%(lineno)d]: %(message)s"
+                ),
                 "datefmt": "%Y-%m%dT%H:%M:%S%z",
             },
         },
