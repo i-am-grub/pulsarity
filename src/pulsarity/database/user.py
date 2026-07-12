@@ -112,7 +112,8 @@ class User(_PulsarityBase):
 
     async def verify_password(self, password: str) -> bool:
         """
-        Checks a hash of the provided password against the hash in the database for a user.
+        Checks a hash of the provided password against the hash in the database
+        for a user.
         """
         if not self._password_hash:
             return False
