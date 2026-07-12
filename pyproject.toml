@@ -79,7 +79,7 @@ dev = [
     "pytest-cov==7.1.0",
     "pytest-randomly==4.1.0",
     # Linting
-    "mypy==2.1.0",
+    "mypy==2.2.0",
     "pylint==4.0.6",
     "types-protobuf==7.34.1.20260518",
     "ruff==0.15.17",
