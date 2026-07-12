@@ -147,18 +147,18 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
 
     :return: JSON containing the status of the request
     """
+    if request.new_password == request.old_password:
+        return Response(status_code=400)
+
     auth_user = ctx.user_ctx.get()
     uuid = UUID(hex=auth_user.identity)
-    user = await User.get_by_uuid(uuid)
 
-    if user is not None and await user.verify_password(request.old_password):
-        await user.update_user_password(request.new_password)
+    if await User.verify_password_uuid(uuid, request.old_password):
+        await User.update_user_password_and_status(uuid, request.new_password)
 
         logger.info("Password reset for %s completed", auth_user.identity)
 
-        background = BackgroundTask(user.update_password_required, False)
-
-        return Response(status_code=200, background=background)
+        return Response(status_code=200)
 
     return Response(status_code=401)
 

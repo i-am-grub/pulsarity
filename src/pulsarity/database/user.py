@@ -57,7 +57,7 @@ class User(_PulsarityBase):
         app = "system"
         table = "user"
 
-    auth_id = fields.UUIDField(default=uuid4)
+    auth_id = fields.UUIDField(default=uuid4, index=True)
     """The UUID associated with the user"""
     username = fields.CharField(max_length=32, unique=True)
     """Username of user"""
@@ -112,35 +112,54 @@ class User(_PulsarityBase):
 
     async def verify_password(self, password: str) -> bool:
         """
-        Checks a hash of the provided password against the hash in the database.
-
-        :param password: The password to hash.
-        :return: Whether the comparsion of the hash was sucessful or not.
+        Checks a hash of the provided password against the hash in the database for a user.
         """
-
-        if self._password_hash is None:
+        if not self._password_hash:
             return False
 
+        return await self._verify_password(self._password_hash, password, self.auth_id)
+
+    @classmethod
+    async def verify_password_uuid(cls, uuid: UUID, password: str) -> bool:
+        """
+        Checks a hash of the provided password against the hash in the database by
+        UUID.
+        """
+        pw_hash: str | None = await cls.get_or_none(auth_id=uuid).values_list(  # type: ignore
+            "_password_hash",
+            flat=True,
+        )
+
+        if pw_hash is None:
+            return False
+
+        return await cls._verify_password(pw_hash, password, uuid)
+
+    @classmethod
+    async def _verify_password(cls, pw_hash: str, password: str, uuid: UUID) -> bool:
+        """
+        Checks a hash of the provided password against the hash in the database.
+        """
         loop = asyncio.get_running_loop()
 
         try:
             result = await loop.run_in_executor(
                 None,
                 _PH.verify,
-                self._password_hash,
+                pw_hash,
                 password,
             )
         except VerifyMismatchError:
             logger.warning(
                 "Stored hash for %s does not match the provided password",
-                self.username,
+                uuid.hex,
             )
             return False
         except VerificationError:
-            logger.exception("Verification failed for %s", self.username)
+            logger.exception("Verification failed for %s", uuid.hex)
             return False
         except InvalidHashError:
-            logger.exception("Invalid hash error for %s", self.username)
+            logger.exception("Invalid hash error for %s", uuid.hex)
             return False
 
         return result
@@ -163,14 +182,28 @@ class User(_PulsarityBase):
             self._password_hash,
         )
 
-    async def update_user_password(self, password: str) -> None:
+    @classmethod
+    async def update_user_password(cls, uuid: UUID, password: str) -> None:
         """
         Updates a user's password hash in the database.
 
         :param password: The password to hash and store
         """
         hashed_password = await _generate_hash(password)
-        await self.filter(id=self.id).update(_password_hash=hashed_password)
+        await cls.filter(auth_id=uuid).update(_password_hash=hashed_password)
+
+    @classmethod
+    async def update_user_password_and_status(cls, uuid: UUID, password: str) -> None:
+        """
+        Updates a user's password hash in the database.
+
+        :param password: The password to hash and store
+        """
+        hashed_password = await _generate_hash(password)
+        await cls.filter(auth_id=uuid).update(
+            _password_hash=hashed_password,
+            reset_required=False,
+        )
 
     @classmethod
     async def get_by_uuid(cls, uuid: UUID) -> Self | None:
@@ -222,7 +255,7 @@ class User(_PulsarityBase):
         default_username = config.config_manager.secrets.default_username
         default_password = config.config_manager.secrets.default_password
 
-        user, created = await User.get_or_create(
+        user, created = await cls.get_or_create(
             username=default_username,
             persistent=True,
         )
@@ -235,7 +268,7 @@ class User(_PulsarityBase):
             raise RuntimeError(msg)
 
         if created:
-            await user.update_user_password(default_password)
+            await cls.update_user_password(user.auth_id, default_password)
 
     async def check_for_rehash(self, password: str) -> None:
         """
@@ -246,7 +279,7 @@ class User(_PulsarityBase):
         """
 
         if await self.check_password_rehash():
-            await self.update_user_password(password)
+            await self.update_user_password(self.auth_id, password)
 
     async def update_user_login_time(self) -> None:
         """
@@ -254,10 +287,11 @@ class User(_PulsarityBase):
         """
         await self.filter(id=self.id).update(last_login=datetime.now(tz=UTC))
 
-    async def update_password_required(self, status: bool) -> None:
+    @classmethod
+    async def update_password_required(cls, uuid: UUID, status: bool) -> None:
         """
         Change the status of the `reset_required` attribute for a user
 
         :param status: The value to set the status to
         """
-        await self.filter(id=self.id).update(reset_required=status)
+        await cls.filter(auth_id=uuid).update(reset_required=status)

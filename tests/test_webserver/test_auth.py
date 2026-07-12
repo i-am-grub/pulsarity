@@ -40,7 +40,7 @@ async def test_webserver_lack_permissions(client: AsyncClient):
 
     user = await User.create(username="foo")
     await user.roles.add(*roles)
-    await user.update_user_password("bar")
+    await User.update_user_password(user.auth_id, "bar")
 
     message = http_pb2.LoginRequest()
     message.username = "foo"

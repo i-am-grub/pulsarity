@@ -160,7 +160,7 @@ select = [
     "UP",       # pyupgrade
 ]
 ignore = [
-    # "ASYNC109"
+    "COM812"
 ]
 
 [tool.ruff.format]
