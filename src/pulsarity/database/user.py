@@ -46,6 +46,51 @@ async def _generate_hash(password: str) -> str:
     return result
 
 
+async def _verify_password(pw_hash: str, password: str, uuid: UUID) -> bool:
+    """
+    Checks a hash of the provided password against the hash in the database.
+    """
+    loop = asyncio.get_running_loop()
+
+    try:
+        result = await loop.run_in_executor(
+            None,
+            _PH.verify,
+            pw_hash,
+            password,
+        )
+    except VerifyMismatchError:
+        logger.warning(
+            "Stored hash for %s does not match the provided password",
+            uuid.hex,
+        )
+        return False
+    except VerificationError:
+        logger.exception("Verification failed for %s", uuid.hex)
+        return False
+    except InvalidHashError:
+        logger.exception("Invalid hash error for %s", uuid.hex)
+        return False
+
+    return result
+
+
+async def _check_password_rehash(pw_hash: str) -> bool:
+    """
+    Checks if the user's password needs to be rehashed due to a
+    configuration change.
+
+    :return: The status of the check
+    """
+    loop = asyncio.get_running_loop()
+
+    return await loop.run_in_executor(
+        None,
+        _PH.check_needs_rehash,
+        pw_hash,
+    )
+
+
 class User(_PulsarityBase):
     """
     User for the application
@@ -118,7 +163,7 @@ class User(_PulsarityBase):
         if not self._password_hash:
             return False
 
-        return await self._verify_password(self._password_hash, password, self.auth_id)
+        return await _verify_password(self._password_hash, password, self.auth_id)
 
     @classmethod
     async def verify_password_uuid(cls, uuid: UUID, password: str) -> bool:
@@ -134,36 +179,7 @@ class User(_PulsarityBase):
         if pw_hash is None:
             return False
 
-        return await cls._verify_password(pw_hash, password, uuid)
-
-    @classmethod
-    async def _verify_password(cls, pw_hash: str, password: str, uuid: UUID) -> bool:
-        """
-        Checks a hash of the provided password against the hash in the database.
-        """
-        loop = asyncio.get_running_loop()
-
-        try:
-            result = await loop.run_in_executor(
-                None,
-                _PH.verify,
-                pw_hash,
-                password,
-            )
-        except VerifyMismatchError:
-            logger.warning(
-                "Stored hash for %s does not match the provided password",
-                uuid.hex,
-            )
-            return False
-        except VerificationError:
-            logger.exception("Verification failed for %s", uuid.hex)
-            return False
-        except InvalidHashError:
-            logger.exception("Invalid hash error for %s", uuid.hex)
-            return False
-
-        return result
+        return await _verify_password(pw_hash, password, uuid)
 
     async def check_password_rehash(self) -> bool:
         """
@@ -278,8 +294,10 @@ class User(_PulsarityBase):
 
         :param password: The password to rehash if necessary
         """
+        if self._password_hash is None:
+            return
 
-        if await self.check_password_rehash():
+        if await _check_password_rehash(self._password_hash):
             await self.update_user_password(self.auth_id, password)
 
     async def update_user_login_time(self) -> None:
