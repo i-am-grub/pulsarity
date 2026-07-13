@@ -90,7 +90,7 @@ docs = [
     "sphinx==9.1.0",
     "sphinx-book-theme==1.2.0",
     "sphinx-copybutton==0.5.2",
-    "sphinx-substitution-extensions==2026.1.12",
+    "sphinx-substitution-extensions==2026.6.17",
 ]
 profile = ["viztracer==1.1.1"]
 
