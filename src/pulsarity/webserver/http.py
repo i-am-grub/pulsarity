@@ -2,7 +2,9 @@
 HTTP Rest API Routes
 """
 
+import asyncio
 import logging
+import secrets
 from uuid import UUID
 
 import pulsarity_localization
@@ -34,6 +36,7 @@ from pulsarity.webserver._wrapper import (
 # pylint: disable=E1121
 
 logger = logging.getLogger(__name__)
+rng = secrets.SystemRandom()
 
 
 @endpoint(requires_auth=False)
@@ -109,6 +112,7 @@ async def login(request: _LoginRequest) -> Response:
         )
         return ProtobufResponse(response, background=background)
 
+    await asyncio.sleep(rng.uniform(1.0, 2.0))
     return Response(status_code=401)
 
 
@@ -160,6 +164,7 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
 
         return Response(status_code=200)
 
+    await asyncio.sleep(rng.uniform(1.0, 2.0))
     return Response(status_code=401)
 
 
