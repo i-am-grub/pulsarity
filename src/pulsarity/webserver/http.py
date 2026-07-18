@@ -83,6 +83,9 @@ async def login(request: _LoginRequest) -> Response:
 
     :return: JSON containing the status of the request
     """
+    loop = ctx.loop_ctx.get()
+    start = loop.time()
+
     user = await User.get_by_username_prefetch(request.username)
 
     if user is not None and await user.verify_password(request.password):
@@ -112,7 +115,10 @@ async def login(request: _LoginRequest) -> Response:
         )
         return ProtobufResponse(response, background=background)
 
-    await asyncio.sleep(rng.uniform(1.0, 2.0))
+    evt = asyncio.Event()
+    loop.call_at(start + rng.uniform(1.0, 2.0), evt.set)
+    await evt.wait()
+
     return Response(status_code=401)
 
 
@@ -154,6 +160,9 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
     if request.new_password == request.old_password:
         return Response(status_code=400)
 
+    loop = ctx.loop_ctx.get()
+    start = loop.time()
+
     auth_user = ctx.user_ctx.get()
     uuid = UUID(hex=auth_user.identity)
 
@@ -164,7 +173,10 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
 
         return Response(status_code=200)
 
-    await asyncio.sleep(rng.uniform(1.0, 2.0))
+    evt = asyncio.Event()
+    loop.call_at(start + rng.uniform(1.0, 2.0), evt.set)
+    await evt.wait()
+
     return Response(status_code=401)
 
 
