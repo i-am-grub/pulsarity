@@ -82,7 +82,7 @@ dev = [
     "mypy==2.1.0",
     "pylint==4.0.6",
     "types-protobuf==7.34.1.20260518",
-    "ruff==0.15.17",
+    "ruff==0.15.21",
     "basedpyright>=1.39.9",
 ]
 docs = [
