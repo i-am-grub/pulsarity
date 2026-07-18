@@ -83,8 +83,9 @@ async def login(request: _LoginRequest) -> Response:
 
     :return: JSON containing the status of the request
     """
-    loop = ctx.loop_ctx.get()
+    loop = asyncio.get_running_loop()
     start = loop.time()
+    evt = asyncio.Event()
 
     user = await User.get_by_username_prefetch(request.username)
 
@@ -113,9 +114,12 @@ async def login(request: _LoginRequest) -> Response:
                 BackgroundTask(user.check_for_rehash, request.password),
             ),
         )
+
+        loop.call_at(start + rng.uniform(0.2, 0.5), evt.set)
+        await evt.wait()
+
         return ProtobufResponse(response, background=background)
 
-    evt = asyncio.Event()
     loop.call_at(start + rng.uniform(1.0, 2.0), evt.set)
     await evt.wait()
 
@@ -162,6 +166,7 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
 
     loop = ctx.loop_ctx.get()
     start = loop.time()
+    evt = asyncio.Event()
 
     auth_user = ctx.user_ctx.get()
     uuid = UUID(hex=auth_user.identity)
@@ -171,9 +176,11 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
 
         logger.info("Password reset for %s completed", auth_user.identity)
 
+        loop.call_at(start + rng.uniform(0.2, 0.5), evt.set)
+        await evt.wait()
+
         return Response(status_code=200)
 
-    evt = asyncio.Event()
     loop.call_at(start + rng.uniform(1.0, 2.0), evt.set)
     await evt.wait()
 
