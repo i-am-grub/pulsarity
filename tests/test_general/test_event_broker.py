@@ -3,7 +3,7 @@ Coverage tests for the EventBroker class
 """
 
 import asyncio
-from typing import Iterable, TypedDict
+from typing import Iterable, Sequence, TypedDict
 
 import pytest
 
@@ -32,7 +32,7 @@ class HighPriorityEvent(SystemEventData):
     permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
-async def broker_subscriber(broker: EventBroker, test_values: Iterable[int]):
+async def broker_subscriber(broker: EventBroker, test_values: Sequence[int]):
     """
     Event subscriber for tests
     """
@@ -53,8 +53,8 @@ async def broker_subscriber(broker: EventBroker, test_values: Iterable[int]):
 
 async def broker_publish_test(
     broker: EventBroker,
-    event_values: Iterable[tuple[type[SystemEventData], int]],
-    test_values: Iterable[int],
+    event_values: Iterable[SystemEventData],
+    test_values: Sequence[int],
     *,
     use_trigger: bool = False,
 ) -> None:
@@ -65,12 +65,11 @@ async def broker_publish_test(
     task = asyncio.create_task(coro)
     await asyncio.sleep(0)
 
-    for cls, id_ in event_values:
-        val = cls(_id=id_)
+    for evt in event_values:
         if use_trigger:
-            await broker.trigger(val)
+            await broker.trigger(evt)
         else:
-            broker.publish(val)
+            broker.publish(evt)
 
     await task
 
@@ -82,10 +81,12 @@ async def test_single_event_handling():
     """
     broker = EventBroker()
 
-    input_order = ((LowPriorityEvent, 1),)
-    test_order = (1,)
+    evt = LowPriorityEvent()
 
-    await broker_publish_test(broker, input_order, test_order)
+    events = (evt,)
+    test_order = (evt._id,)
+
+    await broker_publish_test(broker, events, test_order)
 
 
 @pytest.mark.asyncio
@@ -96,15 +97,18 @@ async def test_multi_event_priority():
     """
     broker = EventBroker()
 
-    evt_order = [LowPriorityEvent] * 3
-    id_order = list(range(3, 0, -1))
-    evt_order.append(HighPriorityEvent)
-    id_order.append(5)
-    input_order = zip(evt_order, id_order)
+    evts = []
 
-    test_order = [5, *range(1, 4)]
+    for i in range(3):
+        low_evt = LowPriorityEvent()
+        evts.append(low_evt)
 
-    await broker_publish_test(broker, input_order, test_order)
+    high_evt = HighPriorityEvent()
+    evts.append(high_evt)
+
+    test_order = [high_evt._id, *(i._id for i in evts[:-1])]
+
+    await broker_publish_test(broker, evts, test_order)
 
 
 class CallbackData(TypedDict):
@@ -119,8 +123,10 @@ async def test_event_async_callback():
 
     broker = EventBroker()
 
-    input_order = ((ServerStartup, 1),)
-    test_order = (1,)
+    evt = ServerStartup()
+    evts = (evt,)
+
+    test_order = (evt._id,)
 
     flag = asyncio.Event()
 
@@ -134,7 +140,7 @@ async def test_event_async_callback():
 
     assert not flag.is_set()
 
-    await broker_publish_test(broker, input_order, test_order, use_trigger=True)
+    await broker_publish_test(broker, evts, test_order, use_trigger=True)
 
     await background.shutdown(5)
 

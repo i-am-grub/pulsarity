@@ -7,6 +7,7 @@ import logging
 import secrets
 from uuid import UUID
 
+import async_lru
 import pulsarity_localization
 from starlette.background import BackgroundTask, BackgroundTasks
 from starlette.responses import Response
@@ -23,7 +24,9 @@ from pulsarity.database.raceclass import RaceClass
 from pulsarity.database.raceevent import RaceEvent
 from pulsarity.database.round import Round
 from pulsarity.database.user import User
+from pulsarity.ui.elements import UIETree
 from pulsarity.utils import config
+from pulsarity.webserver._status_codes import HTTPStatusCodes
 from pulsarity.webserver._wrapper import (
     PathDataModelType,
     ProtobufResponse,
@@ -123,7 +126,7 @@ async def login(request: _LoginRequest) -> Response:
     loop.call_at(start + rng.uniform(1.0, 2.0), evt.set)
     await evt.wait()
 
-    return Response(status_code=401)
+    return Response(status_code=HTTPStatusCodes.UNAUTHORIZED)
 
 
 @endpoint()
@@ -136,7 +139,7 @@ async def logout() -> Response:
     auth_user = ctx.user_ctx.get()
     logger.info("Logging out user %s", auth_user.identity)
     ctx.request_ctx.get().session.clear()
-    return Response(status_code=200)
+    return Response(status_code=HTTPStatusCodes.OK)
 
 
 @http_route_dataclass
@@ -162,7 +165,7 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
     :return: JSON containing the status of the request
     """
     if request.new_password == request.old_password:
-        return Response(status_code=400)
+        return Response(status_code=HTTPStatusCodes.BAD_REQUEST)
 
     loop = ctx.loop_ctx.get()
     start = loop.time()
@@ -184,7 +187,7 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
     loop.call_at(start + rng.uniform(1.0, 2.0), evt.set)
     await evt.wait()
 
-    return Response(status_code=401)
+    return Response(status_code=HTTPStatusCodes.UNAUTHORIZED)
 
 
 @http_route_dataclass
@@ -214,7 +217,7 @@ async def get_pilot(path: _LookupParams) -> Response:
     pilot = await Pilot.get_by_id_with_attributes(path.id)
 
     if pilot is None:
-        return Response(status_code=204)
+        return Response(status_code=HTTPStatusCodes.NO_CONTENT)
 
     return ProtobufResponse(pilot.to_message())
 
@@ -263,7 +266,7 @@ async def get_event(path: _LookupParams) -> Response:
     event = await RaceEvent.get_by_id_with_attributes(path.id)
 
     if event is None:
-        return Response(status_code=204)
+        return Response(status_code=HTTPStatusCodes.NO_CONTENT)
 
     return ProtobufResponse(event.to_message())
 
@@ -294,7 +297,7 @@ async def get_racelass(path: _LookupParams) -> Response:
     raceclass = await RaceClass.get_by_id_with_attributes(path.id)
 
     if raceclass is None:
-        return Response(status_code=204)
+        return Response(status_code=HTTPStatusCodes.NO_CONTENT)
 
     return ProtobufResponse(raceclass.to_message())
 
@@ -331,7 +334,7 @@ async def get_round(path: _LookupParams) -> Response:
     round_ = await Round.get_by_id_with_attributes(path.id)
 
     if round_ is None:
-        return Response(status_code=204)
+        return Response(status_code=HTTPStatusCodes.NO_CONTENT)
 
     return ProtobufResponse(round_.to_message())
 
@@ -365,7 +368,7 @@ async def get_heat(path: _LookupParams) -> Response:
     heat = await Heat.get_by_id_with_attributes(path.id)
 
     if heat is None:
-        return Response(status_code=204)
+        return Response(status_code=HTTPStatusCodes.NO_CONTENT)
 
     return ProtobufResponse(heat.to_message())
 
@@ -419,27 +422,40 @@ class _LocalizationPack(PathDataModelType):
     key: str
 
 
-_local_cache: dict[str, http_pb2.LocalizationData] = {}
-
-
 @endpoint(requires_auth=False, path_model=_LocalizationPack)
+@async_lru.alru_cache()
 async def get_localization_pack(path: _LocalizationPack) -> Response:
     """
     Gets a localization pack for the key in the path
     """
-    if path.key in _local_cache:
-        return ProtobufResponse(_local_cache[path.key])
-
     pack = await pulsarity_localization.load_language_pack_async(path.key)
 
     if pack is not None:
-        _local_cache[path.key] = http_pb2.LocalizationData(
+        pack_data = http_pb2.LocalizationData(
             messages=pack["messages"],
             pluralization=pack["pluralization"],
         )
-        return ProtobufResponse(_local_cache[path.key])
+        return ProtobufResponse(pack_data)
 
-    return Response(status_code=204)
+    return Response(status_code=HTTPStatusCodes.NO_CONTENT)
+
+
+@endpoint(requires_auth=False)
+async def get_etree_mappings() -> Response:
+    """
+    Get the route to element tree(s) mappings
+    """
+    response = UIETree.mappings_to_message()
+    return ProtobufResponse(response)
+
+
+@endpoint(requires_auth=False)
+async def get_etrees() -> Response:
+    """
+    Get the stored element tree data
+    """
+    response = UIETree.store_to_messages()
+    return ProtobufResponse(response)
 
 
 ROUTES: list[BaseRoute] = [
@@ -459,4 +475,6 @@ ROUTES: list[BaseRoute] = [
     Route("/heats/{id:int}", endpoint=get_heat),
     Route("/server-info", endpoint=get_server_info),
     Route("/localization-pack/{key:str}", endpoint=get_localization_pack),
+    Route("/etree-mappings", endpoint=get_etree_mappings),
+    Route("/etrees", endpoint=get_etrees),
 ]

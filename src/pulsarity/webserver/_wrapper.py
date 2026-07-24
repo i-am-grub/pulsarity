@@ -24,6 +24,7 @@ from pulsarity import ctx
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.utils.asyncio import ensure_async
 from pulsarity.webserver._auth import requires
+from pulsarity.webserver._status_codes import HTTPStatusCodes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
@@ -48,7 +49,7 @@ class ProtobufResponse(Response):
     def __init__(
         self,
         content: Message,
-        status_code=200,
+        status_code=HTTPStatusCodes.OK,
         headers=None,
         media_type=None,
         background=None,
@@ -59,7 +60,7 @@ class ProtobufResponse(Response):
         return content.SerializeToString()
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class _HttpModel:
     """
     Base class for http route data
@@ -69,12 +70,12 @@ class _HttpModel:
     """
 
 
-@dataclass_transform()
+@dataclass_transform(frozen_default=True)
 def http_route_dataclass(cls: type[_HttpModel]) -> type[_HttpModel]:
     """
     Decorator for generating dataclasses for http requests
     """
-    return dataclass(cls, slots=True)
+    return dataclass(cls, frozen=True, slots=True)
 
 
 @http_route_dataclass
@@ -158,8 +159,11 @@ def endpoint(
         if requires_auth:
 
             @functools.wraps(func)
-            @requires(SystemDefaultPerms.AUTHENTICATED, status_code=401)
-            @requires(permissions, status_code=403)
+            @requires(
+                SystemDefaultPerms.AUTHENTICATED,
+                status_code=HTTPStatusCodes.UNAUTHORIZED,
+            )
+            @requires(permissions, status_code=HTTPStatusCodes.FORBIDDEN)
             async def auth_wrapper(request: Request) -> Response:
                 with ctx.request_ctx.set(request), ctx.user_ctx.set(request.user):
                     return await _process_request(func, request, models)
@@ -220,43 +224,43 @@ async def _process_request(  # noqa: C901
         content_type = request.headers.get("content-type")
         if content_type != "application/x-protobuf":
             detail = "Headers for protocol buffers were not included"
-            raise HTTPException(415, detail)
+            raise HTTPException(HTTPStatusCodes.UNSUPPORTED_MEDIA_TYPE, detail)
 
         try:
             data = await request.body()
             kwargs["request"] = val_models.request.from_protobuf(data)
         except DecodeError as ex:
             detail = "Unable to decode protocol buffer data"
-            raise HTTPException(400, detail) from ex
+            raise HTTPException(HTTPStatusCodes.BAD_REQUEST, detail) from ex
         except ValueError as ex:
             detail = "Request data failed validation"
-            raise HTTPException(422, detail) from ex
+            raise HTTPException(HTTPStatusCodes.UNPROCESSABLE_CONTENT, detail) from ex
 
     if val_models.query is not None:
         try:
             kwargs["query"] = val_models.query(**request.query_params)
         except TypeError as ex:
             detail = "Query parameter data used improper types"
-            raise HTTPException(400, detail) from ex
+            raise HTTPException(HTTPStatusCodes.BAD_REQUEST, detail) from ex
         except ValueError as ex:
             detail = "Query parameter data failed validation"
-            raise HTTPException(422, detail) from ex
+            raise HTTPException(HTTPStatusCodes.UNPROCESSABLE_CONTENT, detail) from ex
 
     if val_models.path is not None:
         try:
             kwargs["path"] = val_models.path(**request.path_params)
         except TypeError as ex:
             detail = "Request path data used improper types"
-            raise HTTPException(400, detail) from ex
+            raise HTTPException(HTTPStatusCodes.BAD_REQUEST, detail) from ex
         except ValueError as ex:
             detail = "Request path data failed validation"
-            raise HTTPException(422, detail) from ex
+            raise HTTPException(HTTPStatusCodes.UNPROCESSABLE_CONTENT, detail) from ex
 
     try:
         endpoint_result = await ensure_async(func, **kwargs)
     except ValueError as ex:
         detail = "A server errored occured while processing the request"
-        raise HTTPException(500, detail) from ex
+        raise HTTPException(HTTPStatusCodes.INTERNAL_SERVER_ERROR, detail) from ex
 
     if isinstance(endpoint_result, Response):
         return endpoint_result
