@@ -24,7 +24,7 @@ from pulsarity.database.raceclass import RaceClass
 from pulsarity.database.raceevent import RaceEvent
 from pulsarity.database.round import Round
 from pulsarity.database.user import User
-from pulsarity.ui.elements import UIETree
+from pulsarity.ui.elements import UIButtonField, UIETree, UIMarkdownField, UIValueField
 from pulsarity.utils import config
 from pulsarity.webserver._status_codes import HTTPStatusCodes
 from pulsarity.webserver._wrapper import (
@@ -440,7 +440,7 @@ async def get_localization_pack(path: _LocalizationPack) -> Response:
     return Response(status_code=HTTPStatusCodes.NO_CONTENT)
 
 
-@endpoint(requires_auth=False)
+@endpoint(requires_auth=True)
 async def get_etree_mappings() -> Response:
     """
     Get the route to element tree(s) mappings
@@ -449,12 +449,39 @@ async def get_etree_mappings() -> Response:
     return ProtobufResponse(response)
 
 
-@endpoint(requires_auth=False)
+@endpoint(requires_auth=True)
 async def get_etrees() -> Response:
     """
     Get the stored element tree data
     """
-    response = UIETree.store_to_messages()
+    response = UIETree.store_to_message()
+    return ProtobufResponse(response)
+
+
+@endpoint(requires_auth=True)
+async def get_markdown_fields() -> Response:
+    """
+    Get the stored markdown field data
+    """
+    response = UIMarkdownField.store_to_message()
+    return ProtobufResponse(response)
+
+
+@endpoint(requires_auth=True)
+async def get_button_fields() -> Response:
+    """
+    Get the stored button field data
+    """
+    response = UIButtonField.store_to_message()
+    return ProtobufResponse(response)
+
+
+@endpoint(requires_auth=True)
+async def get_value_fields() -> Response:
+    """
+    Get the stored value field data
+    """
+    response = UIValueField.store_to_message()
     return ProtobufResponse(response)
 
 
@@ -477,4 +504,7 @@ ROUTES: list[BaseRoute] = [
     Route("/localization-pack/{key:str}", endpoint=get_localization_pack),
     Route("/etree-mappings", endpoint=get_etree_mappings),
     Route("/etrees", endpoint=get_etrees),
+    Route("/markdown-fields", endpoint=get_markdown_fields),
+    Route("/buttons-fields", endpoint=get_button_fields),
+    Route("/value-fields", endpoint=get_value_fields),
 ]

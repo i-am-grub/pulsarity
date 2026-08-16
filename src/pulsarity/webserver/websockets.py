@@ -7,22 +7,19 @@ import logging
 from typing import TYPE_CHECKING
 
 from google.protobuf.message import DecodeError
-from starlette.authentication import requires
 from starlette.routing import BaseRoute, WebSocketRoute
-from starlette.websockets import WebSocket, WebSocketDisconnect
+from starlette.websockets import WebSocketDisconnect
 
 from pulsarity import ctx
 from pulsarity._protobuf import websocket_pb2
 from pulsarity.database.permission import SystemDefaultPerms
 from pulsarity.events import client
 from pulsarity.utils import background
+from pulsarity.webserver._auth import PulsarityUser, PulsarityWebsocket, requires
 from pulsarity.webserver._status_codes import WebSocketStatusCodes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
-
-    from pulsarity.webserver._auth import PulsarityUser
-
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +141,7 @@ async def duplex_recieve_event_data() -> None:
 
 
 async def ws_connection(
-    websocket: WebSocket,
+    websocket: PulsarityWebsocket,
     rev_coro_func: Callable[[], Coroutine[None, None, None]],
 ) -> None:
     """
@@ -198,7 +195,7 @@ async def ws_connection(
 
 
 @requires(SystemDefaultPerms.SIMPLEX_WEBSOCKET)
-async def simplex_ws(websocket: WebSocket):
+async def simplex_ws(websocket: PulsarityWebsocket):
     """
     The simplex event websocket connection for clients.
 
@@ -218,7 +215,7 @@ async def simplex_ws(websocket: WebSocket):
 
 
 @requires(SystemDefaultPerms.DUPLEX_WEBSOCKET)
-async def duplex_ws(websocket: WebSocket):
+async def duplex_ws(websocket: PulsarityWebsocket):
     """
     The full duplex event websocket connection for clients
 

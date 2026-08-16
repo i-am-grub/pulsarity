@@ -5,6 +5,7 @@ Pulsarity server entry point
 import asyncio
 import logging
 import os
+import platform
 import signal
 import sys
 from pathlib import Path
@@ -25,7 +26,7 @@ from pulsarity.webserver import application, websockets
 if TYPE_CHECKING:
     from starlette.types import ASGIApp
 
-# pylint: disable=w0223
+# pylint: disable=w0223,w0212,e1101
 
 logger = logging.getLogger(__name__)
 _shutdown_event = asyncio.Event()
@@ -102,9 +103,14 @@ async def _server() -> None:
 
     server = _generate_server()
 
-    logger.debug("Granian server version: %s", granian.__version__)
-    logger.info("Pulsarity application version: %s", pulsarity.__version__)
-    logger.info("Pulsarity Languages version: %s", pulsarity_localization.__version__)
+    logger.info("Platform: %s", platform.platform())
+    logger.info("CPU count: %s", os.cpu_count())
+    logger.info("Python: %s", platform.python_version())
+    logger.info("GIL disabled: %s", not sys._is_gil_enabled())
+    logger.info("JIT enabled: %s", sys._jit.is_enabled())  # type: ignore
+    logger.debug("Granian server: %s", granian.__version__)
+    logger.info("Pulsarity application: %s", pulsarity.__version__)
+    logger.info("Pulsarity localization: %s", pulsarity_localization.__version__)
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(server.serve())
@@ -115,11 +121,11 @@ async def _server() -> None:
             tg.create_task(_shutdown_event.wait()),
         ]
 
-        await asyncio.wait(events, return_when=asyncio.FIRST_COMPLETED)
+        _, pending = await asyncio.wait(events, return_when=asyncio.FIRST_COMPLETED)
 
         logger.info("Server shutdown signaled")
 
-        for task in events:
+        for task in pending:
             task.cancel()
 
         await server.shutdown_server()

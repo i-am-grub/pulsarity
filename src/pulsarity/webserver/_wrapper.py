@@ -23,7 +23,7 @@ from starlette.responses import Response
 from pulsarity import ctx
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity.utils.asyncio import ensure_async
-from pulsarity.webserver._auth import requires
+from pulsarity.webserver._auth import PulsarityRequest, requires
 from pulsarity.webserver._status_codes import HTTPStatusCodes
 
 if TYPE_CHECKING:
@@ -132,7 +132,7 @@ def endpoint(
 
     def inner(
         func: Callable[..., Coroutine[None, None, Response]],
-    ) -> Callable[[Request], Coroutine[None, None, Response]]:
+    ) -> Callable[[PulsarityRequest], Coroutine[None, None, Response]]:
         # pylint: disable=R0912
 
         base_kwargs = {"request", "query", "path"}
@@ -164,16 +164,34 @@ def endpoint(
                 status_code=HTTPStatusCodes.UNAUTHORIZED,
             )
             @requires(permissions, status_code=HTTPStatusCodes.FORBIDDEN)
-            async def auth_wrapper(request: Request) -> Response:
-                with ctx.request_ctx.set(request), ctx.user_ctx.set(request.user):
+            async def auth_wrapper(request: PulsarityRequest) -> Response:
+                request_token = ctx.request_ctx.set(request)
+                user_token = ctx.user_ctx.set(request.user)
+                perm_token = ctx.user_permsissions_ctx.set(request.auth.scopes)
+
+                try:
                     return await _process_request(func, request, models)
+
+                finally:
+                    ctx.request_ctx.reset(request_token)
+                    ctx.user_ctx.reset(user_token)
+                    ctx.user_permsissions_ctx.reset(perm_token)
 
             return auth_wrapper
 
         @functools.wraps(func)
-        async def no_auth_wrapper(request: Request) -> Response:
-            with ctx.request_ctx.set(request), ctx.user_ctx.set(request.user):
+        async def no_auth_wrapper(request: PulsarityRequest) -> Response:
+            request_token = ctx.request_ctx.set(request)
+            user_token = ctx.user_ctx.set(request.user)
+            perm_token = ctx.user_permsissions_ctx.set(request.auth.scopes)
+
+            try:
                 return await _process_request(func, request, models)
+
+            finally:
+                ctx.request_ctx.reset(request_token)
+                ctx.user_ctx.reset(user_token)
+                ctx.user_permsissions_ctx.reset(perm_token)
 
         return no_auth_wrapper
 
