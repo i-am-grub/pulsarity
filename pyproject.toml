@@ -28,7 +28,7 @@ dependencies = [
     "async-lru==2.3.0",
     "pulsarity-localization", # Added repo as source until an offical release is made
     # Upstream Dependencies
-    "cffi==2.0.0", # argon, cryptography
+    "cffi==2.1.1", # argon, cryptography
     "idna==3.19", # anyio, httpx
     "argon2-cffi-bindings==25.1.0", # argon
     "pycparser==3.0", # cffi
