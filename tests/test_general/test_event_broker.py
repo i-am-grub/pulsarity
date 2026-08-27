@@ -20,14 +20,14 @@ from pulsarity.database.permission import SystemDefaultPerms
 
 @system_event
 class LowPriorityEvent(SystemEventData):
-    event_id = -1
+    event_id = -1 # type: ignore
     priority = EvtPriority.LOW
     permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 
 
 @system_event
 class HighPriorityEvent(SystemEventData):
-    event_id = -2
+    event_id = -2 # type: ignore
     priority = EvtPriority.HIGH
     permission = SystemDefaultPerms.DUPLEX_WEBSOCKET
 

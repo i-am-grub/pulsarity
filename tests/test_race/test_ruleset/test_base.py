@@ -110,18 +110,15 @@ def test_all_metrics():
     manager.add_lap(next(keys), lap)
 
     metrics = manager.get_combined_metrics()
+    assert metrics is not None
     assert metrics.total_laps == manager.get_num_laps()
     assert metrics.total_time == manager.get_total_time()
     assert metrics.average_lap_time == manager.get_average_lap_time()
     assert metrics.fastest_time == manager.get_fastest_time()
-    assert (
-        metrics.fastest_consec_base
-        == manager.get_fastest_consecutive_metric().consec_base
-    )
-    assert (
-        metrics.fastest_consec_time
-        == manager.get_fastest_consecutive_metric().consec_time
-    )
+    consec_metrics = manager.get_fastest_consecutive_metric()
+    assert consec_metrics is not None
+    assert metrics.fastest_consec_base == consec_metrics.consec_base
+    assert metrics.fastest_consec_time == consec_metrics.consec_time
 
 
 def test_all_metrics_holeshot():
@@ -144,18 +141,15 @@ def test_all_metrics_holeshot():
     manager.add_lap(next(keys), lap)
 
     metrics = manager.get_combined_metrics(True)
+    assert metrics is not None
     assert metrics.total_laps == manager.get_num_laps(True)
     assert metrics.total_time == manager.get_total_time(True)
     assert metrics.average_lap_time == manager.get_average_lap_time(True)
     assert metrics.fastest_time == manager.get_fastest_time(True)
-    assert (
-        metrics.fastest_consec_base
-        == manager.get_fastest_consecutive_metric(True).consec_base
-    )
-    assert (
-        metrics.fastest_consec_time
-        == manager.get_fastest_consecutive_metric(True).consec_time
-    )
+    consec_metrics = manager.get_fastest_consecutive_metric(True)
+    assert consec_metrics is not None
+    assert metrics.fastest_consec_base == consec_metrics.consec_base
+    assert metrics.fastest_consec_time == consec_metrics.consec_time
 
 
 def test_laps_manager_fastest():
@@ -230,7 +224,7 @@ def test_laps_manager_consecutive():
     prev_time = 0.0
     consec = 3
 
-    assert manager.get_fastest_consecutive_metric(consec) is None
+    assert manager.get_fastest_consecutive_metric(False, consec) is None
 
     lap = FullLapData(1.0, 0, "foo", 0)
     manager.add_lap(next(keys), lap)

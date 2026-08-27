@@ -124,6 +124,13 @@ class UIElement[T: Message](ABC):
         Convert the store data to message
         """
 
+    @classmethod
+    def clear_registered(cls) -> None:
+        """
+        Clears the registered elements from the class store
+        """
+        cls._store.clear()
+
 
 @dataclass(frozen=True, slots=True)
 class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
@@ -212,6 +219,15 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
         """
         mapping = {k: cls._etree_to_ids(v) for k, v in cls._mapping_store.items()}
         return ui_pb2.UIETreeMapping(mapping=mapping)
+
+    @override
+    @classmethod
+    def clear_registered(cls) -> None:
+        """
+        Clears the registered elements from the class store
+        """
+        super().clear_registered()
+        cls._mapping_store.clear()
 
 
 @dataclass(frozen=True, slots=True)

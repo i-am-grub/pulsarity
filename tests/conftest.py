@@ -25,9 +25,11 @@ from pulsarity.events.broker import EventBroker
 from pulsarity.interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.manager import RaceManager
 from pulsarity.race.ruleset import RaceRulesetManager
+from pulsarity.ui.elements import UIButtonField, UIETree, UIMarkdownField, UIValueField
 from pulsarity.utils import background
 from pulsarity.utils.config import PulsarityConfig
 from pulsarity.webserver import application
+from pulsarity.webserver._status_codes import HTTPStatusCodes
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -48,6 +50,11 @@ async def context_and_cleanup():
     TimerInterfaceManager.clear_registered()
     RaceRulesetManager.clear_registered()
     EventBroker.clear_registered()
+
+    UIETree.clear_registered()
+    UIMarkdownField.clear_registered()
+    UIButtonField.clear_registered()
+    UIValueField.clear_registered()
 
     ctx.loop_ctx.reset(loop_token)
     ctx.event_broker_ctx.reset(event_token)
@@ -135,7 +142,7 @@ async def _authenticated_client(client: AsyncClient, user_creds: tuple[str, str]
         content=message.SerializeToString(),
         headers={"Content-Type": "application/x-protobuf"},
     )
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatusCodes.OK
 
     yield client
 

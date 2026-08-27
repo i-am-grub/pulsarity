@@ -182,7 +182,7 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
         loop.call_at(start + rng.uniform(0.2, 0.5), evt.set)
         await evt.wait()
 
-        return Response(status_code=200)
+        return Response(status_code=HTTPStatusCodes.OK)
 
     loop.call_at(start + rng.uniform(1.0, 2.0), evt.set)
     await evt.wait()
@@ -318,8 +318,7 @@ async def get_raceclasses_for_event(
     :return: A JSON model of all raceclasses
     """
     raceclasses = (
-        await RaceClass.filter(event_id=path.id)
-        .filter(id__gt=query.cursor)
+        await RaceClass.filter(event_id=path.id, id__gt=query.cursor)
         .limit(query.limit)
         .prefetch_related("attributes")
     )
@@ -352,8 +351,7 @@ async def get_rounds_for_raceclass(
     Gets all rounds for a specific racelass
     """
     rounds = (
-        await Round.filter(raceclass_id=path.id)
-        .filter(id__gt=query.cursor)
+        await Round.filter(raceclass_id=path.id, id__gt=query.cursor)
         .limit(query.limit)
         .prefetch_related("attributes")
     )
@@ -386,8 +384,7 @@ async def get_heats_for_round(
     Gets all heats for a specific round
     """
     heats = (
-        await Heat.filter(round_id=path.id)
-        .filter(id__gt=query.cursor)
+        await Heat.filter(round_id=path.id, id__gt=query.cursor)
         .limit(query.limit)
         .prefetch_related("attributes")
     )
@@ -505,6 +502,6 @@ ROUTES: list[BaseRoute] = [
     Route("/etree-mappings", endpoint=get_etree_mappings),
     Route("/etrees", endpoint=get_etrees),
     Route("/markdown-fields", endpoint=get_markdown_fields),
-    Route("/buttons-fields", endpoint=get_button_fields),
+    Route("/button-fields", endpoint=get_button_fields),
     Route("/value-fields", endpoint=get_value_fields),
 ]
