@@ -23,7 +23,7 @@ dependencies = [
     "cryptography==50.0.0",
     "argon2-cffi==25.1.0",
     "tortoise-orm==1.1.7",
-    "anyio==4.14.0",
+    "anyio==4.14.2",
     "protobuf==7.36.0",
     "async-lru==2.3.0",
     "pulsarity-localization", # Added repo as source until an offical release is made
