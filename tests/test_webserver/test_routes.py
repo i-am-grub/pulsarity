@@ -6,12 +6,38 @@ import pytest
 from httpx import AsyncClient
 
 from pulsarity._protobuf import http_pb2, database_pb2
+from pulsarity._protobuf.ui_pb2 import (
+    UIButtonFields,
+    UIETreeMapping,
+    UIElementTrees,
+    UIMarkdownFields,
+    UIValueFields,
+)
 from pulsarity.database.heat import Heat
 from pulsarity.database.pilot import Pilot
 from pulsarity.database.raceclass import RaceClass
 from pulsarity.database.raceevent import RaceEvent
 from pulsarity.database.round import Round
+from pulsarity.ui.elements import (
+    UIButtonField,
+    UICheckboxValueField,
+    UIDateValueField,
+    UIDatetimeValueField,
+    UIETree,
+    UIEmailValueField,
+    UIMarkdownField,
+    UINumberValueField,
+    UIPasswordValueField,
+    UIRangeValueField,
+    UISelectValueField,
+    UITextValueField,
+    UITimeValueField,
+    UIURLValueField,
+    UIValueField,
+)
 from pulsarity.webserver._status_codes import HTTPStatusCodes
+
+# pylint:disable=W0212
 
 header = {"Content-Type": "application/x-protobuf"}
 
@@ -341,7 +367,7 @@ async def test_get_round_heats(authed_client: AsyncClient, basic_heat: Heat):
 @pytest.mark.asyncio
 async def test_get_etree_mappings_unauth(client: AsyncClient):
     """
-    Test getting individual raceclasses through the api
+    Test accessing etree mappings while being unauthenticated
     """
     response = await client.get("/etree-mappings")
     assert response.status_code == HTTPStatusCodes.UNAUTHORIZED
@@ -350,16 +376,51 @@ async def test_get_etree_mappings_unauth(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_etree_mappings(authed_client: AsyncClient):
     """
-    Test getting individual raceclasses through the api
+    Test accessing etree mappings while being authenticated
     """
     response = await authed_client.get("/etree-mappings")
     assert response.status_code == HTTPStatusCodes.OK
 
 
 @pytest.mark.asyncio
+async def test_get_etree_mapping_content(authed_client: AsyncClient):
+    """
+    Test recieved etree mapping data
+    """
+    assert len(UIETree._store) == 0
+    assert len(UIETree._mapping_store) == 0
+
+    response = await authed_client.get("/etree-mappings")
+    assert response.status_code == HTTPStatusCodes.OK
+
+    etrees_container = UIElementTrees.FromString(response.content)
+    assert len(etrees_container.etrees) == 0
+
+    # Create two etrees
+    tree = UIETree()
+    tree.map_to_route("foo")
+    tree.map_to_route("bar")
+
+    assert len(UIETree._store) == 1
+    assert len(UIETree._mapping_store) == 2
+
+    response = await authed_client.get("/etree-mappings")
+    assert response.status_code == HTTPStatusCodes.OK
+
+    etrees_container = UIETreeMapping.FromString(response.content)
+    mapping = etrees_container.mapping
+    assert len(mapping) == 2
+    assert "foo" in mapping
+    assert tree.uid in mapping["foo"].element_ids
+
+    assert "bar" in mapping
+    assert tree.uid in mapping["bar"].element_ids
+
+
+@pytest.mark.asyncio
 async def test_get_etrees_unauth(client: AsyncClient):
     """
-    Test getting individual raceclasses through the api
+    Test accessing etrees while being unauthenticated
     """
     response = await client.get("/etrees")
     assert response.status_code == HTTPStatusCodes.UNAUTHORIZED
@@ -368,16 +429,47 @@ async def test_get_etrees_unauth(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_etrees(authed_client: AsyncClient):
     """
-    Test getting individual raceclasses through the api
+    Test accessing etrees while being authenticated
     """
     response = await authed_client.get("/etrees")
     assert response.status_code == HTTPStatusCodes.OK
 
 
 @pytest.mark.asyncio
+async def test_get_etrees_content(authed_client: AsyncClient):
+    """
+    Test recieved etree data
+    """
+    assert len(UIETree._store) == 0
+
+    response = await authed_client.get("/etrees")
+    assert response.status_code == HTTPStatusCodes.OK
+
+    etrees_container = UIElementTrees.FromString(response.content)
+    assert len(etrees_container.etrees) == 0
+
+    # Create two etrees
+    tree1 = UIETree()
+    tree2 = UIETree()
+    assert tree1.uid != tree2.uid
+
+    assert len(UIETree._store) == 2
+
+    response = await authed_client.get("/etrees")
+    assert response.status_code == HTTPStatusCodes.OK
+
+    etrees_container = UIElementTrees.FromString(response.content)
+    etrees = etrees_container.etrees
+    assert len(etrees) == 2
+    keys = {etree.element_id for etree in etrees}
+    assert tree1.uid in keys
+    assert tree2.uid in keys
+
+
+@pytest.mark.asyncio
 async def test_get_markdown_fields_unauth(client: AsyncClient):
     """
-    Test getting individual raceclasses through the api
+    Test accessing markdown fields while being unauthenticated
     """
     response = await client.get("/markdown-fields")
     assert response.status_code == HTTPStatusCodes.UNAUTHORIZED
@@ -386,16 +478,47 @@ async def test_get_markdown_fields_unauth(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_markdown_fields(authed_client: AsyncClient):
     """
-    Test getting individual raceclasses through the api
+    Test accessing markdown fields while being authenticated
     """
     response = await authed_client.get("/markdown-fields")
     assert response.status_code == HTTPStatusCodes.OK
 
 
 @pytest.mark.asyncio
+async def test_get_markdown_field_content(authed_client: AsyncClient):
+    """
+    Test recieved markdown field data
+    """
+    assert len(UIMarkdownField._store) == 0
+
+    response = await authed_client.get("/markdown-fields")
+    assert response.status_code == HTTPStatusCodes.OK
+
+    markdown_container = UIMarkdownFields.FromString(response.content)
+    assert len(markdown_container.fields) == 0
+
+    # Create two markdown fields
+    field1 = UIMarkdownField("foo")
+    field2 = UIMarkdownField("bar")
+    assert field1.uid != field2.uid
+
+    assert len(UIMarkdownField._store) == 2
+
+    response = await authed_client.get("/markdown-fields")
+    assert response.status_code == HTTPStatusCodes.OK
+
+    markdown_container = UIMarkdownFields.FromString(response.content)
+    fields = markdown_container.fields
+    assert len(fields) == 2
+    keys = {field.element_id for field in fields}
+    assert field1.uid in keys
+    assert field2.uid in keys
+
+
+@pytest.mark.asyncio
 async def test_get_button_fields_unauth(client: AsyncClient):
     """
-    Test getting individual raceclasses through the api
+    Test accessing button fields while being unauthenticated
     """
     response = await client.get("/button-fields")
     assert response.status_code == HTTPStatusCodes.UNAUTHORIZED
@@ -404,16 +527,47 @@ async def test_get_button_fields_unauth(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_button_fields(authed_client: AsyncClient):
     """
-    Test getting individual raceclasses through the api
+    Test accessing button fields while being authenticated
     """
     response = await authed_client.get("/button-fields")
     assert response.status_code == HTTPStatusCodes.OK
 
 
 @pytest.mark.asyncio
+async def test_get_button_field_content(authed_client: AsyncClient):
+    """
+    Test recieved button field data
+    """
+    assert len(UIButtonField._store) == 0
+
+    response = await authed_client.get("/button-fields")
+    assert response.status_code == HTTPStatusCodes.OK
+
+    button_container = UIButtonFields.FromString(response.content)
+    assert len(button_container.fields) == 0
+
+    # Create two markdown fields
+    field1 = UIButtonField("foo", lambda: None)
+    field2 = UIButtonField("bar", lambda: None)
+    assert field1.uid != field2.uid
+
+    assert len(UIButtonField._store) == 2
+
+    response = await authed_client.get("/button-fields")
+    assert response.status_code == HTTPStatusCodes.OK
+
+    button_container = UIButtonFields.FromString(response.content)
+    fields = button_container.fields
+    assert len(fields) == 2
+    keys = {field.element_id for field in fields}
+    assert field1.uid in keys
+    assert field2.uid in keys
+
+
+@pytest.mark.asyncio
 async def test_get_value_fields_unauth(client: AsyncClient):
     """
-    Test getting individual raceclasses through the api
+    Test accessing value fields while being unauthenticated
     """
     response = await client.get("/value-fields")
     assert response.status_code == HTTPStatusCodes.UNAUTHORIZED
@@ -422,7 +576,52 @@ async def test_get_value_fields_unauth(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_value_fields(authed_client: AsyncClient):
     """
-    Test getting individual raceclasses through the api
+    Test accessing value fields while being authenticated
     """
     response = await authed_client.get("/value-fields")
     assert response.status_code == HTTPStatusCodes.OK
+
+
+@pytest.mark.asyncio
+async def test_get_value_field_content(authed_client: AsyncClient):
+    """
+    Test recieved value field data
+    """
+    assert len(UIValueField._store) == 0
+
+    response = await authed_client.get("/value-fields")
+    assert response.status_code == HTTPStatusCodes.OK
+
+    values_container = UIValueFields.FromString(response.content)
+    assert len(values_container.fields) == 0
+
+    # Create value fields of all types
+    init_fields: list[UIValueField] = [
+        UITextValueField(),
+        UIPasswordValueField(),
+        UIEmailValueField(),
+        UIURLValueField(),
+        UINumberValueField(),
+        UIRangeValueField(),
+        UICheckboxValueField(),
+        UIDatetimeValueField(),
+        UIDateValueField(),
+        UITimeValueField(),
+        UISelectValueField(),
+    ]
+
+    assert len(UIValueField._store) == 11
+
+    response = await authed_client.get("/value-fields")
+    assert response.status_code == HTTPStatusCodes.OK
+
+    values_container = UIValueFields.FromString(response.content)
+    fields = values_container.fields
+    assert len(fields) == 11
+    keys = {field.element_id for field in fields}
+
+    field_types = set()
+    for field in init_fields:
+        assert field.uid in keys
+        assert field.field_type not in field_types
+        field_types.add(field.field_type)

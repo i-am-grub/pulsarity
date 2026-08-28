@@ -314,7 +314,7 @@ class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
 
     field_type: ClassVar[ui_pb2.FieldType]
 
-    _value: T = field(init=False)
+    _value: T | None = field(init=False, default=None)
     default: InitVar[T | None] = None
     description: str | None = None
 
@@ -325,7 +325,7 @@ class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
             object.__setattr__(self, "_value", default)
 
     @property
-    def value(self) -> T:
+    def value(self) -> T | None:
         """
         The value of the field
         """
@@ -491,6 +491,17 @@ class UICheckboxValueField(UIValueField[bool]):
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_CHECKBOX
 
+    _value: bool = field(init=False, default=False)
+    default: InitVar[bool] = False
+
+    @property
+    @override
+    def value(self) -> bool:
+        """
+        The value of the field
+        """
+        return self._value
+
     @override
     def _validate_value(self, value) -> None:
         if not isinstance(value, bool):
@@ -528,7 +539,11 @@ class UIDatetimeValueField(UIValueField[datetime]):
         """
         Convert the element data to message
         """
-        datetime_ = Timestamp().FromDatetime(self.value)
+        if self._value is not None:
+            datetime_ = Timestamp().FromDatetime(self._value)
+        else:
+            datetime_ = None
+
         return ui_pb2.UIValueField(
             element_id=self.uid,
             hidden=self._hidden,
@@ -556,13 +571,16 @@ class UIDateValueField(UIValueField[date]):
         """
         Convert the element data to message
         """
-        dt = datetime(
-            year=self._value.year,
-            month=self._value.month,
-            day=self._value.day,
-            tzinfo=UTC,
-        )
-        datetime_ = Timestamp().FromDatetime(dt)
+        if self._value is not None:
+            dt = datetime(
+                year=self._value.year,
+                month=self._value.month,
+                day=self._value.day,
+                tzinfo=UTC,
+            )
+            datetime_ = Timestamp().FromDatetime(dt)
+        else:
+            datetime_ = None
 
         return ui_pb2.UIValueField(
             element_id=self.uid,
@@ -591,11 +609,17 @@ class UITimeValueField(UIValueField[time]):
         """
         Convert the element data to message
         """
-        seconds = (
-            (self._value.hour * 3600) + (self._value.minute * 60) + self._value.second
-        )
-        nanos = self._value.microsecond * 1000
-        datetime_ = Timestamp(seconds=seconds, nanos=nanos)
+        if self._value is not None:
+            seconds = (
+                (self._value.hour * 3600)
+                + (self._value.minute * 60)
+                + self._value.second
+            )
+            nanos = self._value.microsecond * 1000
+            datetime_ = Timestamp(seconds=seconds, nanos=nanos)
+        else:
+            datetime_ = None
+
         return ui_pb2.UIValueField(
             element_id=self.uid,
             hidden=self._hidden,
@@ -630,10 +654,18 @@ class UISelectValueField[T](UIValueField[int]):
         """
         The value of the current selection
         """
+        if self._value is None:
+            msg = "Unable to get value when selection is None"
+            raise ValueError(msg)
+
         return self._options[self._value].value
 
     @selected_value.setter
     def selected_value(self, val: T) -> None:
+        if self._value is None:
+            msg = "Unable to set value when selection is None"
+            raise ValueError(msg)
+
         current = self._options[self._value]
         if val != current.value:
             self._options[self._value] = _SelectOption(current.label, val)
@@ -668,7 +700,11 @@ class UISelectValueField[T](UIValueField[int]):
         """
         self._options.pop(id_)
         if id_ == self._value:
-            first_key = next(iter(self._options))
+            try:
+                first_key = next(iter(self._options))
+            except StopIteration:
+                first_key = None
+
             object.__setattr__(self, "_value", first_key)
         self.publish_update_event()
 
