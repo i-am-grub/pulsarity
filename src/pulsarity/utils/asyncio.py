@@ -66,4 +66,4 @@ async def wait_task_cancellation(
 
     for task in pending:
         if not task.cancelled() and (task_ex := task.exception()) is not None:
-            logger.exception(exc_message, exc_info=task_ex)
+            logger.error(exc_message, exc_info=task_ex)
