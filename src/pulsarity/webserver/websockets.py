@@ -7,21 +7,19 @@ import logging
 from typing import TYPE_CHECKING
 
 from google.protobuf.message import DecodeError
-from starlette.authentication import requires
 from starlette.routing import BaseRoute, WebSocketRoute
-from starlette.websockets import WebSocket, WebSocketDisconnect
+from starlette.websockets import WebSocketDisconnect
 
 from pulsarity import ctx
 from pulsarity._protobuf import websocket_pb2
 from pulsarity.database.permission import SystemDefaultPerms
 from pulsarity.events import client
 from pulsarity.utils import background
+from pulsarity.webserver._auth import PulsarityUser, PulsarityWebsocket, requires
+from pulsarity.webserver._status_codes import WebSocketStatusCodes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
-
-    from pulsarity.webserver._auth import PulsarityUser
-
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +71,8 @@ async def send_event_data() -> None:
             continue
 
         if event.permission in permissions:
-            await websocket.send_bytes(event.model_dump_protobuf())
+            serialized_message = event.message_dump_protobuf()
+            await websocket.send_bytes(serialized_message)
 
 
 async def simplex_recieve_event_data() -> None:
@@ -142,7 +141,7 @@ async def duplex_recieve_event_data() -> None:
 
 
 async def ws_connection(
-    websocket: WebSocket,
+    websocket: PulsarityWebsocket,
     rev_coro_func: Callable[[], Coroutine[None, None, None]],
 ) -> None:
     """
@@ -155,7 +154,7 @@ async def ws_connection(
     :param rev_coro_func: The coroutine function to use for handling incoming data
     from the connected client
     """
-    close_info = 1000, "standard client disconnect"
+    close_info = WebSocketStatusCodes.NORMAL_CLOSURE, "standard client disconnect"
 
     await websocket.accept(headers=[(b"Content-Type", b"application/x-protobuf")])
 
@@ -176,7 +175,7 @@ async def ws_connection(
             recv_task.cancel()
             send_task.cancel()
 
-        close_info = 1001, "server shutting down"
+        close_info = WebSocketStatusCodes.GOING_AWAY, "server shutting down"
 
     except* WebSocketDisconnect:
         logger.debug(
@@ -185,7 +184,7 @@ async def ws_connection(
         )
 
     except* BaseException:
-        close_info = 1011, "internal server error"
+        close_info = WebSocketStatusCodes.INTERNAL_ERROR, "internal server error"
         raise
 
     finally:
@@ -196,7 +195,7 @@ async def ws_connection(
 
 
 @requires(SystemDefaultPerms.SIMPLEX_WEBSOCKET)
-async def simplex_ws(websocket: WebSocket):
+async def simplex_ws(websocket: PulsarityWebsocket):
     """
     The simplex event websocket connection for clients.
 
@@ -204,7 +203,7 @@ async def simplex_ws(websocket: WebSocket):
     if the server is signalled to shut down.
     """
     if ws_shutdown_evt.is_set():
-        await websocket.close(1001, "server shutting down")
+        await websocket.close(WebSocketStatusCodes.GOING_AWAY, "server shutting down")
         return
 
     user: PulsarityUser = websocket.user
@@ -216,7 +215,7 @@ async def simplex_ws(websocket: WebSocket):
 
 
 @requires(SystemDefaultPerms.DUPLEX_WEBSOCKET)
-async def duplex_ws(websocket: WebSocket):
+async def duplex_ws(websocket: PulsarityWebsocket):
     """
     The full duplex event websocket connection for clients
 
@@ -224,7 +223,7 @@ async def duplex_ws(websocket: WebSocket):
     if the server is signalled to shut down.
     """
     if ws_shutdown_evt.is_set():
-        await websocket.close(1001, "server shutting down")
+        await websocket.close(WebSocketStatusCodes.GOING_AWAY, "server shutting down")
         return
 
     user: PulsarityUser = websocket.user

@@ -2,14 +2,13 @@
 System events originating on the server
 """
 
-import functools
 import itertools
-import uuid as _uuid
+import uuid
 from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum, unique
+from functools import partial
 from typing import ClassVar, Self, dataclass_transform, override
-from uuid import UUID
 
 from pulsarity._protobuf import websocket_pb2
 from pulsarity.database.permission import SystemDefaultPerms, UserPermission
@@ -23,12 +22,12 @@ def system_event(cls: type[SystemEventData]) -> type[SystemEventData]:
     Decorator for generating registering system event handlers as dataclasses
     """
     if cls.event_id in _registered:
-        msg = f"Class with event_id={cls.event_id} already used"
+        msg = f"Class with event_id={cls.event_id} already registered"
         raise ValueError(msg)
 
     if issubclass(cls, SystemEventData):
         _registered.add(cls.event_id)
-        return dataclass(cls, frozen=True)
+        return dataclass(cls, frozen=True, slots=True)
 
     msg = f"{cls.__name__} is not a subclass of {SystemEventData.__name__}"
     raise TypeError(msg)
@@ -47,7 +46,7 @@ class EvtPriority(Enum):
     HIGHEST = 1
     HIGHER = 2
     HIGH = 3
-    MEDUIUM = 4
+    MEDIUM = 4
     LOW = 5
     LOWER = 6
     LOWEST = 7
@@ -56,11 +55,14 @@ class EvtPriority(Enum):
         return self.value < other.value
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class SystemEventData(ABC):
     """
     ABC for event data originating on the server
     """
+
+    _counter: ClassVar = itertools.count()
+    """Event data ID generator"""
 
     event_id: ClassVar[websocket_pb2.EventID]
     """Protocol buffer event id"""
@@ -69,27 +71,30 @@ class SystemEventData(ABC):
     permission: ClassVar[UserPermission]
     """Outgoing required client permission"""
 
-    _counter: ClassVar[itertools.count] = itertools.count()
-    _id: int = field(default_factory=functools.partial(next, _counter))
-
-    uuid: UUID = field(default_factory=_uuid.uuid4)
+    _id: int = field(default_factory=partial(next, _counter), init=False)
+    """ID of the event data"""
+    uuid: uuid.UUID = field(default_factory=uuid.uuid4)
     """Unique instance identifier"""
+    _cached_message: bytes | None = field(default=None, init=False)
+    """Serialized message cache"""
 
-    @functools.cached_property
-    def dumped_model(self) -> bytes:
+    def serialize_message(self) -> bytes:
         """
-        Cached serialized message
+        Generate the serialized message
         """
         return websocket_pb2.WebsocketEvent(
             uuid=self.uuid.bytes,
             event_id=self.event_id,
         ).SerializeToString()
 
-    def model_dump_protobuf(self) -> bytes:
+    def message_dump_protobuf(self) -> bytes:
         """
         Serialize as a protocol buffer message
         """
-        return self.dumped_model
+        if self._cached_message is None:
+            serialized_message = self.serialize_message()
+            object.__setattr__(self, "_cached_message", serialized_message)
+        return self._cached_message  # type: ignore
 
     def __lt__(self, other: Self) -> bool:
         return (self.priority, self._id) < (other.priority, other._id)
@@ -234,14 +239,13 @@ class PilotAdd(SystemEventData):
     """
 
     event_id: ClassVar[websocket_pb2.EventID] = websocket_pb2.EVENT_PILOT_ADD
-    priority = EvtPriority.MEDUIUM
+    priority = EvtPriority.MEDIUM
     permission = SystemDefaultPerms.READ_PILOTS
 
     pilot_id: int
 
-    @functools.cached_property
     @override
-    def dumped_model(self) -> bytes:
+    def serialize_message(self) -> bytes:
         pilot_data = websocket_pb2.PilotAddData(pilot_id=self.pilot_id)
         return websocket_pb2.WebsocketEvent(
             uuid=self.uuid.bytes,
@@ -257,14 +261,13 @@ class PilotAlter(SystemEventData):
     """
 
     event_id: ClassVar[websocket_pb2.EventID] = websocket_pb2.EVENT_PILOT_ALTER
-    priority = EvtPriority.MEDUIUM
+    priority = EvtPriority.MEDIUM
     permission = SystemDefaultPerms.READ_PILOTS
 
     pilot_id: int
 
-    @functools.cached_property
     @override
-    def dumped_model(self) -> bytes:
+    def serialize_message(self) -> bytes:
         pilot_data = websocket_pb2.PilotAlterData(pilot_id=self.pilot_id)
         return websocket_pb2.WebsocketEvent(
             uuid=self.uuid.bytes,
@@ -280,14 +283,13 @@ class PilotDelete(SystemEventData):
     """
 
     event_id = websocket_pb2.EVENT_PILOT_DELETE
-    priority = EvtPriority.MEDUIUM
+    priority = EvtPriority.MEDIUM
     permission = SystemDefaultPerms.READ_PILOTS
 
     pilot_id: int
 
-    @functools.cached_property
     @override
-    def dumped_model(self) -> bytes:
+    def serialize_message(self) -> bytes:
         pilot_data = websocket_pb2.PilotDeleteData(pilot_id=self.pilot_id)
         return websocket_pb2.WebsocketEvent(
             uuid=self.uuid.bytes,

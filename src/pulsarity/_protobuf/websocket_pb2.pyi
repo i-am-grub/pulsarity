@@ -1,3 +1,4 @@
+import pulsarity._protobuf.ui_pb2 as _ui_pb2
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -19,6 +20,7 @@ EVENT_RACE_STOP: EventID
 EVENT_RESTART: EventID
 EVENT_SHUTDOWN: EventID
 EVENT_STARTUP: EventID
+EVENT_UI_UPDATE: EventID
 EVENT_UNSPECIFIED: EventID
 
 class PilotAddData(_message.Message):
@@ -40,18 +42,20 @@ class PilotDeleteData(_message.Message):
     def __init__(self, pilot_id: _Optional[int] = ...) -> None: ...
 
 class WebsocketEvent(_message.Message):
-    __slots__ = ["event_id", "pilot_add", "pilot_alter", "pilot_delete", "uuid"]
+    __slots__ = ["event_id", "pilot_add", "pilot_alter", "pilot_delete", "ui_element_update", "uuid"]
     EVENT_ID_FIELD_NUMBER: _ClassVar[int]
     PILOT_ADD_FIELD_NUMBER: _ClassVar[int]
     PILOT_ALTER_FIELD_NUMBER: _ClassVar[int]
     PILOT_DELETE_FIELD_NUMBER: _ClassVar[int]
+    UI_ELEMENT_UPDATE_FIELD_NUMBER: _ClassVar[int]
     UUID_FIELD_NUMBER: _ClassVar[int]
     event_id: EventID
     pilot_add: PilotAddData
     pilot_alter: PilotAlterData
     pilot_delete: PilotDeleteData
+    ui_element_update: _ui_pb2.UIElementUpdate
     uuid: bytes
-    def __init__(self, uuid: _Optional[bytes] = ..., event_id: _Optional[_Union[EventID, str]] = ..., pilot_add: _Optional[_Union[PilotAddData, _Mapping]] = ..., pilot_alter: _Optional[_Union[PilotAlterData, _Mapping]] = ..., pilot_delete: _Optional[_Union[PilotDeleteData, _Mapping]] = ...) -> None: ...
+    def __init__(self, uuid: _Optional[bytes] = ..., event_id: _Optional[_Union[EventID, str]] = ..., ui_element_update: _Optional[_Union[_ui_pb2.UIElementUpdate, _Mapping]] = ..., pilot_add: _Optional[_Union[PilotAddData, _Mapping]] = ..., pilot_alter: _Optional[_Union[PilotAlterData, _Mapping]] = ..., pilot_delete: _Optional[_Union[PilotDeleteData, _Mapping]] = ...) -> None: ...
 
 class EventID(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = []

@@ -81,7 +81,7 @@ class ClientHeartbeat(ClientEventData):
 
     async def run_handler(self):
         websocket = ctx.websocket_ctx.get()
-        response = SystemHeartBeat(uuid=self.uuid).model_dump_protobuf()
+        response = SystemHeartBeat(uuid=self.uuid).message_dump_protobuf()
         await websocket.send_bytes(response)
 
 

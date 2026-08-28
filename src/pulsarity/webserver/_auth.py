@@ -5,11 +5,12 @@ Authorization and permission enforcement
 import functools
 import inspect
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ParamSpec
+from typing import TYPE_CHECKING, Any, ParamSpec, override
 from urllib.parse import urlencode
 from uuid import UUID
 
 from starlette.authentication import (
+    AuthCredentials,
     AuthenticationBackend,
     BaseUser,
 )
@@ -20,6 +21,7 @@ from starlette.websockets import WebSocket
 
 from pulsarity.database import Role
 from pulsarity.database.user import User
+from pulsarity.webserver._status_codes import HTTPStatusCodes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -28,15 +30,15 @@ if TYPE_CHECKING:
 _P = ParamSpec("_P")
 
 
-class PulsarityCredentials:
+class PulsarityCredentials(AuthCredentials):
     """
     Reimplementation of starlette's `AuthCredentials`
     """
 
     __slots__ = ("scopes",)
 
-    def __init__(self, scopes: Iterable[str] | None = None):
-        self.scopes = set() if scopes is None else set(scopes)
+    def __init__(self, scopes: Iterable[str] | None = None):  # pylint: disable=W0231
+        self.scopes: set[str] = set() if scopes is None else set(scopes)  # type: ignore
 
 
 def has_required_scope(conn: HTTPConnection, scopes: Iterable[str]) -> bool:
@@ -44,13 +46,13 @@ def has_required_scope(conn: HTTPConnection, scopes: Iterable[str]) -> bool:
     Reimplementation of starlette's `has_required_scope`. Assumes that the
     connection scope container is set based.
     """
-    connection_scopes: set = conn.auth.scopes
+    connection_scopes: set[str] = conn.auth.scopes
     return connection_scopes.issuperset(scopes)
 
 
 def requires(  # noqa: C901
     scopes: str | Sequence[str],
-    status_code: int = 403,
+    status_code: int = HTTPStatusCodes.FORBIDDEN,
     redirect: str | None = None,
 ) -> Callable[[Callable[_P, Any]], Callable[_P, Any]]:
     """
@@ -104,7 +106,9 @@ def requires(  # noqa: C901
                             next_url = (
                                 f"{request.url_for(redirect)}?{orig_request_qparam}"
                             )
-                            return RedirectResponse(url=next_url, status_code=303)
+                            return RedirectResponse(
+                                url=next_url, status_code=HTTPStatusCodes.SEE_OTHER
+                            )
                         raise HTTPException(status_code=status_code)
                     return await func(*args, **kwargs)
                 msg = "Request object not provided as valid arg"
@@ -120,7 +124,9 @@ def requires(  # noqa: C901
                     if redirect is not None:
                         orig_request_qparam = urlencode({"next": str(request.url)})
                         next_url = f"{request.url_for(redirect)}?{orig_request_qparam}"
-                        return RedirectResponse(url=next_url, status_code=303)
+                        return RedirectResponse(
+                            url=next_url, status_code=HTTPStatusCodes.SEE_OTHER
+                        )
                     raise HTTPException(status_code=status_code)
                 return func(*args, **kwargs)
 
@@ -208,7 +214,7 @@ class PulsarityAuthBackend(AuthenticationBackend):
 
     __slots__ = ()
 
-    async def authenticate(self, conn):
+    async def authenticate(self, conn) -> tuple[AuthCredentials, BaseUser]:
         """
         Checks session info to verify if the user is authenticated or not
         """
@@ -224,5 +230,41 @@ class PulsarityAuthBackend(AuthenticationBackend):
             User.get_by_uuid_prefetch.cache_invalidate(user_uuid)
 
         role = await Role.get(name="UNAUTHENTICATED").prefetch_related("permissions")
-        unauth_perms = await role.get_permissions()
+        unauth_perms = (perm.value for perm in role.permissions)
         return PulsarityCredentials(unauth_perms), PulsarityUnauthenticatedUser()
+
+
+class PulsarityRequest(Request):
+    """
+    Subclass of Starlette's Request class
+
+    Used for typing hinting
+    """
+
+    @property
+    @override
+    @abstractmethod
+    def auth(self) -> PulsarityCredentials: ...
+
+    @property
+    @override
+    @abstractmethod
+    def user(self) -> PulsarityUser: ...
+
+
+class PulsarityWebsocket(WebSocket):
+    """
+    Subclass of Starlette's WebSocket class
+
+    Used for typing hinting
+    """
+
+    @property
+    @override
+    @abstractmethod
+    def auth(self) -> PulsarityCredentials: ...
+
+    @property
+    @override
+    @abstractmethod
+    def user(self) -> PulsarityUser: ...

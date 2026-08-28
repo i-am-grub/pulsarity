@@ -102,7 +102,7 @@ class User(_PulsarityBase):
         app = "system"
         table = "user"
 
-    auth_id = fields.UUIDField(default=uuid4, index=True)
+    auth_id = fields.UUIDField(default=uuid4, db_index=True)
     """The UUID associated with the user"""
     username = fields.CharField(max_length=32, unique=True)
     """Username of user"""
@@ -148,12 +148,12 @@ class User(_PulsarityBase):
 
         :return: The set of permissions
         """
-        permissions: set[str] = set()
 
-        for role in self.roles:
-            permissions.update({perm.value for perm in role.permissions})
+        def perm_generator():
+            for role in self.roles:
+                yield from (perm.value for perm in role.permissions)
 
-        return permissions
+        return set(perm_generator())
 
     async def verify_password(self, password: str) -> bool:
         """
