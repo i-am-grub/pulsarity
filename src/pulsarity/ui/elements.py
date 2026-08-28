@@ -502,6 +502,12 @@ class UICheckboxValueField(UIValueField[bool]):
         """
         return self._value
 
+    @value.setter
+    def value(self, val: bool) -> None:
+        if val != self._value:
+            self._validate_value(val)
+            object.__setattr__(self, "_value", val)
+
     @override
     def _validate_value(self, value) -> None:
         if not isinstance(value, bool):
