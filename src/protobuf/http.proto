@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package pulsarity.http;
+
+message UserInfo {
+    bool authenticated = 1;
+    string auth_id = 2;
+    string username = 3;
+    string dispay_name = 4;
+    repeated string permissions = 5;
+}
+
+message AuthenticatedResponse {
+    bool status = 1;
+    UserInfo userinfo = 2;
+}
+
+message LoginRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    bool password_reset_required = 1;
+    UserInfo userinfo = 2;
+}
+
+message ResetPasswordRequest {
+    string old_password = 1;
+    string new_password = 2;
+}
+
+message ServerData {
+    string version = 1;
+    string server_name = 2;
+    string language_version = 3;
+    repeated string language_packs = 4;
+}
+
+message LocalizationData {
+    map<string, string> messages = 1;
+    map<string, string> pluralization = 2;
+}

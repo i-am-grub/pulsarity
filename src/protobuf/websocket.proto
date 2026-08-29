@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+import "ui.proto";
+
+package pulsarity.ws;
+
+enum EventID {
+    EVENT_UNSPECIFIED = 0x00;
+    
+    // System Events
+    EVENT_HEARTBEAT = 0x01;
+    EVENT_PERMISSIONS_UPDATE = 0x02;
+    EVENT_STARTUP = 0x03;
+    EVENT_SHUTDOWN = 0x04;
+    EVENT_RESTART = 0x05;
+    EVENT_UI_UPDATE = 0x06;
+
+    // Race Sequence
+    EVENT_RACE_SCHEDULE = 0x20;
+    EVENT_RACE_STAGE = 0x21;
+    EVENT_RACE_START = 0x22;
+    EVENT_RACE_FINISH = 0x23;
+    EVENT_RACE_STOP = 0x24;
+    EVENT_RACE_PAUSE = 0x25;
+    EVENT_RACE_RESUME = 0x26;
+
+    // Database Objects Management
+    EVENT_PILOT_ADD = 0x40;
+    EVENT_PILOT_ALTER = 0x41;
+    EVENT_PILOT_DELETE = 0x42;   
+}
+
+// Payload for EVENT_PILOT_ADD
+message PilotAddData {
+    uint32 pilot_id = 1;
+}
+
+// Payload for EVENT_PILOT_ALTER
+message PilotAlterData {
+    uint32 pilot_id = 1;
+}
+
+// Payload for EVENT_PILOT_DELETE
+message PilotDeleteData {
+    uint32 pilot_id = 1;
+}
+
+message WebsocketEvent {
+    bytes uuid = 1; // UUID encoded as bytes
+    EventID event_id = 2;
+    
+    oneof event_data {
+        // Reserve 3 for race value updates?
+        pulsarity.ui.UIElementUpdate ui_element_update = 4;
+
+        // Reserve up to 15 for the
+        // most common events
+        PilotAddData pilot_add = 16;
+        PilotAlterData pilot_alter = 17;
+        PilotDeleteData pilot_delete = 18;
+  }
+}
