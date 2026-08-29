@@ -16,7 +16,7 @@ from typing import (
     Self,
 )
 
-from pulsarity.interface.timer_manager import FullLapData, TimerMode
+from pulsarity.timing_interface.timer_manager import FullLapData, TimerMode
 from pulsarity.utils.collections import ValueSortedDict
 
 if TYPE_CHECKING:

@@ -11,7 +11,7 @@ from enum import Enum, auto, unique
 from typing import ClassVar, NamedTuple
 
 from pulsarity import ctx
-from pulsarity.interface.timer_interface import (
+from pulsarity.timing_interface.timer_interface import (
     BasicLapData,
     BasicSignalData,
     TimerInterface,

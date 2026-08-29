@@ -4,8 +4,11 @@ import uuid
 
 import pytest
 
-from pulsarity.interface import BasicLapData, BasicSignalData
-from pulsarity.interface.timer_manager import TimerInterfaceManager, TimerInterface
+from pulsarity.timing_interface import BasicLapData, BasicSignalData
+from pulsarity.timing_interface.timer_manager import (
+    TimerInterfaceManager,
+    TimerInterface,
+)
 
 
 @pytest.fixture(name="interface_manager")

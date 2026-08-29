@@ -18,7 +18,7 @@ from pulsarity.database.pilot import Pilot
 from pulsarity.database.raceclass import RaceClass
 from pulsarity.database.raceevent import RaceEvent
 from pulsarity.database.round import Round
-from pulsarity.ui.elements import (
+from pulsarity.user_interface.elements import (
     UIButtonField,
     UICheckboxValueField,
     UIDateValueField,

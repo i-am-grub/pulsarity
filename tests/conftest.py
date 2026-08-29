@@ -22,10 +22,15 @@ from pulsarity.database import (
     setup_default_objects,
 )
 from pulsarity.events.broker import EventBroker
-from pulsarity.interface.timer_manager import TimerInterfaceManager
+from pulsarity.timing_interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.manager import RaceManager
 from pulsarity.race.ruleset import RaceRulesetManager
-from pulsarity.ui.elements import UIButtonField, UIETree, UIMarkdownField, UIValueField
+from pulsarity.user_interface.elements import (
+    UIButtonField,
+    UIETree,
+    UIMarkdownField,
+    UIValueField,
+)
 from pulsarity.utils import background
 from pulsarity.utils.config import PulsarityConfig
 from pulsarity.webserver import application

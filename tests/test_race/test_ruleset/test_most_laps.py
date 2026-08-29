@@ -1,5 +1,5 @@
-from pulsarity.defaults.rulesets.most_laps import MostLapsRuleset
-from pulsarity.interface.timer_manager import FullLapData
+from pulsarity.native.rulesets.most_laps import MostLapsRuleset
+from pulsarity.timing_interface.timer_manager import FullLapData
 from pulsarity.race.ruleset import SafeRaceFormat
 
 

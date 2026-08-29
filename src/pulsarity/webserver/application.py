@@ -20,11 +20,11 @@ from tortoise import Tortoise
 from tortoise.context import TortoiseContext
 from tortoise.context import _current_context as db_context
 
-from pulsarity import ctx, database, defaults
+from pulsarity import ctx, database, native
 from pulsarity.events import EventBroker
 from pulsarity.events.server import ServerShutdown, ServerStartup, SystemHeartBeat
-from pulsarity.interface.timer_manager import TimerInterfaceManager
 from pulsarity.race.manager import RaceManager
+from pulsarity.timing_interface.timer_manager import TimerInterfaceManager
 from pulsarity.utils import background, config
 from pulsarity.webserver import http, websockets
 from pulsarity.webserver._auth import PulsarityAuthBackend
@@ -262,7 +262,7 @@ async def server_starup_workflow() -> None:
     """
     Startup workflow
     """
-    defaults.import_all_submodules()
+    native.import_all_submodules()
     ctx.timer_manager_ctx.get().start()
     await ctx.event_broker_ctx.get().trigger(ServerStartup())
 

@@ -11,8 +11,8 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
 
     from pulsarity.events.broker import EventBroker
-    from pulsarity.interface.timer_manager import TimerInterfaceManager
     from pulsarity.race.manager import RaceManager
+    from pulsarity.timing_interface.timer_manager import TimerInterfaceManager
     from pulsarity.webserver._auth import (
         PulsarityRequest,
         PulsarityUser,

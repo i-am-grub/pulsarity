@@ -1,7 +1,7 @@
 from collections.abc import Iterable, Sequence
 
 from pulsarity.database.raceformat import RaceFormat
-from pulsarity.interface.timer_manager import FullLapData
+from pulsarity.timing_interface.timer_manager import FullLapData
 from pulsarity.race.ruleset import RaceRuleset, SlotResult
 
 

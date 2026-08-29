@@ -24,7 +24,12 @@ from pulsarity.database.raceclass import RaceClass
 from pulsarity.database.raceevent import RaceEvent
 from pulsarity.database.round import Round
 from pulsarity.database.user import User
-from pulsarity.ui.elements import UIButtonField, UIETree, UIMarkdownField, UIValueField
+from pulsarity.user_interface.elements import (
+    UIButtonField,
+    UIETree,
+    UIMarkdownField,
+    UIValueField,
+)
 from pulsarity.utils import config
 from pulsarity.webserver._status_codes import HTTPStatusCodes
 from pulsarity.webserver._wrapper import (
