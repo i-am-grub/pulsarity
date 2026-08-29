@@ -32,7 +32,7 @@ def future_schedule(limited_schedule_: RaceFormat, race_manager: RaceStateManage
     schedule_offset = 1
     schedule_time = time.monotonic() + schedule_offset
 
-    race_manager.schedule_race(limited_schedule_, assigned_start=schedule_time)
+    race_manager.schedule_race(limited_schedule_, assigned_start=schedule_time)  # type: ignore
 
     return schedule_offset
 
@@ -59,7 +59,7 @@ async def test_past_schedule(
     now = time.monotonic() - 0.1
 
     with pytest.raises(ValueError):
-        race_manager.schedule_race(limited_schedule, assigned_start=now)
+        race_manager.schedule_race(limited_schedule, assigned_start=now)  # type: ignore
 
     assert race_manager.status == RaceStatus.READY
 

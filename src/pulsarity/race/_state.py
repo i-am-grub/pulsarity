@@ -3,8 +3,8 @@ Race management
 """
 
 import logging
+import secrets
 from enum import Flag, auto, unique
-from random import random
 from typing import TYPE_CHECKING, NamedTuple
 
 import pulsarity.events.server as server_evts
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from pulsarity.race.ruleset import SafeRaceFormat
 
 logger = logging.getLogger(__name__)
+rng = secrets.SystemRandom()
 
 
 @unique
@@ -203,7 +204,7 @@ class RaceStateManager:
             msg = "Assigned start is in the past"
             raise ValueError(msg)
 
-        _random_delay = format_.random_stage_delay * random() * 0.001  # noqa: S311
+        _random_delay = format_.random_stage_delay * rng.random() * 0.001
         start_delay = format_.stage_time_sec + _random_delay
         start_time = assigned_start + start_delay
 
