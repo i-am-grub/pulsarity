@@ -81,7 +81,7 @@ dev = [
     # Linting
     "mypy==2.3.1",
     "pylint==4.0.7",
-    "types-protobuf==7.35.1.20260823",
+    "types-protobuf==7.35.1.20260827",
     "ruff==0.16.4",
     "basedpyright>=1.39.9",
 ]
