@@ -105,7 +105,7 @@ local_partial_types = true
 ignore = ["tests", "src/pulsarity/_protobuf"]
 ignored-modules = ["pulsarity._protobuf.*", "google.protobuf.*"]
 disable = [
-    "too-few-public-methods",
+    "too-few-public-methods", "duplicate-code"
 ]
 
 [tool.ruff.lint]
