@@ -7,7 +7,7 @@ from __future__ import annotations
 import inspect
 import logging
 from abc import ABC, abstractmethod
-from collections import ChainMap, deque
+from collections import ChainMap
 from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
@@ -16,6 +16,7 @@ from typing import (
     Self,
 )
 
+from pulsarity.race import metrics
 from pulsarity.timing_interface.timer_manager import FullLapData, TimerMode
 from pulsarity.utils.collections import ValueSortedDict
 
@@ -50,7 +51,7 @@ class SafeRaceFormat(NamedTuple):
         the ruleset fields default values.
         """
         ruleset = RaceRulesetManager.get_ruleset(format_.ruleset_id)
-        fields = {field.name: field.default for field in ruleset.Meta.fields}
+        fields = {field.name: field.default for field in ruleset.__meta__.fields}
         fields.update({field.name: field.value for field in format_.ruleset_fields})
         return cls(
             format_.stage_time_sec,
@@ -60,28 +61,6 @@ class SafeRaceFormat(NamedTuple):
             format_.overtime_sec,
             fields,
         )
-
-
-class ConsecutiveMetric(NamedTuple):
-    """
-    Number of laps and the time associated with the laps
-    """
-
-    consec_base: int
-    consec_time: float
-
-
-class CombinedMetrics(NamedTuple):
-    """
-    All race metrics
-    """
-
-    total_laps: int
-    total_time: float
-    average_lap_time: float
-    fastest_time: float
-    fastest_consec_base: int
-    fastest_consec_time: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -124,20 +103,6 @@ class SlotResult[T]:
 
     def __hash__(self):
         return object.__hash__(self)
-
-
-@dataclass(frozen=True, slots=True)
-class SoloResultData:
-    """
-    Basic class for representing solo pilot race data.
-    """
-
-    total_laps: int
-    total_time: float
-    average_lap_time: float
-    fastest_time: float
-    fastest_consec_base: int
-    fastest_consec_time: float
 
 
 class LapsManager(ABC):
@@ -230,17 +195,12 @@ class LapsManager(ABC):
 
     def get_num_laps(self, holeshot: bool = False) -> int:
         """
-        Get number of laps
+        Get number of laps completed
 
         :param holeshot: Holeshot active, defaults to False
         :return: The number of laps completed
         """
-        num_laps = len(self._primary_laps)
-
-        if holeshot:
-            num_laps -= 1
-
-        return max(num_laps, 0)
+        return metrics.calculate_num_laps(self._primary_laps.values(), holeshot)
 
     def get_total_time(self, holeshot: bool = False) -> float:
         """
@@ -249,19 +209,7 @@ class LapsManager(ABC):
         :param holeshot: Holeshot active, defaults to False
         :return: The total time
         """
-        if self._primary_laps:
-            primary_lap_values = self._primary_laps.values()
-
-            last_lap = primary_lap_values[-1]
-            last_time = last_lap.timedelta
-
-            if holeshot:
-                first_lap = primary_lap_values[0]
-                return last_time - first_lap.timedelta
-
-            return last_time
-
-        return 0.0
+        return metrics.calculate_total_time(self._primary_laps.values(), holeshot)
 
     def get_average_lap_time(self, holeshot: bool = False) -> float | None:
         """
@@ -270,13 +218,7 @@ class LapsManager(ABC):
         :param holeshot: Holeshot active, defaults to False
         :return: The average time
         """
-        total_time = self.get_total_time(holeshot)
-        num_laps = self.get_num_laps(holeshot)
-
-        if total_time and num_laps:
-            return total_time / num_laps
-
-        return None
+        return metrics.calculate_average_lap_time(self._primary_laps.values(), holeshot)
 
     def get_fastest_time(self, holeshot: bool = False) -> float | None:
         """
@@ -285,31 +227,13 @@ class LapsManager(ABC):
         :param holeshot: Holeshot active, defaults to False
         :return: The time associated with the fastest lap
         """
-        fastest_time = float("inf")
-        prev_time: float = 0.0
-        num_laps: int = 0
-
-        start = 0 if holeshot else 1
-        for num_laps, lap in enumerate(self._primary_laps.values(), start):
-            if not num_laps:
-                prev_time = lap.timedelta
-                continue
-
-            time_diff = lap.timedelta - prev_time
-            prev_time = lap.timedelta
-
-            fastest_time = min(fastest_time, time_diff)
-
-        if not num_laps:
-            return None
-
-        return fastest_time
+        return metrics.calculate_fastest_time(self._primary_laps.values(), holeshot)
 
     def get_fastest_consecutive_metric(
         self,
         holeshot: bool = False,
-        max_laps: int = 3,
-    ) -> ConsecutiveMetric | None:
+        consec_laps: int = 3,
+    ) -> metrics.ConsecutiveMetric | None:
         """
         Get the fastest consecutive lap times
 
@@ -321,19 +245,15 @@ class LapsManager(ABC):
         :param max_laps: The max consecutive laps, defaults to 3
         :return: A tuple of number of laps and the time associated with the laps
         """
-        metrics = self.get_combined_metrics(holeshot, max_laps)
-        if metrics is None:
-            return None
-        return ConsecutiveMetric(
-            metrics.fastest_consec_base,
-            metrics.fastest_consec_time,
+        return metrics.calculate_fastest_consecutive_metric(
+            self._primary_laps.values(), holeshot, consec_laps
         )
 
     def get_combined_metrics(
         self,
         holeshot: bool = False,
         consec_laps: int = 3,
-    ) -> CombinedMetrics | None:
+    ) -> metrics.CombinedMetrics | None:
         """
         Generate multiple metrics at once.
 
@@ -349,46 +269,8 @@ class LapsManager(ABC):
         :param max_laps: The max consecutive laps, defaults to 3
         :return: The generated metrics
         """
-        store: deque[float] = deque(maxlen=consec_laps + 1)
-        fastest_time = float("inf")
-        fastest_consec_time = float("inf")
-
-        prev_time: float = 0.0
-        windowed_time: float = 0.0
-        num_laps: int = 0
-        total_time: float = 0.0
-
-        start = 0 if holeshot else 1
-        for num_laps, lap in enumerate(self._primary_laps.values(), start):
-            if not num_laps:
-                prev_time = lap.timedelta
-                continue
-
-            time_diff = lap.timedelta - prev_time
-            store.append(time_diff)
-            windowed_time += time_diff
-            total_time += time_diff
-            prev_time = lap.timedelta
-
-            fastest_time = min(fastest_time, time_diff)
-
-            if len(store) > consec_laps:
-                windowed_time -= store.popleft()
-                fastest_consec_time = min(fastest_consec_time, windowed_time)
-            else:
-                fastest_consec_time = windowed_time
-
-        if not num_laps:
-            return None
-
-        consec_laps_ = min(consec_laps, num_laps)
-        return CombinedMetrics(
-            num_laps,
-            total_time,
-            total_time / num_laps,
-            fastest_time,
-            consec_laps_,
-            fastest_consec_time,
+        return metrics.calculate_combined_metrics(
+            self._primary_laps.values(), holeshot, consec_laps
         )
 
     @abstractmethod
@@ -446,7 +328,7 @@ class LapsManager(ABC):
         return object.__hash__(self)
 
 
-class RulesetFieldData[T](NamedTuple):
+class RulesetFieldData[T: JsonParsable](NamedTuple):
     """
     Custom field data for ruleset
     """
@@ -457,19 +339,45 @@ class RulesetFieldData[T](NamedTuple):
     default: T
 
 
-class RaceRuleset[T](ABC):
+class RulesetMeta(NamedTuple):
+    """
+    Ruleset metadata
+    """
+
+    uid: str
+    """ruleset unique identifier"""
+    fields: Iterable[RulesetFieldData]
+    """custom fields for ruleset"""
+
+
+@dataclass(frozen=True, slots=True)
+class ResultData:
+    """
+    Abstract class defining race result data (used for typing)
+    """
+
+
+@dataclass(frozen=True, slots=True)
+class SoloResultData(ResultData):
+    """
+    Basic class for representing solo pilot race data.
+    """
+
+    total_laps: int
+    total_time: float
+    average_lap_time: float
+    fastest_time: float
+    fastest_consec_base: int
+    fastest_consec_time: float
+
+
+class RaceRuleset[T: ResultData](ABC):
     """
     Abstract base class for processing race data.
     Can be used to enforce custom rulesets
     """
 
-    class Meta:
-        """Ruleset metadata"""
-
-        uid: str
-        """ruleset unique identifier"""
-        fields: Iterable[RulesetFieldData]
-        """custom fields for ruleset"""
+    __meta__: RulesetMeta
 
     @abstractmethod
     def __init__(self, race_format: SafeRaceFormat) -> None:
@@ -566,7 +474,7 @@ class RaceRulesetManager:
                 msg = "Attempted to register an abstract race ruleset"
                 raise TypeError(msg)
 
-            uid = ruleset_class.Meta.uid
+            uid = ruleset_class.__meta__.uid
             if uid in cls._registered_ruleset:
                 msg = "Interface type with matching identifier already registered"
                 raise RuntimeError(msg)

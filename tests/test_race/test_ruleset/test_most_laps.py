@@ -11,7 +11,7 @@ def test_most_laps_ruleset():
     """
     race_time_sec = 4
     overtime_sec = -1
-    fields = {field.name: field.default for field in MostLapsRuleset.Meta.fields}
+    fields = {field.name: field.default for field in MostLapsRuleset.__meta__.fields}
 
     race_format = SafeRaceFormat(0, 0, False, race_time_sec, overtime_sec, fields)
     ruleset = MostLapsRuleset(race_format)

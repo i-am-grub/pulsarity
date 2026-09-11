@@ -17,7 +17,7 @@ _registered: set[websocket_pb2.EventID] = set()
 
 
 @dataclass_transform(frozen_default=True)
-def system_event(cls: type[SystemEventData]) -> type[SystemEventData]:
+def system_event[T: SystemEventData](cls: type[T]) -> type[T]:
     """
     Decorator for generating registering system event handlers as dataclasses
     """

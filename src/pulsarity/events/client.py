@@ -19,7 +19,7 @@ registry: dict[websocket_pb2.EventID, type[ClientEventData]] = {}
 
 
 @dataclass_transform(frozen_default=True)
-def client_event(cls: type[ClientEventData]) -> type[ClientEventData]:
+def client_event[T: ClientEventData](cls: type[T]) -> type[T]:
     """
     Decorator for generating registering client event handlers as dataclasses
     """

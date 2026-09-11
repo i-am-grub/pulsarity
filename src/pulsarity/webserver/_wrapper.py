@@ -71,7 +71,7 @@ class _HttpModel:
 
 
 @dataclass_transform(frozen_default=True)
-def http_route_dataclass(cls: type[_HttpModel]) -> type[_HttpModel]:
+def http_route_dataclass[T: _HttpModel](cls: type[T]) -> type[T]:
     """
     Decorator for generating dataclasses for http requests
     """

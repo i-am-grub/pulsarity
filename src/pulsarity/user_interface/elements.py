@@ -56,7 +56,7 @@ class UIElement[T: Message](ABC):
     _counter: ClassVar = itertools.count()
     uid: int = field(default_factory=partial(next, _counter), init=False)
 
-    _hidden: bool = field(default=False, init=False)
+    _visible: bool = field(default=True, init=False)
 
     permission: SystemDefaultPerms | str | None = field(default=None, kw_only=True)
 
@@ -64,16 +64,16 @@ class UIElement[T: Message](ABC):
         self._store[self.uid] = self
 
     @property
-    def hidden(self) -> bool:
+    def visible(self) -> bool:
         """
-        Whether the element is hidden in the UI or not
+        Whether the element is visible in the UI or not
         """
-        return self._hidden
+        return self._visible
 
-    @hidden.setter
-    def hidden(self, val: bool):
-        if val != self._hidden:
-            object.__setattr__(self, "_hidden", val)
+    @visible.setter
+    def visible(self, val: bool):
+        if val != self._visible:
+            object.__setattr__(self, "_visible", val)
             self.publish_update_event()
 
     @classmethod
@@ -179,7 +179,7 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
         Convert the element data to message
         """
         return ui_pb2.UIElementTree(
-            element_id=self.uid, hidden=self._hidden, elements=self._convert_entries()
+            element_id=self.uid, visible=self._visible, elements=self._convert_entries()
         )
 
     def to_element_update_message(self):
@@ -255,7 +255,7 @@ class UIMarkdownField(UIElement[ui_pb2.UIMarkdownField]):
         Convert the element data to message
         """
         return ui_pb2.UIMarkdownField(
-            element_id=self.uid, hidden=self._hidden, text=self.text
+            element_id=self.uid, visible=self._visible, text=self.text
         )
 
     @classmethod
@@ -292,7 +292,7 @@ class UIButtonField(UIElement[ui_pb2.UIButtonField]):
         Convert the element data to message
         """
         return ui_pb2.UIButtonField(
-            element_id=self.uid, hidden=self._hidden, text=self.text
+            element_id=self.uid, visible=self._visible, text=self.text
         )
 
     @classmethod
@@ -337,7 +337,7 @@ class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
             self._validate_value(val)
             object.__setattr__(self, "_value", val)
 
-    def _validate_value(self, _: T) -> None: ...
+    def _validate_value(self, value: T) -> None: ...  # pyright: ignore[reportUnusedParameter]  pylint: disable=W0613
 
     def to_element_update_message(self):
         """
@@ -365,7 +365,7 @@ class UITextValueField(UIValueField[str]):
     field_type: ClassVar = ui_pb2.FIELD_TYPE_TEXT
 
     @override
-    def _validate_value(self, value) -> None:
+    def _validate_value(self, value):
         if not isinstance(value, str):
             msg = "Value is not a string"
             raise TypeError(msg)
@@ -376,7 +376,7 @@ class UITextValueField(UIValueField[str]):
         """
         return ui_pb2.UIValueField(
             element_id=self.uid,
-            hidden=self._hidden,
+            visible=self._visible,
             description=self.description,
             field_type=self.field_type,
             text=self.value,
@@ -463,7 +463,7 @@ class UINumberValueField(UIValueField[float]):
         )
         return ui_pb2.UIValueField(
             element_id=self.uid,
-            hidden=self._hidden,
+            visible=self._visible,
             description=self.description,
             field_type=self.field_type,
             number=number,
@@ -520,7 +520,7 @@ class UICheckboxValueField(UIValueField[bool]):
         """
         return ui_pb2.UIValueField(
             element_id=self.uid,
-            hidden=self._hidden,
+            visible=self._visible,
             description=self.description,
             field_type=self.field_type,
             boolean=self.value,
@@ -552,7 +552,7 @@ class UIDatetimeValueField(UIValueField[datetime]):
 
         return ui_pb2.UIValueField(
             element_id=self.uid,
-            hidden=self._hidden,
+            visible=self._visible,
             description=self.description,
             field_type=self.field_type,
             datetime=datetime_,
@@ -590,7 +590,7 @@ class UIDateValueField(UIValueField[date]):
 
         return ui_pb2.UIValueField(
             element_id=self.uid,
-            hidden=self._hidden,
+            visible=self._visible,
             description=self.description,
             field_type=self.field_type,
             datetime=datetime_,
@@ -628,7 +628,7 @@ class UITimeValueField(UIValueField[time]):
 
         return ui_pb2.UIValueField(
             element_id=self.uid,
-            hidden=self._hidden,
+            visible=self._visible,
             description=self.description,
             field_type=self.field_type,
             datetime=datetime_,
@@ -724,7 +724,7 @@ class UISelectValueField[T](UIValueField[int]):
         )
         return ui_pb2.UIValueField(
             element_id=self.uid,
-            hidden=self._hidden,
+            visible=self._visible,
             description=self.description,
             field_type=self.field_type,
             select=select,

@@ -7,10 +7,10 @@ from itertools import count
 from typing import TYPE_CHECKING
 
 from pulsarity.race.ruleset import (
-    CombinedMetrics,
     LapsManager,
     RaceRuleset,
     RulesetFieldData,
+    RulesetMeta,
     SafeRaceFormat,
     SlotResult,
     SoloResultData,
@@ -20,6 +20,7 @@ from pulsarity.race.ruleset import (
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from pulsarity.race.metrics import CombinedMetrics
     from pulsarity.timing_interface.timer_manager import FullLapData
 
 
@@ -102,16 +103,13 @@ class MostLapsRuleset(RaceRuleset[SoloResultData]):
 
     __slots__ = ("_cache", "_count", "_format", "_lap_data")
 
-    class Meta:
-        """
-        Ruleset metadata
-        """
-
-        uid = "most_laps"
-        fields = (
+    __meta__ = RulesetMeta(
+        uid="most_laps",
+        fields=(
             RulesetFieldData("holeshot", "holeshot", bool, False),
             RulesetFieldData("consecutive", "consecutive laps", int, 3),
-        )
+        ),
+    )
 
     def __init__(self, race_format: SafeRaceFormat) -> None:
         self._format = race_format
@@ -140,15 +138,9 @@ class MostLapsRuleset(RaceRuleset[SoloResultData]):
         last_lap = slot_data.get_last_primary_lap()
         if last_lap is not None:
             return last_lap.timedelta > self._format.race_time_sec
-
         return False
 
     def all_slots_finished(self):
-        """
-        Note: This serves as a temporary implementation until slot data
-        is passed to the ruleset - a different source for the slot
-        keys is needed
-        """
         return all(self.is_slot_done(slot) for slot in self._lap_data)
 
     def _get_cache(self) -> dict[int, SlotResult[SoloResultData]]:
@@ -157,32 +149,36 @@ class MostLapsRuleset(RaceRuleset[SoloResultData]):
         Makes use of the `_MostLapsManager`'s ability to be sorted
         against itself by each instance's current score.
         """
-        if not self._cache:
-            pos, step = 0, 1
-            prev_manager: _MostLapsManager | None = None
+        if self._cache:
+            return self._cache
 
-            for slot_id, manager in sorted(
-                self._lap_data.items(),
-                key=lambda pair: pair[1],
-                reverse=True,
-            ):
-                if manager == prev_manager:
-                    step += 1
-                else:
-                    pos += step
-                    step = 1
+        pos, step = 0, 1
+        prev_manager: _MostLapsManager | None = None
 
-                if manager:
-                    metrics = manager.get_metrics(
-                        self._format.fields["holeshot"],  # type: ignore
-                        self._format.fields["consecutive"],  # type: ignore
-                    )
-                    result = SlotResult(pos, (slot_id,), SoloResultData(*metrics))  # type: ignore
-                else:
-                    result = SlotResult(pos, (slot_id,))
+        for slot_id, manager in sorted(
+            self._lap_data.items(),
+            key=lambda pair: pair[1],
+            reverse=True,
+        ):
+            if manager == prev_manager:
+                step += 1
+            else:
+                pos += step
+                step = 1
 
-                self._cache[slot_id] = result
-                prev_manager = manager
+            metrics = manager.get_metrics(
+                self._format.fields["holeshot"],  # type: ignore
+                self._format.fields["consecutive"],  # type: ignore
+            )
+
+            result: SlotResult[SoloResultData]
+            if metrics:
+                result = SlotResult(pos, (slot_id,), SoloResultData(*metrics))
+            else:
+                result = SlotResult(pos, (slot_id,), None)
+
+            self._cache[slot_id] = result
+            prev_manager = manager
 
         return self._cache
 

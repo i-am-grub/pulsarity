@@ -1,5 +1,6 @@
 from collections.abc import Iterable, Sequence
 from itertools import count
+from typing import ClassVar
 
 import pytest
 
@@ -9,6 +10,7 @@ from pulsarity.race.ruleset import (
     LapsManager,
     RaceRuleset,
     RaceRulesetManager,
+    RulesetMeta,
     SlotResult,
 )
 
@@ -32,11 +34,7 @@ class _Testruleset(RaceRuleset):
     ruleset to test good implementation
     """
 
-    class Meta:
-        """ruleset metadata"""
-
-        uid = "foo"
-        fields = ()
+    __meta__ = RulesetMeta(uid="foo", fields=())
 
     def __init__(self, race_format: RaceFormat) -> None: ...
 

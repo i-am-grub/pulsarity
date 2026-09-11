@@ -172,3 +172,6 @@ addopts = "--no-cov-on-fail --showlocals --strict-markers"
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.uv.audit]
+malware-check=true

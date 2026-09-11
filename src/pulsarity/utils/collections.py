@@ -1,7 +1,7 @@
 """Custom collections"""
 
 import bisect
-from collections.abc import ItemsView, Iterable, KeysView, ValuesView
+from collections.abc import ItemsView, Iterable, KeysView, Sequence, ValuesView
 from typing import TYPE_CHECKING, TypeVar, overload, override
 
 if TYPE_CHECKING:
@@ -11,7 +11,7 @@ U = TypeVar("U")
 V = TypeVar("V", bound="SupportsRichComparison")
 
 
-class SortedKeysView(KeysView[U]):
+class SortedKeysView(KeysView[U], Sequence[U]):
     """Sorted keys view of `ValueSortedDict`"""
 
     def __init__(self, mapping: ValueSortedDict):
@@ -26,7 +26,7 @@ class SortedKeysView(KeysView[U]):
         return self._mapping.list[i]
 
 
-class SortedValuesView(ValuesView[V]):
+class SortedValuesView(ValuesView[V], Sequence[V]):
     """Sorted values view of `ValueSortedDict`"""
 
     def __init__(self, mapping: ValueSortedDict):
