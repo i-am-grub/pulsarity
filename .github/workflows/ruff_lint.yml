@@ -8,10 +8,11 @@ permissions:
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
   pull_request:
     paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
+  workflow_dispatch:
 
 jobs:
   format:
