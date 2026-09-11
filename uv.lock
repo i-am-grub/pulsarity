@@ -340,14 +340,11 @@ wheels = [
 
 [[package]]
 name = "click"
-version = "8.4.2"
+version = "8.5.0"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/76/d4/81420972a676e8ffea40450d8c8c92943e7218a78fe9b64359836cc9876b/click-8.4.2.tar.gz", hash = "sha256:9a6cea6e60b17ebe0a44c5cc636d94f09bd66142c1cd7d8b4cd731c4917a15f6", size = 338000, upload-time = "2026-06-24T17:45:15.148Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c7/0e/7fa0ef50764b67090eca4114772a2abf8b6148198475e54c660b97caeee6/click-8.5.0.tar.gz", hash = "sha256:ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34", size = 382235, upload-time = "2026-08-26T13:33:14.56Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fb/e2/79c688af8b210d232694e31e59da9f6ec747bae31c3f5946e4e9b98860d5/click-8.4.2-py3-none-any.whl", hash = "sha256:e6f9f66136c816745b9d65817da91d61d957fb16e02e4dcd0552553c5a197b76", size = 119243, upload-time = "2026-06-24T17:45:13.73Z" },
+    { url = "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl", hash = "sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360", size = 125251, upload-time = "2026-08-26T13:33:12.928Z" },
 ]
 
 [[package]]
@@ -980,7 +977,7 @@ requires-dist = [
     { name = "argon2-cffi-bindings", specifier = "==26.1.0" },
     { name = "async-lru", specifier = "==2.3.0" },
     { name = "cffi", specifier = "==2.1.1" },
-    { name = "click", specifier = "==8.4.2" },
+    { name = "click", specifier = "==8.5.0" },
     { name = "cryptography", specifier = "==50.0.1" },
     { name = "granian", specifier = "==2.8.2" },
     { name = "idna", specifier = "==3.19" },
@@ -1001,7 +998,7 @@ dev = [
     { name = "httpx", specifier = "==0.28.1" },
     { name = "httpx-ws", specifier = "==0.9.0" },
     { name = "mypy", specifier = "==2.3.1" },
-    { name = "pylint", specifier = "==4.0.7" },
+    { name = "pylint", specifier = "==4.0.8" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.0" },
     { name = "pytest-cov", specifier = "==7.1.0" },
@@ -1065,7 +1062,7 @@ wheels = [
 
 [[package]]
 name = "pylint"
-version = "4.0.7"
+version = "4.0.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astroid" },
@@ -1076,9 +1073,9 @@ dependencies = [
     { name = "platformdirs" },
     { name = "tomlkit" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/de/92/98dace02f2d11b88160354c53944f77ea7327aa78bce1c75971e7aaa4347/pylint-4.0.7.tar.gz", hash = "sha256:9b2d1d15791c84b77a4fe2aafe8f0d9570717e2dea06d53b19c105cf60275a52", size = 1594770, upload-time = "2026-08-09T19:13:23.289Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5c/2e/424cbfcb3af792a6b7da6e5c640de463b98c8d3a49fbd8882f38e83d4232/pylint-4.0.8.tar.gz", hash = "sha256:1c1b2128bde5ff5e966801413080b6384d42a5782718d528c906dbb6beab94ed", size = 1599177, upload-time = "2026-08-29T12:21:59.188Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e0/b0/3a8040e53df6c5c1e04b0e23ed53fdbeb64f333723a334d313fba2f581ce/pylint-4.0.7-py3-none-any.whl", hash = "sha256:be4a3111557a614411ed1fc89347ce4a8e1013a59e1f33d11485227a02e3304d", size = 539710, upload-time = "2026-08-09T19:13:21.228Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/ea/9b601859afa055afe659ffe55abdfed6e5f17e17a840d9cd61c54ac89c02/pylint-4.0.8-py3-none-any.whl", hash = "sha256:3341c08c0aabaa4adc71516de0969f3ba5c692b56c75af4dcb4d242823fbe363", size = 540709, upload-time = "2026-08-29T12:21:57.392Z" },
 ]
 
 [[package]]
