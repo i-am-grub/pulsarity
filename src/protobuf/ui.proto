@@ -25,7 +25,7 @@ message UIElementTreeEntry {
 // elements
 message UIElementTree {
     uint32 element_id = 1;
-    bool hidden = 2;
+    bool visible = 2;
     repeated UIElementTreeEntry elements = 3;
 }
 
@@ -48,7 +48,7 @@ message UIETreeMapping {
 // Message modeling the data required for a markdown field
 message UIMarkdownField {
     uint32 element_id = 1;
-    bool hidden = 2;
+    bool visible = 2;
     string text = 3;
 } 
 
@@ -60,7 +60,7 @@ message UIMarkdownFields {
 // Message modeling the data required for a markdown field
 message UIButtonField {
     uint32 element_id = 1;
-    bool hidden = 2;
+    bool visible = 2;
     string text = 3;
 } 
 
@@ -104,7 +104,7 @@ message SelectFieldData {
 // Message modeling the user interface field data
 message UIValueField {
     uint32 element_id = 1;
-    bool hidden = 2;
+    bool visible = 2;
     FieldType field_type = 3;
     string description = 4;
 

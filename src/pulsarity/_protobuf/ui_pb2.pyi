@@ -59,14 +59,14 @@ class SelectFieldData(_message.Message):
     def __init__(self, mapping: _Optional[_Mapping[int, str]] = ..., selected: _Optional[int] = ...) -> None: ...
 
 class UIButtonField(_message.Message):
-    __slots__ = ["element_id", "hidden", "text"]
+    __slots__ = ["element_id", "text", "visible"]
     ELEMENT_ID_FIELD_NUMBER: _ClassVar[int]
-    HIDDEN_FIELD_NUMBER: _ClassVar[int]
     TEXT_FIELD_NUMBER: _ClassVar[int]
+    VISIBLE_FIELD_NUMBER: _ClassVar[int]
     element_id: int
-    hidden: bool
     text: str
-    def __init__(self, element_id: _Optional[int] = ..., hidden: bool = ..., text: _Optional[str] = ...) -> None: ...
+    visible: bool
+    def __init__(self, element_id: _Optional[int] = ..., visible: bool = ..., text: _Optional[str] = ...) -> None: ...
 
 class UIButtonFields(_message.Message):
     __slots__ = ["fields"]
@@ -88,14 +88,14 @@ class UIETreeMapping(_message.Message):
     def __init__(self, mapping: _Optional[_Mapping[str, MappedElementTrees]] = ...) -> None: ...
 
 class UIElementTree(_message.Message):
-    __slots__ = ["element_id", "elements", "hidden"]
+    __slots__ = ["element_id", "elements", "visible"]
     ELEMENTS_FIELD_NUMBER: _ClassVar[int]
     ELEMENT_ID_FIELD_NUMBER: _ClassVar[int]
-    HIDDEN_FIELD_NUMBER: _ClassVar[int]
+    VISIBLE_FIELD_NUMBER: _ClassVar[int]
     element_id: int
     elements: _containers.RepeatedCompositeFieldContainer[UIElementTreeEntry]
-    hidden: bool
-    def __init__(self, element_id: _Optional[int] = ..., hidden: bool = ..., elements: _Optional[_Iterable[_Union[UIElementTreeEntry, _Mapping]]] = ...) -> None: ...
+    visible: bool
+    def __init__(self, element_id: _Optional[int] = ..., visible: bool = ..., elements: _Optional[_Iterable[_Union[UIElementTreeEntry, _Mapping]]] = ...) -> None: ...
 
 class UIElementTreeEntry(_message.Message):
     __slots__ = ["element_id", "type"]
@@ -128,14 +128,14 @@ class UIElementUpdate(_message.Message):
     def __init__(self, element_type: _Optional[_Union[UIElementType, str]] = ..., element_id: _Optional[int] = ..., etree: _Optional[_Union[UIElementTree, _Mapping]] = ..., markdown: _Optional[_Union[UIMarkdownField, _Mapping]] = ..., button: _Optional[_Union[UIButtonField, _Mapping]] = ..., value: _Optional[_Union[UIValueField, _Mapping]] = ...) -> None: ...
 
 class UIMarkdownField(_message.Message):
-    __slots__ = ["element_id", "hidden", "text"]
+    __slots__ = ["element_id", "text", "visible"]
     ELEMENT_ID_FIELD_NUMBER: _ClassVar[int]
-    HIDDEN_FIELD_NUMBER: _ClassVar[int]
     TEXT_FIELD_NUMBER: _ClassVar[int]
+    VISIBLE_FIELD_NUMBER: _ClassVar[int]
     element_id: int
-    hidden: bool
     text: str
-    def __init__(self, element_id: _Optional[int] = ..., hidden: bool = ..., text: _Optional[str] = ...) -> None: ...
+    visible: bool
+    def __init__(self, element_id: _Optional[int] = ..., visible: bool = ..., text: _Optional[str] = ...) -> None: ...
 
 class UIMarkdownFields(_message.Message):
     __slots__ = ["fields"]
@@ -144,26 +144,26 @@ class UIMarkdownFields(_message.Message):
     def __init__(self, fields: _Optional[_Iterable[_Union[UIMarkdownField, _Mapping]]] = ...) -> None: ...
 
 class UIValueField(_message.Message):
-    __slots__ = ["boolean", "datetime", "description", "element_id", "field_type", "hidden", "number", "select", "text"]
+    __slots__ = ["boolean", "datetime", "description", "element_id", "field_type", "number", "select", "text", "visible"]
     BOOLEAN_FIELD_NUMBER: _ClassVar[int]
     DATETIME_FIELD_NUMBER: _ClassVar[int]
     DESCRIPTION_FIELD_NUMBER: _ClassVar[int]
     ELEMENT_ID_FIELD_NUMBER: _ClassVar[int]
     FIELD_TYPE_FIELD_NUMBER: _ClassVar[int]
-    HIDDEN_FIELD_NUMBER: _ClassVar[int]
     NUMBER_FIELD_NUMBER: _ClassVar[int]
     SELECT_FIELD_NUMBER: _ClassVar[int]
     TEXT_FIELD_NUMBER: _ClassVar[int]
+    VISIBLE_FIELD_NUMBER: _ClassVar[int]
     boolean: bool
     datetime: _timestamp_pb2.Timestamp
     description: str
     element_id: int
     field_type: FieldType
-    hidden: bool
     number: NumberFieldData
     select: SelectFieldData
     text: str
-    def __init__(self, element_id: _Optional[int] = ..., hidden: bool = ..., field_type: _Optional[_Union[FieldType, str]] = ..., description: _Optional[str] = ..., text: _Optional[str] = ..., number: _Optional[_Union[NumberFieldData, _Mapping]] = ..., boolean: bool = ..., datetime: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., select: _Optional[_Union[SelectFieldData, _Mapping]] = ...) -> None: ...
+    visible: bool
+    def __init__(self, element_id: _Optional[int] = ..., visible: bool = ..., field_type: _Optional[_Union[FieldType, str]] = ..., description: _Optional[str] = ..., text: _Optional[str] = ..., number: _Optional[_Union[NumberFieldData, _Mapping]] = ..., boolean: bool = ..., datetime: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., select: _Optional[_Union[SelectFieldData, _Mapping]] = ...) -> None: ...
 
 class UIValueFields(_message.Message):
     __slots__ = ["fields"]
