@@ -9,4 +9,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    versioning-strategy: "auto" 
+    versioning-strategy: "auto"
+    cooldown:
+      default-days: 7
