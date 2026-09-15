@@ -1,17 +1,21 @@
 """Custom collections"""
 
 import bisect
-from collections.abc import ItemsView, Iterable, KeysView, Sequence, ValuesView
-from typing import TYPE_CHECKING, TypeVar, overload, override
+from collections.abc import (
+    Hashable,
+    ItemsView,
+    Iterable,
+    KeysView,
+    Sequence,
+    ValuesView,
+)
+from typing import TYPE_CHECKING, overload, override
 
 if TYPE_CHECKING:
     from _typeshed import SupportsRichComparison
 
-U = TypeVar("U")
-V = TypeVar("V", bound="SupportsRichComparison")
 
-
-class SortedKeysView(KeysView[U], Sequence[U]):
+class SortedKeysView[U: Hashable](KeysView[U], Sequence[U]):
     """Sorted keys view of `ValueSortedDict`"""
 
     def __init__(self, mapping: ValueSortedDict):
@@ -26,7 +30,7 @@ class SortedKeysView(KeysView[U], Sequence[U]):
         return self._mapping.list[i]
 
 
-class SortedValuesView(ValuesView[V], Sequence[V]):
+class SortedValuesView[V: "SupportsRichComparison"](ValuesView[V], Sequence[V]):
     """Sorted values view of `ValueSortedDict`"""
 
     def __init__(self, mapping: ValueSortedDict):
@@ -46,7 +50,7 @@ class SortedValuesView(ValuesView[V], Sequence[V]):
         return self._mapping[key]
 
 
-class SortedItemsView(ItemsView[U, V]):
+class SortedItemsView[U: Hashable, V: "SupportsRichComparison"](ItemsView[U, V]):
     """Sorted values view of `ValueSortedDict`"""
 
     def __init__(self, mapping: ValueSortedDict):
@@ -66,7 +70,7 @@ class SortedItemsView(ItemsView[U, V]):
         return key, self._mapping[key]
 
 
-class ValueSortedDict(dict[U, V]):
+class ValueSortedDict[U: Hashable, V: "SupportsRichComparison"](dict[U, V]):
     """Dictionary with sorted values"""
 
     __slots__ = ("list",)

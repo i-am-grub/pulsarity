@@ -18,10 +18,7 @@ from pulsarity.race.ruleset import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from pulsarity.race.metrics import CombinedMetrics
-    from pulsarity.timing_interface.timer_manager import FullLapData
 
 
 class _MostLapsManager(LapsManager):
@@ -60,7 +57,7 @@ class _MostLapsManager(LapsManager):
             self._metrics = self.get_combined_metrics(holeshot, consec_laps)
         return self._metrics
 
-    def get_score(self) -> tuple:
+    def get_score(self):
         """
         Return from cache or build slot score based on the following order:
         - Primary laps completed
@@ -185,9 +182,9 @@ class MostLapsRuleset(RaceRuleset[SoloResultData]):
     def get_race_results(self):
         return tuple(self._get_cache().values())
 
-    def get_slot_result(self, slot_num: int):
+    def get_slot_result(self, slot_num):
         return self._get_cache().get(slot_num, None)
 
-    def get_laps_iterable(self) -> Iterable[FullLapData]:
+    def get_laps_iterable(self):
         for slot in self._lap_data.values():
             yield from slot.get_all_laps_iterable()
