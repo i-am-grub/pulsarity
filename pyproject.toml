@@ -29,7 +29,7 @@ dependencies = [
     "async-lru==2.3.0",
     "pulsarity-localization", # Added repo as source until an offical release is made
     # Upstream Dependencies
-    "idna==3.19", # anyio
+    "idna==3.20", # anyio
     "typing-extensions==4.16.0; python_version < '3.15'", # anyio
     "cffi==2.1.1", # argon, cryptography
     "argon2-cffi-bindings==26.1.0", # argon
