@@ -20,6 +20,7 @@ from pulsarity._protobuf import ui_pb2, websocket_pb2
 from pulsarity.database.permission import SystemDefaultPerms
 from pulsarity.events import EvtPriority
 from pulsarity.events.server import SystemEventData, system_event
+from pulsarity.user_interface.pages import UIPage
 
 if TYPE_CHECKING:
     from google.protobuf.message import Message
@@ -198,10 +199,13 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
         """
         return ui_pb2.UIElementTrees(etrees=cls.store_element_message())
 
-    def map_to_route(self, route: str) -> None:
+    def map_to_page(self, route: UIPage | str) -> None:
         """
-        Maps an element tree to a provided route
+        Maps an element tree to a provided page
         """
+        if isinstance(route, UIPage):
+            route = route.name
+
         if self in self._mapping_store[route]:
             msg = "Element tree already mapped to route"
             raise ValueError(msg)

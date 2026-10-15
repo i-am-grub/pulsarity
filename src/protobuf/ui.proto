@@ -134,3 +134,37 @@ message UIElementUpdate {
         UIValueField value = 6;
     }
 }
+
+// Payload for a user interface page
+message UIMainPage {
+    uint32 element_id = 1;
+    string name = 2;
+}
+
+// Payload for user interface pages
+message UIMainPages {
+    repeated UIMainPage pages = 1;
+}
+
+// Payload for a user interface sub page
+message UISubPage {
+    uint32 element_id = 1;
+    string parent_name = 2;
+    string name = 3;
+}
+
+// Payload for user interface sub pages
+message UISubPages {
+    repeated UISubPage sub_pages = 1;
+}
+
+// Payload for transporting all user interface data at once
+message UIData {
+    UIMainPages pages = 1;
+    UISubPages sub_pages = 2;
+    UIETreeMapping mappings = 3;
+    UIElementTrees etrees = 4;
+    UIMarkdownFields markdown = 5;
+    UIButtonFields buttons = 6;
+    UIValueFields values = 7;
+}
