@@ -5,6 +5,7 @@ User Interface Elements
 from __future__ import annotations
 
 import itertools
+import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Callable, Iterable
@@ -24,6 +25,8 @@ from pulsarity.user_interface.pages import UIPage
 
 if TYPE_CHECKING:
     from google.protobuf.message import Message
+
+logger = logging.getLogger(__name__)
 
 
 @system_event
@@ -60,9 +63,11 @@ class UIElement[T: Message](ABC):
     _visible: bool = field(default=True, init=False)
 
     permission: SystemDefaultPerms | str | None = field(default=None, kw_only=True)
+    auto_register: InitVar[bool] = field(default=False, kw_only=True)
 
-    def __post_init__(self) -> None:
-        self._store[self.uid] = self
+    def __post_init__(self, auto_register: bool) -> None:
+        if auto_register:
+            self.register()
 
     @property
     def visible(self) -> bool:
@@ -76,6 +81,13 @@ class UIElement[T: Message](ABC):
         if val != self._visible:
             object.__setattr__(self, "_visible", val)
             self.publish_update_event()
+
+    @property
+    def registered(self) -> bool:
+        """
+        The element's registration status
+        """
+        return self.uid in self._store
 
     @classmethod
     def get_element_by_uid(cls, uid: int) -> UIElement[T] | None:
@@ -125,8 +137,28 @@ class UIElement[T: Message](ABC):
         Convert the store data to message
         """
 
+    def register(self) -> None:
+        """
+        Registers an element to be shown in the user interface.
+        """
+        if self.uid in self._store:
+            msg = f"Element {self} is already registered for use."
+            raise RuntimeError(msg)
+
+        self._store[self.uid] = self
+
+    def unregister(self) -> None:
+        """
+        Unregisters an element to be shown in the user interface.
+        """
+        if self.uid not in self._store:
+            msg = f"Element {self} is not registered for use."
+            raise RuntimeError(msg)
+
+        self._store.pop(self.uid)
+
     @classmethod
-    def clear_registered(cls) -> None:
+    def _clear_registered(cls) -> None:
         """
         Clears the registered elements from the class store
         """
@@ -150,6 +182,12 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
         """
         Adds an element to the element tree
         """
+        if not self.registered:
+            logger.warning("Adding an element to an unregisterd UIETree (%s)", self)
+
+        if not element.registered:
+            logger.warning("Adding an unregisterd element (%s) to an UIETree", element)
+
         self._elements.append(element)
 
     def remove_element(self, element: UIElement) -> None:
@@ -199,17 +237,23 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
         """
         return ui_pb2.UIElementTrees(etrees=cls.store_element_message())
 
-    def map_to_page(self, route: UIPage | str) -> None:
+    def map_to_page(self, page: UIPage | str) -> None:
         """
         Maps an element tree to a provided page
         """
-        if isinstance(route, UIPage):
-            route = route.name
+        if not self.registered:
+            logger.warning("Mapping an unregisterd UIETree (%s) to a UIPage", self)
 
-        if self in self._mapping_store[route]:
-            msg = "Element tree already mapped to route"
+        if UIPage.is_name_registered(page):
+            logger.warning("Mapping an UIETree to an unregisterd UIPage (%s)", page)
+
+        if isinstance(page, UIPage):
+            page = page.name
+
+        if self in self._mapping_store[page]:
+            msg = "Element tree already mapped to page"
             raise ValueError(msg)
-        self._mapping_store[route].append(self)
+        self._mapping_store[page].append(self)
 
     @classmethod
     def _etree_to_ids(cls, etrees: Iterable[UIETree]) -> ui_pb2.MappedElementTrees:
@@ -226,11 +270,11 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
 
     @override
     @classmethod
-    def clear_registered(cls) -> None:
+    def _clear_registered(cls) -> None:
         """
         Clears the registered elements from the class store
         """
-        super().clear_registered()
+        super()._clear_registered()
         cls._mapping_store.clear()
 
 
@@ -322,11 +366,12 @@ class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
     default: InitVar[T | None] = None
     description: str | None = None
 
-    def __post_init__(self, default) -> None:
-        super().__post_init__()
+    def __post_init__(self, auto_register: bool, default: T | None) -> None:  # type: ignore
         if default is not None:
             self._validate_value(default)
             object.__setattr__(self, "_value", default)
+
+        super().__post_init__(auto_register)
 
     @property
     def value(self) -> T | None:

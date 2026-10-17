@@ -186,10 +186,10 @@ class UISubPage(_message.Message):
     def __init__(self, element_id: _Optional[int] = ..., parent_name: _Optional[str] = ..., name: _Optional[str] = ...) -> None: ...
 
 class UISubPages(_message.Message):
-    __slots__ = ["sub_pages"]
-    SUB_PAGES_FIELD_NUMBER: _ClassVar[int]
-    sub_pages: _containers.RepeatedCompositeFieldContainer[UISubPage]
-    def __init__(self, sub_pages: _Optional[_Iterable[_Union[UISubPage, _Mapping]]] = ...) -> None: ...
+    __slots__ = ["pages"]
+    PAGES_FIELD_NUMBER: _ClassVar[int]
+    pages: _containers.RepeatedCompositeFieldContainer[UISubPage]
+    def __init__(self, pages: _Optional[_Iterable[_Union[UISubPage, _Mapping]]] = ...) -> None: ...
 
 class UIValueField(_message.Message):
     __slots__ = ["boolean", "datetime", "description", "element_id", "field_type", "number", "select", "text", "visible"]

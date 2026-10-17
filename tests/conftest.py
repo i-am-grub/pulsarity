@@ -31,10 +31,30 @@ from pulsarity.user_interface.elements import (
     UIMarkdownField,
     UIValueField,
 )
+from pulsarity.user_interface.pages import UIMainPage, UIPage, UISubPage
 from pulsarity.utils import background
 from pulsarity.utils.config import PulsarityConfig
 from pulsarity.webserver import application
 from pulsarity.webserver._status_codes import HTTPStatusCodes
+
+
+def clear_register():
+    """
+    Clear stores and registered values in appication classes.
+    """
+    # pylint: disable=W0212
+
+    TimerInterfaceManager._clear_registered()
+    RaceRulesetManager._clear_registered()
+    EventBroker._clear_registered()
+
+    UIETree._clear_registered()
+    UIMarkdownField._clear_registered()
+    UIButtonField._clear_registered()
+    UIValueField._clear_registered()
+    UIPage._reset_pages()
+    UIMainPage._clear_registered()
+    UISubPage._clear_registered()
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -52,14 +72,7 @@ async def context_and_cleanup():
 
     await background.shutdown(5)
 
-    TimerInterfaceManager.clear_registered()
-    RaceRulesetManager.clear_registered()
-    EventBroker.clear_registered()
-
-    UIETree.clear_registered()
-    UIMarkdownField.clear_registered()
-    UIButtonField.clear_registered()
-    UIValueField.clear_registered()
+    clear_register()
 
     ctx.loop_ctx.reset(loop_token)
     ctx.event_broker_ctx.reset(event_token)

@@ -524,7 +524,7 @@ async def get_value_fields() -> Response:
 
 
 @endpoint(requires_auth=True)
-async def get_ui_data() -> Response:
+async def get_all_ui() -> Response:
     """
     Load all user interface data from the server.
 
@@ -559,12 +559,12 @@ ROUTES: list[BaseRoute] = [
     Route("/heats/{id:int}", endpoint=get_heat),
     Route("/server-info", endpoint=get_server_info),
     Route("/localization-pack/{key:str}", endpoint=get_localization_pack),
-    Route("/main_pages", endpoint=get_main_pages),
-    Route("/sub_pages", endpoint=get_sub_pages),
+    Route("/main-pages", endpoint=get_main_pages),
+    Route("/sub-pages", endpoint=get_sub_pages),
     Route("/etree-mappings", endpoint=get_etree_mappings),
     Route("/etrees", endpoint=get_etrees),
     Route("/markdown-fields", endpoint=get_markdown_fields),
     Route("/button-fields", endpoint=get_button_fields),
     Route("/value-fields", endpoint=get_value_fields),
-    Route("/ui-data", endpoint=get_ui_data),
+    Route("/all-ui", endpoint=get_all_ui),
 ]

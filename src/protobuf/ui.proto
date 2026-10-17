@@ -155,7 +155,7 @@ message UISubPage {
 
 // Payload for user interface sub pages
 message UISubPages {
-    repeated UISubPage sub_pages = 1;
+    repeated UISubPage pages = 1;
 }
 
 // Payload for transporting all user interface data at once

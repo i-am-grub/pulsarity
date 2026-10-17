@@ -504,7 +504,7 @@ class RaceRulesetManager:
             raise
 
     @classmethod
-    def clear_registered(cls) -> None:
+    def _clear_registered(cls) -> None:
         """
         UNIT TESTING ONLY: Clears all registered rulesets.
         """
