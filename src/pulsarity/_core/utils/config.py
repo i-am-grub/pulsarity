@@ -18,8 +18,6 @@ from pulsarity._core.utils.logging import generate_default_config
 
 DEFAULT_CONFIG_FILE = Path("config.json")
 
-# pylint: disable=E1134,R0902
-
 
 logger = logging.getLogger(__name__)
 

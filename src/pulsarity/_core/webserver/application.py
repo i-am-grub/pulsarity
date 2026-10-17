@@ -143,7 +143,7 @@ def generate_pulsarity_application() -> Starlette:
 
     try:
         spa_app = SPAStaticFiles(
-            directory=Path(files("pulsarity") / "frontend"),  # type: ignore
+            directory=Path(files("pulsarity") / "frontend"),  # pyright: ignore[reportArgumentType]
             html=True,
         )
 

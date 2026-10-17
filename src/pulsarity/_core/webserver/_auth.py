@@ -37,8 +37,8 @@ class PulsarityCredentials(AuthCredentials):
 
     __slots__ = ("scopes",)
 
-    def __init__(self, scopes: Iterable[str] | None = None):  # pylint: disable=W0231
-        self.scopes: set[str] = set() if scopes is None else set(scopes)  # type: ignore
+    def __init__(self, scopes: Iterable[str] | None = None):
+        self.scopes: set[str] = set() if scopes is None else set(scopes)
 
 
 def has_required_scope(conn: HTTPConnection, scopes: Iterable[str]) -> bool:
@@ -58,7 +58,6 @@ def requires(  # noqa: C901
     """
     Reimplementation of starlette's `requires` decorator
     """
-    # pylint: disable=W0719
     scopes_list = (scopes,) if isinstance(scopes, str) else tuple(scopes)
 
     def decorator(  # noqa: C901

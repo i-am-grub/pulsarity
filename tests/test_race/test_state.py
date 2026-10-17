@@ -12,15 +12,12 @@ from pulsarity._core.database import RaceFormat
 from pulsarity._core.race._state import RaceStateManager, RaceStatus
 from pulsarity._core.utils import background
 
-# pylint: disable=W0212
-
 
 @pytest_asyncio.fixture(name="race_manager", loop_scope="function")
 async def _race_manager():
     """
     Setup the RaceStateManager and shutdown background tasks
     """
-    # pylint: disable=W0613
     yield RaceStateManager()
 
 
@@ -32,8 +29,7 @@ def future_schedule(limited_schedule_: RaceFormat, race_manager: RaceStateManage
     schedule_offset = 1
     schedule_time = time.monotonic() + schedule_offset
 
-    race_manager.schedule_race(limited_schedule_, assigned_start=schedule_time)  # type: ignore
-
+    race_manager.schedule_race(limited_schedule_, assigned_start=schedule_time)  # pyright: ignore[reportArgumentType]
     return schedule_offset
 
 
@@ -59,7 +55,7 @@ async def test_past_schedule(
     now = time.monotonic() - 0.1
 
     with pytest.raises(ValueError):
-        race_manager.schedule_race(limited_schedule, assigned_start=now)  # type: ignore
+        race_manager.schedule_race(limited_schedule, assigned_start=now)  # pyright: ignore[reportArgumentType]
 
     assert race_manager.status == RaceStatus.READY
 

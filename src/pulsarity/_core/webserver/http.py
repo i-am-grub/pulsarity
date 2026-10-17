@@ -45,8 +45,6 @@ from pulsarity._core.webserver._wrapper import (
     http_route_dataclass,
 )
 
-# pylint: disable=E1121
-
 logger = logging.getLogger(__name__)
 rng = secrets.SystemRandom()
 

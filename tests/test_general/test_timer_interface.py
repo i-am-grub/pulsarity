@@ -129,8 +129,6 @@ async def test_manager_register_decorator(interface_manager: TimerInterfaceManag
     Tests the usage of the `interface_manager.register` method
     as a decorator
     """
-    # pylint: disable=C0115,W0612,W0212
-
     interface_manager = TimerInterfaceManager()
 
     num_interfaces = len(interface_manager._interfaces)

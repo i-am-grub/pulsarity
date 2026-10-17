@@ -26,8 +26,6 @@ from pulsarity._core.webserver import application, websockets
 if TYPE_CHECKING:
     from starlette.types import ASGIApp
 
-# pylint: disable=w0223,w0212,e1101
-
 logger = logging.getLogger(__name__)
 _shutdown_event = asyncio.Event()
 
@@ -107,7 +105,7 @@ async def _server() -> None:
     logger.info("CPU count: %s", os.cpu_count())
     logger.info("Python: %s", platform.python_version())
     logger.info("GIL disabled: %s", not sys._is_gil_enabled())
-    logger.info("JIT enabled: %s", sys._jit.is_enabled())  # type: ignore
+    logger.info("JIT enabled: %s", sys._jit.is_enabled())
     logger.debug("Granian server: %s", granian.__version__)
     logger.info("Pulsarity application: %s", pulsarity.__version__)
     logger.info("Pulsarity localization: %s", pulsarity_localization.__version__)

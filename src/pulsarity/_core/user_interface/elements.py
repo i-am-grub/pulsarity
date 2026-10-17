@@ -103,7 +103,7 @@ class UIElement[T: Message](ABC):
         Publish an UI element update event
         """
         broker = ctx.event_broker_ctx.get()
-        evt = UIElementUpdate(ui_element=self)  # pylint: disable=E1123
+        evt = UIElementUpdate(ui_element=self)
         broker.publish(evt)
 
     @abstractmethod
@@ -366,7 +366,7 @@ class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
     default: InitVar[T | None] = None
     description: str | None = None
 
-    def __post_init__(self, auto_register: bool, default: T | None) -> None:  # type: ignore
+    def __post_init__(self, auto_register: bool, default: T | None) -> None:
         if default is not None:
             self._validate_value(default)
             object.__setattr__(self, "_value", default)
@@ -386,7 +386,7 @@ class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
             self._validate_value(val)
             object.__setattr__(self, "_value", val)
 
-    def _validate_value(self, value: T) -> None: ...  # pyright: ignore[reportUnusedParameter]  pylint: disable=W0613
+    def _validate_value(self, value: T) -> None: ...  # pyright: ignore[reportUnusedParameter]
 
     def to_element_update_message(self):
         """

@@ -46,7 +46,7 @@ class Role(_PulsarityBase):
 
         :return: The set of permissions
         """
-        return set(await self.permissions.all().values_list("value", flat=True))  # type: ignore
+        return set(await self.permissions.all().values_list("value", flat=True))  # pyright: ignore[reportReturnType]
 
     async def add_permissions(self, *permissions: Permission) -> None:
         """

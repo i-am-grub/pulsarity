@@ -42,8 +42,6 @@ def clear_register():
     """
     Clear stores and registered values in appication classes.
     """
-    # pylint: disable=W0212
-
     TimerInterfaceManager._clear_registered()
     RaceRulesetManager._clear_registered()
     EventBroker._clear_registered()

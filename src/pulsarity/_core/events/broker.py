@@ -110,7 +110,6 @@ class EventBroker:
         :param callbacks: The list of callbacks to run
         :param data: The additional data to provide for each callback
         """
-        # pylint: disable=W0718
         data_ = asdict(data)
 
         for callback in callbacks:

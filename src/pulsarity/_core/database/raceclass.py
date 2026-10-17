@@ -98,7 +98,7 @@ class RaceClass(_PulsarityRaceBase):
         value = await self.rounds.all().annotate(max=Max("round_num")).first()
 
         if value is not None:
-            return value.max  # type: ignore
+            return value.max  # pyright: ignore[reportAttributeAccessIssue]
 
         return None
 

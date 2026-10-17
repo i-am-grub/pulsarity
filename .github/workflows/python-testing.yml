@@ -1,4 +1,4 @@
-name: mypy
+name: Python Unit Testing
 
 permissions:
   contents: read
@@ -9,17 +9,30 @@ permissions:
 on:
   push:
     branches: [main]
-    paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
+    paths: [
+      'src/pulsarity/*',
+      'tests/*',
+      'pyproject.toml',
+      'uv.lock'
+    ]
   pull_request:
-    paths-ignore: ['docs/**', '*.md', '*.rst', '.gitignore', '.gitmodules', 'LICENSE']
+    paths: [
+      'src/pulsarity/*',
+      'tests/*',
+      'pyproject.toml',
+      'uv.lock'
+    ]
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  test:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ["3.14"]
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.14', '3.14t', "3.15", "3.15t"]
+      fail-fast: false
+
     steps:
     - uses: actions/checkout@v4
     
@@ -30,6 +43,6 @@ jobs:
 
     - name: Install the project
       run: uv sync --group dev
-    
-    - name: Analysing the code with mypy
-      run: uv run mypy src
+
+    - name: Test with pytest
+      run: uv run pytest

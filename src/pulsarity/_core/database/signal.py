@@ -16,14 +16,12 @@ if TYPE_CHECKING:
     from pulsarity._core.database.slot import Slot
 
 
-class ProtobufField[T: Message](fields.Field[T]):  # type: ignore
+class ProtobufField[T: Message](fields.Field[T]):
     """
     Protocol buffer field with automatic object encoding and decoding.
 
     Note that filter or queryset-update operations are not supported.
     """
-
-    # pylint: disable=C0103
 
     __slots__ = ("message_type",)
 

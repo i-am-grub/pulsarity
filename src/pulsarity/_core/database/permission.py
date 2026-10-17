@@ -46,7 +46,7 @@ class Permission(_PulsarityBase):
                     if e not in permissions:
                         yield Permission(value=e, persistent=persistent)
 
-        permissions: set[str] = set(await cls.all().values_list("value", flat=True))  # type: ignore
+        permissions: set[str] = set(await cls.all().values_list("value", flat=True))  # pyright: ignore[reportAssignmentType]
 
         await cls.bulk_create(generate_permissions())  # pyright: ignore[reportArgumentType]
 

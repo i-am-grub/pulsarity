@@ -164,8 +164,8 @@ class MostLapsRuleset(RaceRuleset[SoloResultData]):
                 step = 1
 
             metrics = manager.get_metrics(
-                self._format.fields["holeshot"],  # type: ignore
-                self._format.fields["consecutive"],  # type: ignore
+                self._format.fields["holeshot"],  # pyright: ignore[reportArgumentType]
+                self._format.fields["consecutive"],  # pyright: ignore[reportArgumentType]
             )
 
             result: SlotResult[SoloResultData]

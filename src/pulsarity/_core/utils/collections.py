@@ -106,15 +106,15 @@ class ValueSortedDict[U: Hashable, V: "SupportsRichComparison"](dict[U, V]):
         self.list.clear()
 
     @override
-    def keys(self) -> SortedKeysView[U]:  # type: ignore
+    def keys(self) -> SortedKeysView[U]:
         return SortedKeysView(self)
 
     @override
-    def values(self) -> SortedValuesView[V]:  # type: ignore
+    def values(self) -> SortedValuesView[V]:
         return SortedValuesView(self)
 
     @override
-    def items(self) -> SortedItemsView[U, V]:  # type: ignore
+    def items(self) -> SortedItemsView[U, V]:
         return SortedItemsView(self)
 
     @override

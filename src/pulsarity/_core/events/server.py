@@ -94,7 +94,7 @@ class SystemEventData(ABC):
         if self._cached_message is None:
             serialized_message = self.serialize_message()
             object.__setattr__(self, "_cached_message", serialized_message)
-        return self._cached_message  # type: ignore
+        return self._cached_message  # pyright: ignore[reportReturnType]
 
     def __lt__(self, other: Self) -> bool:
         return (self.priority, self._id) < (other.priority, other._id)

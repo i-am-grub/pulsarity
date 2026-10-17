@@ -82,7 +82,7 @@ class UIPage(ABC):
             raise ValueError(msg)
 
         self._registered_names.add(lower)
-        self._store.append(self)  # type: ignore
+        self._store.append(self)
 
     def unregister(self) -> None:
         """
@@ -152,7 +152,7 @@ class UISubPage(UIPage):
 
     parent_name: str = field(init=False)
 
-    def __post_init__(self, auto_register: bool, parent: UIPage | str) -> None:  # type: ignore
+    def __post_init__(self, auto_register: bool, parent: UIPage | str) -> None:
         if isinstance(parent, UIPage):
             parent = parent.name
 

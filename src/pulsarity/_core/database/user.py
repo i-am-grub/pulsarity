@@ -171,7 +171,7 @@ class User(_PulsarityBase):
         Checks a hash of the provided password against the hash in the database by
         UUID.
         """
-        pw_hash: str | None = await cls.get_or_none(auth_id=uuid).values_list(  # type: ignore
+        pw_hash: str | None = await cls.get_or_none(auth_id=uuid).values_list(  # pyright: ignore[reportAssignmentType]
             "_password_hash",
             flat=True,
         )

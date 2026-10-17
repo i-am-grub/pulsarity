@@ -13,8 +13,6 @@ from pulsarity._core._protobuf import websocket_pb2
 from pulsarity._core.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity._core.events.server import SystemHeartBeat
 
-# pylint: disable=E1121
-
 registry: dict[websocket_pb2.EventID, type[ClientEventData]] = {}
 
 

@@ -40,8 +40,6 @@ from pulsarity._core.user_interface.elements import (
 from pulsarity._core.user_interface.pages import UIMainPage, UISubPage
 from pulsarity._core.webserver._status_codes import HTTPStatusCodes
 
-# pylint:disable=W0212,E1123
-
 header = {"Content-Type": "application/x-protobuf"}
 
 

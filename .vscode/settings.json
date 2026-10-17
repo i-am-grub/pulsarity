@@ -1,10 +1,5 @@
 {
   "[python]": {
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.fixAll": "explicit",
-      "source.organizeImports": "explicit"
-    },
     "editor.defaultFormatter": "charliermarsh.ruff"
   },
   "python.testing.pytestArgs": [
@@ -12,27 +7,10 @@
   ],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
-  "python.analysis.exclude": [
-    "**/_protobuf",
-    "**/node_modules",
-    "**/__pycache__",
-    "**/.*",
-    ".venv"
-  ],
-  "mypy-type-checker.importStrategy": "fromEnvironment",
   "autoDocstring.startOnNewLine": true,
   "autoDocstring.guessTypes": false,
   "autoDocstring.docstringFormat": "sphinx-notypes",
-  "pylint.importStrategy": "fromEnvironment",
   "ruff.importStrategy": "fromEnvironment",
   "python.languageServer": "None",
-  "basedpyright.analysis.exclude": [
-    "**/_protobuf",
-    "**/node_modules",
-    "**/__pycache__",
-    "**/.*",
-    ".venv"
-  ],
-  "ruff.nativeServer": "on",
-  "basedpyright.analysis.typeCheckingMode": "basic",
+  "basedpyright.importStrategy": "fromEnvironment",
 }
