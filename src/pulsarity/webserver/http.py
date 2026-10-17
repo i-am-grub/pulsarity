@@ -16,7 +16,7 @@ from starsessions import session
 
 import pulsarity
 from pulsarity import ctx
-from pulsarity._protobuf import http_pb2
+from pulsarity._protobuf import http_pb2, ui_pb2
 from pulsarity.database.heat import Heat
 from pulsarity.database.permission import SystemDefaultPerms
 from pulsarity.database.pilot import Pilot
@@ -29,6 +29,10 @@ from pulsarity.user_interface.elements import (
     UIETree,
     UIMarkdownField,
     UIValueField,
+)
+from pulsarity.user_interface.pages import (
+    UIMainPage,
+    UISubPage,
 )
 from pulsarity.utils import config
 from pulsarity.webserver._status_codes import HTTPStatusCodes
@@ -443,9 +447,33 @@ async def get_localization_pack(path: _LocalizationPack) -> Response:
 
 
 @endpoint(requires_auth=True)
+async def get_main_pages() -> Response:
+    """
+    Get the stored ui main page data.
+
+    Data is filtered based on user permissions.
+    """
+    response = UIMainPage.store_to_message()
+    return ProtobufResponse(response)
+
+
+@endpoint(requires_auth=True)
+async def get_sub_pages() -> Response:
+    """
+    Get the stored ui sub page data.
+
+    Data is filtered based on user permissions.
+    """
+    response = UISubPage.store_to_message()
+    return ProtobufResponse(response)
+
+
+@endpoint(requires_auth=True)
 async def get_etree_mappings() -> Response:
     """
-    Get the route to element tree(s) mappings
+    Get the route to element tree(s) mappings.
+
+    Data is filtered based on user permissions.
     """
     response = UIETree.mappings_to_message()
     return ProtobufResponse(response)
@@ -454,7 +482,9 @@ async def get_etree_mappings() -> Response:
 @endpoint(requires_auth=True)
 async def get_etrees() -> Response:
     """
-    Get the stored element tree data
+    Get the stored element tree data.
+
+    Data is filtered based on user permissions.
     """
     response = UIETree.store_to_message()
     return ProtobufResponse(response)
@@ -463,7 +493,9 @@ async def get_etrees() -> Response:
 @endpoint(requires_auth=True)
 async def get_markdown_fields() -> Response:
     """
-    Get the stored markdown field data
+    Get the stored markdown field data.
+
+    Data is filtered based on user permissions.
     """
     response = UIMarkdownField.store_to_message()
     return ProtobufResponse(response)
@@ -472,7 +504,9 @@ async def get_markdown_fields() -> Response:
 @endpoint(requires_auth=True)
 async def get_button_fields() -> Response:
     """
-    Get the stored button field data
+    Get the stored button field data.
+
+    Data is filtered based on user permissions.
     """
     response = UIButtonField.store_to_message()
     return ProtobufResponse(response)
@@ -481,9 +515,30 @@ async def get_button_fields() -> Response:
 @endpoint(requires_auth=True)
 async def get_value_fields() -> Response:
     """
-    Get the stored value field data
+    Get the stored value field data.
+
+    Data is filtered based on user permissions.
     """
     response = UIValueField.store_to_message()
+    return ProtobufResponse(response)
+
+
+@endpoint(requires_auth=True)
+async def get_all_ui() -> Response:
+    """
+    Load all user interface data from the server.
+
+    Data is filtered based on user permissions.
+    """
+    response = ui_pb2.UIData(
+        pages=UIMainPage.store_to_message(),
+        sub_pages=UISubPage.store_to_message(),
+        mappings=UIETree.mappings_to_message(),
+        etrees=UIETree.store_to_message(),
+        markdown=UIMarkdownField.store_to_message(),
+        buttons=UIButtonField.store_to_message(),
+        values=UIValueField.store_to_message(),
+    )
     return ProtobufResponse(response)
 
 
@@ -504,9 +559,12 @@ ROUTES: list[BaseRoute] = [
     Route("/heats/{id:int}", endpoint=get_heat),
     Route("/server-info", endpoint=get_server_info),
     Route("/localization-pack/{key:str}", endpoint=get_localization_pack),
+    Route("/main-pages", endpoint=get_main_pages),
+    Route("/sub-pages", endpoint=get_sub_pages),
     Route("/etree-mappings", endpoint=get_etree_mappings),
     Route("/etrees", endpoint=get_etrees),
     Route("/markdown-fields", endpoint=get_markdown_fields),
     Route("/button-fields", endpoint=get_button_fields),
     Route("/value-fields", endpoint=get_value_fields),
+    Route("/all-ui", endpoint=get_all_ui),
 ]
