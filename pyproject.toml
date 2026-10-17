@@ -82,7 +82,7 @@ dev = [
     "pytest-randomly==5.0.0",
     # Linting
     "types-protobuf==7.35.1.20260906",
-    "ruff==0.16.9",
+    "ruff==0.17.0",
     "basedpyright==1.40.2",
 ]
 docs = [
