@@ -17,7 +17,7 @@ With the protocol buffer compiler installed to your system, the command that wil
 typically be used to generate the python files from the definition files will similar to:
 
 ```bash
-protoc --proto_path=src/protobuf --python_out=src/pulsarity/_protobuf --pyi_out=src/pulsarity/_protobuf src/protobuf/*.proto
+protoc --proto_path=src/protobuf --python_out=src/pulsarity/_core/_protobuf --pyi_out=src/pulsarity/_core/_protobuf src/protobuf/*.proto
 ```
 
 > [!NOTE]
