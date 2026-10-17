@@ -5,8 +5,8 @@ Background task manager
 import logging
 from typing import TYPE_CHECKING, Any
 
-from pulsarity import ctx
-from pulsarity.utils.asyncio import (
+from pulsarity._core import ctx
+from pulsarity._core.utils.asyncio import (
     ensure_async,
     wait_task_cancellation,
 )

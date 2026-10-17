@@ -10,10 +10,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
 
-    from pulsarity.events.broker import EventBroker
-    from pulsarity.race.manager import RaceManager
-    from pulsarity.timing_interface.timer_manager import TimerInterfaceManager
-    from pulsarity.webserver._auth import (
+    from pulsarity._core.events.broker import EventBroker
+    from pulsarity._core.race.manager import RaceManager
+    from pulsarity._core.timing_interface.timer_manager import TimerInterfaceManager
+    from pulsarity._core.webserver._auth import (
         PulsarityRequest,
         PulsarityUser,
         PulsarityWebsocket,

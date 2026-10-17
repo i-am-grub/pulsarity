@@ -15,28 +15,28 @@ from starlette.routing import BaseRoute, Route
 from starsessions import session
 
 import pulsarity
-from pulsarity import ctx
-from pulsarity._protobuf import http_pb2, ui_pb2
-from pulsarity.database.heat import Heat
-from pulsarity.database.permission import SystemDefaultPerms
-from pulsarity.database.pilot import Pilot
-from pulsarity.database.raceclass import RaceClass
-from pulsarity.database.raceevent import RaceEvent
-from pulsarity.database.round import Round
-from pulsarity.database.user import User
-from pulsarity.user_interface.elements import (
+from pulsarity._core import ctx
+from pulsarity._core._protobuf import http_pb2, ui_pb2
+from pulsarity._core.database.heat import Heat
+from pulsarity._core.database.permission import SystemDefaultPerms
+from pulsarity._core.database.pilot import Pilot
+from pulsarity._core.database.raceclass import RaceClass
+from pulsarity._core.database.raceevent import RaceEvent
+from pulsarity._core.database.round import Round
+from pulsarity._core.database.user import User
+from pulsarity._core.user_interface.elements import (
     UIButtonField,
     UIETree,
     UIMarkdownField,
     UIValueField,
 )
-from pulsarity.user_interface.pages import (
+from pulsarity._core.user_interface.pages import (
     UIMainPage,
     UISubPage,
 )
-from pulsarity.utils import config
-from pulsarity.webserver._status_codes import HTTPStatusCodes
-from pulsarity.webserver._wrapper import (
+from pulsarity._core.utils import config
+from pulsarity._core.webserver._status_codes import HTTPStatusCodes
+from pulsarity._core.webserver._wrapper import (
     PathDataModelType,
     ProtobufResponse,
     QueryDataModelType,

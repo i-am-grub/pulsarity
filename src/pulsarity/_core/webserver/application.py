@@ -20,14 +20,15 @@ from tortoise import Tortoise
 from tortoise.context import TortoiseContext
 from tortoise.context import _current_context as db_context
 
-from pulsarity import ctx, database, native
-from pulsarity.events import EventBroker
-from pulsarity.events.server import ServerShutdown, ServerStartup, SystemHeartBeat
-from pulsarity.race.manager import RaceManager
-from pulsarity.timing_interface.timer_manager import TimerInterfaceManager
-from pulsarity.utils import background, config
-from pulsarity.webserver import http, websockets
-from pulsarity.webserver._auth import PulsarityAuthBackend
+from pulsarity import native
+from pulsarity._core import ctx, database
+from pulsarity._core.events import EventBroker
+from pulsarity._core.events.server import ServerShutdown, ServerStartup, SystemHeartBeat
+from pulsarity._core.race.manager import RaceManager
+from pulsarity._core.timing_interface.timer_manager import TimerInterfaceManager
+from pulsarity._core.utils import background, config
+from pulsarity._core.webserver import http, websockets
+from pulsarity._core.webserver._auth import PulsarityAuthBackend
 
 logger = logging.getLogger(__name__)
 
@@ -196,11 +197,11 @@ async def lifespan(_app: Starlette):
                 "connections": config.config_manager.database.model_dump(),
                 "apps": {
                     "system": {
-                        "models": ["pulsarity.database"],
+                        "models": ["pulsarity._core.database"],
                         "default_connection": "system_db",
                     },
                     "event": {
-                        "models": ["pulsarity.database"],
+                        "models": ["pulsarity._core.database"],
                         "default_connection": "event_db",
                     },
                 },

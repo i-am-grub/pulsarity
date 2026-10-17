@@ -10,16 +10,16 @@ from typing import TYPE_CHECKING, Self
 from tortoise import fields
 from tortoise.functions import Max
 
-from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
-from pulsarity.database._base import PulsarityRaceBase as _PulsarityRaceBase
+from pulsarity._core._protobuf import database_pb2
+from pulsarity._core.database._base import PulsarityMessageBase as _PulsarityMessageBase
+from pulsarity._core.database._base import PulsarityRaceBase as _PulsarityRaceBase
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from pulsarity.database.raceevent import RaceEvent
-    from pulsarity.database.raceformat import RaceFormat
-    from pulsarity.database.round import Round
+    from pulsarity._core.database.raceevent import RaceEvent
+    from pulsarity._core.database.raceformat import RaceFormat
+    from pulsarity._core.database.round import Round
 
 
 class RaceClassAttribute[ATTRIBUTE](_PulsarityMessageBase):

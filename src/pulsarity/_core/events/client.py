@@ -8,10 +8,10 @@ from dataclasses import dataclass
 from typing import ClassVar, Self, dataclass_transform
 from uuid import UUID
 
-from pulsarity import ctx
-from pulsarity._protobuf import websocket_pb2
-from pulsarity.database.permission import SystemDefaultPerms, UserPermission
-from pulsarity.events.server import SystemHeartBeat
+from pulsarity._core import ctx
+from pulsarity._core._protobuf import websocket_pb2
+from pulsarity._core.database.permission import SystemDefaultPerms, UserPermission
+from pulsarity._core.events.server import SystemHeartBeat
 
 # pylint: disable=E1121
 

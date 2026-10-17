@@ -12,15 +12,15 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self
 
-from pulsarity.events.server import EvtPriority, SystemEventData
-from pulsarity.utils import background
-from pulsarity.utils.asyncio import ensure_async
+from pulsarity._core.events.server import EvtPriority, SystemEventData
+from pulsarity._core.utils import background
+from pulsarity._core.utils.asyncio import ensure_async
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable
 
-    from pulsarity._protobuf.websocket_pb2 import EventID
-    from pulsarity.events.enums import SystemEvt
+    from pulsarity._core._protobuf.websocket_pb2 import EventID
+    from pulsarity._core.events.enums import SystemEvt
 
 logger = logging.getLogger(__name__)
 

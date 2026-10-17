@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING
 
 from tortoise import fields
 
-from pulsarity.database._base import PulsarityBase as _PulsarityBase
+from pulsarity._core.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
-    from pulsarity.database.slot import Slot
+    from pulsarity._core.database.slot import Slot
 
 
 class LapAttribute[ATTRIBUTE](_PulsarityBase):

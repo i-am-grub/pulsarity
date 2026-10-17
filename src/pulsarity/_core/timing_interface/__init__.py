@@ -2,7 +2,7 @@
 Hardware Interfaces
 """
 
-from pulsarity.timing_interface.timer_interface import (
+from pulsarity._core.timing_interface.timer_interface import (
     Action,
     BasicLapData,
     BasicSignalData,

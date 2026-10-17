@@ -19,9 +19,9 @@ from starlette.requests import HTTPConnection, Request
 from starlette.responses import RedirectResponse
 from starlette.websockets import WebSocket
 
-from pulsarity.database import Role
-from pulsarity.database.user import User
-from pulsarity.webserver._status_codes import HTTPStatusCodes
+from pulsarity._core.database import Role
+from pulsarity._core.database.user import User
+from pulsarity._core.webserver._status_codes import HTTPStatusCodes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence

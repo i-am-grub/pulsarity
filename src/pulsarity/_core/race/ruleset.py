@@ -16,17 +16,17 @@ from typing import (
     Self,
 )
 
-from pulsarity.race import metrics
-from pulsarity.timing_interface.timer_manager import FullLapData, TimerMode
-from pulsarity.utils.collections import ValueSortedDict
+from pulsarity._core.race import metrics
+from pulsarity._core.timing_interface.timer_manager import FullLapData, TimerMode
+from pulsarity._core.utils.collections import ValueSortedDict
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
 
     from _typeshed import SupportsAllComparisons, SupportsBool
 
-    from pulsarity.database._base import JsonParsable
-    from pulsarity.database.raceformat import RaceFormat
+    from pulsarity._core.database._base import JsonParsable
+    from pulsarity._core.database.raceformat import RaceFormat
 
 
 logger = logging.getLogger(__name__)

@@ -1,4 +1,4 @@
-from pulsarity.utils.collections import ValueSortedDict
+from pulsarity._core.utils.collections import ValueSortedDict
 
 
 def test_basic_features():

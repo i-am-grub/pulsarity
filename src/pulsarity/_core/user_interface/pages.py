@@ -10,11 +10,11 @@ from dataclasses import InitVar, dataclass, field
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar, Self
 
-from pulsarity import ctx
-from pulsarity._protobuf import ui_pb2
+from pulsarity._core import ctx
+from pulsarity._core._protobuf import ui_pb2
 
 if TYPE_CHECKING:
-    from pulsarity.database.permission import SystemDefaultPerms
+    from pulsarity._core.database.permission import SystemDefaultPerms
 
 _default_names = {"/", "/reset-password"}
 

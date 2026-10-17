@@ -9,11 +9,11 @@ from typing import TYPE_CHECKING, Any, Self
 from google.protobuf.message import Message
 from tortoise import Model, fields
 
-from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import PulsarityBase as _PulsarityBase
+from pulsarity._core._protobuf import database_pb2
+from pulsarity._core.database._base import PulsarityBase as _PulsarityBase
 
 if TYPE_CHECKING:
-    from pulsarity.database.slot import Slot
+    from pulsarity._core.database.slot import Slot
 
 
 class ProtobufField[T: Message](fields.Field[T]):  # type: ignore

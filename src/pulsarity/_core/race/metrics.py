@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, NamedTuple
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
-    from pulsarity.timing_interface.timer_manager import FullLapData
+    from pulsarity._core.timing_interface.timer_manager import FullLapData
 
 
 def calculate_num_laps(lap_data: Sequence[FullLapData], holeshot: bool = False) -> int:

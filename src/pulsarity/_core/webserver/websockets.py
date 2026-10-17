@@ -10,13 +10,13 @@ from google.protobuf.message import DecodeError
 from starlette.routing import BaseRoute, WebSocketRoute
 from starlette.websockets import WebSocketDisconnect
 
-from pulsarity import ctx
-from pulsarity._protobuf import websocket_pb2
-from pulsarity.database.permission import SystemDefaultPerms
-from pulsarity.events import client
-from pulsarity.utils import background
-from pulsarity.webserver._auth import PulsarityUser, PulsarityWebsocket, requires
-from pulsarity.webserver._status_codes import WebSocketStatusCodes
+from pulsarity._core import ctx
+from pulsarity._core._protobuf import websocket_pb2
+from pulsarity._core.database.permission import SystemDefaultPerms
+from pulsarity._core.events import client
+from pulsarity._core.utils import background
+from pulsarity._core.webserver._auth import PulsarityUser, PulsarityWebsocket, requires
+from pulsarity._core.webserver._status_codes import WebSocketStatusCodes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine

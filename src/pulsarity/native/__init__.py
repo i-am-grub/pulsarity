@@ -1,5 +1,8 @@
 """
-Built-in Implementations
+Built-in Plugin Implementations
+
+Note: The current architecture for the bundled plugins in this
+module is not finalized.
 """
 
 import importlib

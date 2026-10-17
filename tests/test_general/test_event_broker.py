@@ -7,15 +7,15 @@ from typing import Iterable, Sequence, TypedDict
 
 import pytest
 
-from pulsarity.events import EventBroker, SystemEvt
-from pulsarity.utils import background
-from pulsarity.events.server import (
+from pulsarity._core.events import EventBroker, SystemEvt
+from pulsarity._core.utils import background
+from pulsarity._core.events.server import (
     system_event,
     SystemEventData,
     EvtPriority,
     ServerStartup,
 )
-from pulsarity.database.permission import SystemDefaultPerms
+from pulsarity._core.database.permission import SystemDefaultPerms
 
 
 @system_event

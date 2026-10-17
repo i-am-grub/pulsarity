@@ -6,9 +6,9 @@ from datetime import timedelta
 
 import pytest
 from tortoise.exceptions import IntegrityError
-from pulsarity._protobuf import database_pb2
+from pulsarity._core._protobuf import database_pb2
 
-from pulsarity.database import (
+from pulsarity._core.database import (
     Heat,
     Lap,
     Pilot,

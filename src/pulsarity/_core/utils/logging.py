@@ -52,7 +52,7 @@ def generate_default_config() -> dict:
             },
             "queue_handler": {
                 "class": "logging.handlers.QueueHandler",
-                "listener": "pulsarity.utils.logging.AutoQueueListener",
+                "listener": "pulsarity._core.utils.logging.AutoQueueListener",
                 "handlers": ["stdout", "file"],
                 "respect_handler_level": True,
             },

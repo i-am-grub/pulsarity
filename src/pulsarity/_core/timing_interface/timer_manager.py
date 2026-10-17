@@ -10,14 +10,14 @@ from dataclasses import dataclass
 from enum import Enum, auto, unique
 from typing import ClassVar, NamedTuple
 
-from pulsarity import ctx
-from pulsarity.timing_interface.timer_interface import (
+from pulsarity._core import ctx
+from pulsarity._core.timing_interface.timer_interface import (
     BasicLapData,
     BasicSignalData,
     TimerInterface,
 )
-from pulsarity.utils import background
-from pulsarity.utils.asyncio import wait_task_cancellation
+from pulsarity._core.utils import background
+from pulsarity._core.utils.asyncio import wait_task_cancellation
 
 logger = logging.getLogger(__name__)
 

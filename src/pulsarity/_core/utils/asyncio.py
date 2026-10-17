@@ -7,7 +7,7 @@ import inspect
 import logging
 from typing import TYPE_CHECKING
 
-from pulsarity import ctx
+from pulsarity._core import ctx
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Coroutine, Iterable

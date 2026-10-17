@@ -16,12 +16,12 @@ from typing import TYPE_CHECKING, ClassVar, NamedTuple, override
 
 from google.protobuf.timestamp_pb2 import Timestamp
 
-from pulsarity import ctx
-from pulsarity._protobuf import ui_pb2, websocket_pb2
-from pulsarity.database.permission import SystemDefaultPerms
-from pulsarity.events import EvtPriority
-from pulsarity.events.server import SystemEventData, system_event
-from pulsarity.user_interface.pages import UIPage
+from pulsarity._core import ctx
+from pulsarity._core._protobuf import ui_pb2, websocket_pb2
+from pulsarity._core.database.permission import SystemDefaultPerms
+from pulsarity._core.events import EvtPriority
+from pulsarity._core.events.server import SystemEventData, system_event
+from pulsarity._core.user_interface.pages import UIPage
 
 if TYPE_CHECKING:
     from google.protobuf.message import Message

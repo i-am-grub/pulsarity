@@ -14,7 +14,7 @@ from typing import Any, Self
 
 import anyio
 
-from pulsarity.utils.logging import generate_default_config
+from pulsarity._core.utils.logging import generate_default_config
 
 DEFAULT_CONFIG_FILE = Path("config.json")
 

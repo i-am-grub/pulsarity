@@ -1,6 +1,6 @@
 from pulsarity.native.rulesets.most_laps import MostLapsRuleset
-from pulsarity.timing_interface.timer_manager import FullLapData
-from pulsarity.race.ruleset import SafeRaceFormat
+from pulsarity._core.timing_interface.timer_manager import FullLapData
+from pulsarity._core.race.ruleset import SafeRaceFormat
 
 
 def test_most_laps_ruleset():

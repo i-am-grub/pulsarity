@@ -6,7 +6,7 @@ from collections import defaultdict
 from itertools import count
 from typing import TYPE_CHECKING
 
-from pulsarity.race.ruleset import (
+from pulsarity._core.race.ruleset import (
     LapsManager,
     RaceRuleset,
     RulesetFieldData,
@@ -18,7 +18,7 @@ from pulsarity.race.ruleset import (
 )
 
 if TYPE_CHECKING:
-    from pulsarity.race.metrics import CombinedMetrics
+    from pulsarity._core.race.metrics import CombinedMetrics
 
 
 class _MostLapsManager(LapsManager):

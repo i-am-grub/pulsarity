@@ -7,13 +7,13 @@ import secrets
 from enum import Flag, auto, unique
 from typing import TYPE_CHECKING, NamedTuple
 
-import pulsarity.events.server as server_evts
-from pulsarity import ctx
+import pulsarity._core.events.server as server_evts
+from pulsarity._core import ctx
 
 if TYPE_CHECKING:
     from asyncio import TimerHandle
 
-    from pulsarity.race.ruleset import SafeRaceFormat
+    from pulsarity._core.race.ruleset import SafeRaceFormat
 
 logger = logging.getLogger(__name__)
 rng = secrets.SystemRandom()

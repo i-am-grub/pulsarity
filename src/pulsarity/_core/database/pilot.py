@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Self
 
 from tortoise import fields
 
-from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
-from pulsarity.database._base import PulsarityRaceBase as _PulsarityRaceBase
+from pulsarity._core._protobuf import database_pb2
+from pulsarity._core.database._base import PulsarityMessageBase as _PulsarityMessageBase
+from pulsarity._core.database._base import PulsarityRaceBase as _PulsarityRaceBase
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

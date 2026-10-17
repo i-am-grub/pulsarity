@@ -5,8 +5,8 @@ Enums for system events
 from dataclasses import dataclass
 from enum import Enum, unique
 
-from pulsarity._protobuf import websocket_pb2
-from pulsarity.events import server
+from pulsarity._core._protobuf import websocket_pb2
+from pulsarity._core.events import server
 
 
 @dataclass(frozen=True)

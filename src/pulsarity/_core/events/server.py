@@ -10,8 +10,8 @@ from enum import Enum, unique
 from functools import partial
 from typing import ClassVar, Self, dataclass_transform, override
 
-from pulsarity._protobuf import websocket_pb2
-from pulsarity.database.permission import SystemDefaultPerms, UserPermission
+from pulsarity._core._protobuf import websocket_pb2
+from pulsarity._core.database.permission import SystemDefaultPerms, UserPermission
 
 _registered: set[websocket_pb2.EventID] = set()
 

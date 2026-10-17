@@ -19,9 +19,9 @@ from argon2.exceptions import (
 )
 from tortoise import fields
 
-from pulsarity.database._base import PulsarityBase as _PulsarityBase
-from pulsarity.database.role import Role
-from pulsarity.utils import config
+from pulsarity._core.database._base import PulsarityBase as _PulsarityBase
+from pulsarity._core.database.role import Role
+from pulsarity._core.utils import config
 
 logger = logging.getLogger(__name__)
 

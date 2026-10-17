@@ -4,9 +4,9 @@ ORM classes for Format data
 
 from tortoise import fields
 
-from pulsarity._protobuf import database_pb2
-from pulsarity.database._base import PulsarityBase as _PulsarityBase
-from pulsarity.database._base import PulsarityMessageBase as _PulsarityMessageBase
+from pulsarity._core._protobuf import database_pb2
+from pulsarity._core.database._base import PulsarityBase as _PulsarityBase
+from pulsarity._core.database._base import PulsarityMessageBase as _PulsarityMessageBase
 
 
 class RulesetField[ATTRIBUTE](_PulsarityMessageBase):

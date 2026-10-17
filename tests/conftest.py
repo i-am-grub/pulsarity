@@ -9,9 +9,9 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from tortoise import Tortoise
 
-from pulsarity import ctx
-from pulsarity._protobuf import http_pb2
-from pulsarity.database import (
+from pulsarity._core import ctx
+from pulsarity._core._protobuf import http_pb2
+from pulsarity._core.database import (
     Heat,
     Pilot,
     RaceClass,
@@ -21,21 +21,21 @@ from pulsarity.database import (
     Slot,
     setup_default_objects,
 )
-from pulsarity.events.broker import EventBroker
-from pulsarity.timing_interface.timer_manager import TimerInterfaceManager
-from pulsarity.race.manager import RaceManager
-from pulsarity.race.ruleset import RaceRulesetManager
-from pulsarity.user_interface.elements import (
+from pulsarity._core.events.broker import EventBroker
+from pulsarity._core.timing_interface.timer_manager import TimerInterfaceManager
+from pulsarity._core.race.manager import RaceManager
+from pulsarity._core.race.ruleset import RaceRulesetManager
+from pulsarity._core.user_interface.elements import (
     UIButtonField,
     UIETree,
     UIMarkdownField,
     UIValueField,
 )
-from pulsarity.user_interface.pages import UIMainPage, UIPage, UISubPage
-from pulsarity.utils import background
-from pulsarity.utils.config import PulsarityConfig
-from pulsarity.webserver import application
-from pulsarity.webserver._status_codes import HTTPStatusCodes
+from pulsarity._core.user_interface.pages import UIMainPage, UIPage, UISubPage
+from pulsarity._core.utils import background
+from pulsarity._core.utils.config import PulsarityConfig
+from pulsarity._core.webserver import application
+from pulsarity._core.webserver._status_codes import HTTPStatusCodes
 
 
 def clear_register():
@@ -100,11 +100,11 @@ async def database_init():
             },
             "apps": {
                 "system": {
-                    "models": ["pulsarity.database"],
+                    "models": ["pulsarity._core.database"],
                     "default_connection": "system",
                 },
                 "event": {
-                    "models": ["pulsarity.database"],
+                    "models": ["pulsarity._core.database"],
                     "default_connection": "event",
                 },
             },

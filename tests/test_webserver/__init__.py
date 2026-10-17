@@ -2,8 +2,8 @@ import asyncio
 
 import pytest_asyncio
 
-from pulsarity import ctx
-from pulsarity.utils import background
+from pulsarity._core import ctx
+from pulsarity._core.utils import background
 
 
 @pytest_asyncio.fixture(loop_scope="function", autouse=True)

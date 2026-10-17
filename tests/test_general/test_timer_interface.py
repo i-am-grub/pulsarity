@@ -4,8 +4,8 @@ import uuid
 
 import pytest
 
-from pulsarity.timing_interface import BasicLapData, BasicSignalData
-from pulsarity.timing_interface.timer_manager import (
+from pulsarity._core.timing_interface import BasicLapData, BasicSignalData
+from pulsarity._core.timing_interface.timer_manager import (
     TimerInterfaceManager,
     TimerInterface,
 )
