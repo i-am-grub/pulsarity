@@ -31,6 +31,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Install uv and set the python version
+      uses: astral-sh/setup-uv@v10.1.0
+      with:
+        enable-cache: true
+        python-version: "3.14"
+
     - name: Install the project
       run: uv sync --group dev
     
@@ -40,23 +46,19 @@ jobs:
       run: uv run basedpyright
 
     - name: Run Ruff formatter check
-      uses: astral-sh/ruff-action@v3
-      continue-on-error: true
       id: ruff-format
-      with:
-        args: format --check --diff
+      continue-on-error: true
+      run: uv run ruff format --check --diff
     
     - name: Run Ruff import check
-      uses: astral-sh/ruff-action@v3
-      continue-on-error: true
       id: ruff-imports
-      with:
-        args: check --select I
+      continue-on-error: true
+      run: uv run ruff check --select I
 
     - name: Run Ruff linting check
       id: ruff-lint
       continue-on-error: true
-      uses: astral-sh/ruff-action@v3
+      run: uv run ruff check
 
     - name: Check Outcome
       if: |
