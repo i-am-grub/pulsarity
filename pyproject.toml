@@ -27,6 +27,7 @@ dependencies = [
     "anyio==4.15.1",
     "protobuf==7.36.2",
     "async-lru==2.3.0",
+    "semver==3.1.0", # To be used for parsing plugin versions
     "pulsarity-localization", # Added repo as source until an offical release is made
     # Upstream Dependencies
     "idna==3.20", # anyio
@@ -67,9 +68,9 @@ default-tag = "0.0.0"
 method = "minor-release"
 
 [tool.versioningit.format]
-distance = "{next_version}.dev{distance}+{vcs}{rev}"
+distance = "{next_version}-dev.{distance}+{vcs}{rev}"
 dirty = "{version}+dirty"
-distance-dirty = "{next_version}.dev{distance}+{vcs}{rev}.dirty"
+distance-dirty = "{next_version}-dev.{distance}+{vcs}{rev}.dirty"
 
 [dependency-groups]
 dev = [
