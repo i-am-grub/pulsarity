@@ -14,7 +14,7 @@ on:
       'tests/*',
       'pyproject.toml',
       'uv.lock',
-      '.github/workflows/python-*'
+      '.github/workflows/python-linting.yml'
     ]
   pull_request:
     paths: [
@@ -22,7 +22,7 @@ on:
       'tests/*',
       'pyproject.toml',
       'uv.lock',
-      '.github/workflows/python-*'
+      '.github/workflows/python-linting.yml'
     ]
   workflow_dispatch:
 
