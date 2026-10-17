@@ -13,14 +13,16 @@ on:
       'src/pulsarity/*',
       'tests/*',
       'pyproject.toml',
-      'uv.lock'
+      'uv.lock',
+      '.github/workflows/python-*'
     ]
   pull_request:
     paths: [
       'src/pulsarity/*',
       'tests/*',
       'pyproject.toml',
-      'uv.lock'
+      'uv.lock',
+      '.github/workflows/python-*'
     ]
   workflow_dispatch:
 
