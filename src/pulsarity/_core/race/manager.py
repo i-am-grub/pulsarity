@@ -3,8 +3,8 @@ Race state/timing management
 """
 
 import asyncio
+import datetime as dt
 from collections import defaultdict
-from datetime import timedelta
 from functools import partial
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -193,7 +193,7 @@ class RaceManager:
             laps = (
                 Lap(
                     slot_id=lap.node_index,
-                    time=timedelta(seconds=lap.timedelta),
+                    time=dt.timedelta(seconds=lap.timedelta),
                     timer_index=lap.timer_index,
                     timer_identifier=lap.timer_identifier,
                 )

@@ -2,7 +2,7 @@
 Test the event database
 """
 
-from datetime import timedelta
+import datetime as dt
 
 import pytest
 from tortoise.exceptions import IntegrityError
@@ -227,7 +227,7 @@ async def test_basic_lap(basic_slot: Slot):
     """
     Test creating and deleting laps under a parent slot
     """
-    delta = timedelta(seconds=1)
+    delta = dt.timedelta(seconds=1)
 
     lap1 = await Lap.create(
         slot=basic_slot, timedelta=delta, timer_index=0, timer_identifier="foo"
@@ -252,7 +252,7 @@ async def test_unique_lap(basic_slot: Slot):
     """
     Test creating a lap with non-unique parameters
     """
-    delta = timedelta(seconds=1)
+    delta = dt.timedelta(seconds=1)
 
     await Lap.create(
         slot=basic_slot, timedelta=delta, timer_index=0, timer_identifier="foo"
@@ -272,7 +272,7 @@ async def test_cascade_delete(basic_slot: Slot):
     slot = await Slot.get_by_id(basic_slot.id)
     assert slot is not None
 
-    delta = timedelta(seconds=1)
+    delta = dt.timedelta(seconds=1)
     lap = await Lap.create(
         slot=basic_slot, timedelta=delta, timer_index=0, timer_identifier="foo"
     )

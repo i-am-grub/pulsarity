@@ -4,13 +4,13 @@ User Interface Elements
 
 from __future__ import annotations
 
+import datetime as dt
 import itertools
 import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from dataclasses import InitVar, dataclass, field
-from datetime import UTC, date, datetime, time
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar, NamedTuple, override
 
@@ -577,7 +577,7 @@ class UICheckboxValueField(UIValueField[bool]):
 
 
 @dataclass(frozen=True, slots=True)
-class UIDatetimeValueField(UIValueField[datetime]):
+class UIDatetimeValueField(UIValueField[dt.datetime]):
     """
     User interface datetime value field
     """
@@ -586,7 +586,7 @@ class UIDatetimeValueField(UIValueField[datetime]):
 
     @override
     def _validate_value(self, value) -> None:
-        if not isinstance(value, datetime):
+        if not isinstance(value, dt.datetime):
             msg = "Value is not a datetime"
             raise TypeError(msg)
 
@@ -609,7 +609,7 @@ class UIDatetimeValueField(UIValueField[datetime]):
 
 
 @dataclass(frozen=True, slots=True)
-class UIDateValueField(UIValueField[date]):
+class UIDateValueField(UIValueField[dt.date]):
     """
     User interface date value field
     """
@@ -618,7 +618,7 @@ class UIDateValueField(UIValueField[date]):
 
     @override
     def _validate_value(self, value) -> None:
-        if not isinstance(value, date):
+        if not isinstance(value, dt.date):
             msg = "Value is not a date"
             raise TypeError(msg)
 
@@ -627,13 +627,13 @@ class UIDateValueField(UIValueField[date]):
         Convert the element data to message
         """
         if self._value is not None:
-            dt = datetime(
+            dt_ = dt.datetime(
                 year=self._value.year,
                 month=self._value.month,
                 day=self._value.day,
-                tzinfo=UTC,
+                tzinfo=dt.UTC,
             )
-            datetime_ = Timestamp().FromDatetime(dt)
+            datetime_ = Timestamp().FromDatetime(dt_)
         else:
             datetime_ = None
 
@@ -647,7 +647,7 @@ class UIDateValueField(UIValueField[date]):
 
 
 @dataclass(frozen=True, slots=True)
-class UITimeValueField(UIValueField[time]):
+class UITimeValueField(UIValueField[dt.time]):
     """
     User interface time value field
     """
@@ -656,7 +656,7 @@ class UITimeValueField(UIValueField[time]):
 
     @override
     def _validate_value(self, value) -> None:
-        if not isinstance(value, time):
+        if not isinstance(value, dt.time):
             msg = "Value is not a time"
             raise TypeError(msg)
 

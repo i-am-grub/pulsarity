@@ -3,10 +3,10 @@ Global configurations
 """
 
 import asyncio
+import datetime as dt
 import json
 import logging
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
 from functools import partial
 from pathlib import Path
 from secrets import token_urlsafe
@@ -30,7 +30,7 @@ def _parse_types(params: list[tuple[str, Any]]):
             continue
         if isinstance(val, Path):
             vals[key] = str(val)
-        elif isinstance(val, datetime):
+        elif isinstance(val, dt.datetime):
             vals[key] = val.isoformat()
         else:
             vals[key] = val
@@ -73,11 +73,11 @@ class _WebserverConfig:
 @dataclass
 class _GeneralConfig:
     server_name: str = "Pulsarity"
-    last_modified_time: datetime = field(default_factory=datetime.now)
+    last_modified_time: dt.datetime = field(default_factory=dt.datetime.now)
 
     def __post_init__(self):
         if isinstance(self.last_modified_time, str):
-            self.last_modified_time = datetime.fromisoformat(self.last_modified_time)
+            self.last_modified_time = dt.datetime.fromisoformat(self.last_modified_time)
 
 
 @dataclass
@@ -182,7 +182,7 @@ class PulsarityConfig:
 
         :param filepath: The filepath to save the config to
         """
-        self.general.last_modified_time = datetime.now(tz=UTC)
+        self.general.last_modified_time = dt.datetime.now(tz=dt.UTC)
 
         with filepath.open("w", encoding="utf-8") as file:
             json.dump(asdict(self, dict_factory=_parse_types), file, indent=4)
@@ -197,7 +197,7 @@ class PulsarityConfig:
         :param filepath: The filepath to save the config to
         """
         async with self._lock:
-            self.general.last_modified_time = datetime.now(tz=UTC)
+            self.general.last_modified_time = dt.datetime.now(tz=dt.UTC)
 
             async with await anyio.open_file(filepath, "w", encoding="utf-8") as file:
                 await file.write(

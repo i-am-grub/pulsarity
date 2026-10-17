@@ -3,8 +3,8 @@ ORM classes for User data
 """
 
 import asyncio
+import datetime as dt
 import logging
-from datetime import UTC, datetime
 from functools import cached_property
 from typing import Self
 from uuid import UUID, uuid4
@@ -304,7 +304,7 @@ class User(_PulsarityBase):
         """
         Update a user's `last_login` time.
         """
-        await self.filter(id=self.id).update(last_login=datetime.now(tz=UTC))
+        await self.filter(id=self.id).update(last_login=dt.datetime.now(tz=dt.UTC))
 
     @classmethod
     async def update_password_required(cls, uuid: UUID, status: bool) -> None:

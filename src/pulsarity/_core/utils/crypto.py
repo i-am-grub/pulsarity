@@ -2,7 +2,7 @@
 Cryptography for the application
 """
 
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING
 
 from cryptography import x509
@@ -39,9 +39,9 @@ def generate_self_signed_cert(key_file: Path, cert_file: Path) -> None:
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.datetime.now(datetime.UTC))
+        .not_valid_before(dt.datetime.now(dt.UTC))
         .not_valid_after(
-            datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=365 * 10),
+            dt.datetime.now(dt.UTC) + dt.timedelta(days=365 * 10),
         )
         .add_extension(
             x509.BasicConstraints(ca=True, path_length=None),
