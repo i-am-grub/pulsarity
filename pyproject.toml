@@ -105,14 +105,14 @@ exclude = ["tests", "src/pulsarity/_protobuf"]
 local_partial_types = true
 
 [tool.pylint]
-ignore = ["tests", "src/pulsarity/_protobuf"]
-ignored-modules = ["pulsarity._protobuf.*", "google.protobuf.*"]
+ignore = ["tests", "src/pulsarity/_core/_protobuf"]
+ignored-modules = ["pulsarity._core._protobuf.*", "google.protobuf.*"]
 disable = [
     "too-few-public-methods", "duplicate-code"
 ]
 
 [tool.ruff.lint]
-exclude = ["tests/*", "docs/*", ".mypy_cache", "env", "src/pulsarity/_protobuf/*"]
+exclude = ["tests/*", "docs/*", ".mypy_cache", "env", "src/pulsarity/_core/_protobuf/*"]
 select = [
     "A",        # don't shadow builtins
     "ASYNC",    # flake8-async
@@ -168,7 +168,7 @@ ignore = [
 
 [tool.ruff.format]
 docstring-code-format = true
-exclude = ["src/pulsarity/_protobuf/*"]
+exclude = ["src/pulsarity/_core/_protobuf/*"]
 
 [tool.pytest.ini_options]
 addopts = "--no-cov-on-fail --showlocals --strict-markers"
