@@ -1,0 +1,86 @@
+"""
+ORM classes for Role data
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from tortoise import fields
+
+from pulsarity._core.database._base import PulsarityBase as _PulsarityBase
+from pulsarity._core.database.permission import Permission, SystemDefaultPerms
+
+if TYPE_CHECKING:
+    from pulsarity._core.database.user import User
+
+
+class Role(_PulsarityBase):
+    """
+    Role for the application
+    """
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "system"
+        table = "role"
+
+    name = fields.CharField(max_length=64, unique=True)
+    """Name of role"""
+    users: fields.ManyToManyRelation[User]
+    """Users role is assigned to"""
+    permissions: fields.ManyToManyRelation[Permission] = fields.ManyToManyField(
+        "system.Permission",
+        related_name="roles",
+        through="role_permission",
+    )
+    """Permissions granted to a role"""
+    persistent = fields.BooleanField(default=False)
+    """Entry is persistent in database"""
+
+    async def get_permissions(self) -> set[str]:
+        """
+        Gets the permissions for the role. Should be ran while the database
+        session is still active.
+
+        :return: The set of permissions
+        """
+        return set(await self.permissions.all().values_list("value", flat=True))  # type: ignore
+
+    async def add_permissions(self, *permissions: Permission) -> None:
+        """
+        Set the permissions for a role. Overwrites any previous values
+
+        :param value: The permissions to set
+        """
+        await self.permissions.clear()
+        await self.permissions.add(*permissions)
+
+    @classmethod
+    async def verify_persistant(cls) -> None:
+        """
+        Verify all system roles are in the user database.
+        """
+        admin_role, _ = await cls.get_or_create(name="SYSTEM_ADMIN", persistent=True)
+
+        permissions = await Permission.all()
+
+        await admin_role.permissions.add(*permissions)
+
+        unauth_role, created = await cls.get_or_create(
+            name="UNAUTHENTICATED",
+            persistent=True,
+        )
+
+        if created:
+            perm_values = [
+                SystemDefaultPerms.READ_PILOTS,
+                SystemDefaultPerms.READ_EVENTS,
+                SystemDefaultPerms.READ_RACECLASS,
+                SystemDefaultPerms.READ_ROUND,
+                SystemDefaultPerms.READ_HEAT,
+                SystemDefaultPerms.SIMPLEX_WEBSOCKET,
+            ]
+            permissions = await Permission.filter(value__in=perm_values)
+            await unauth_role.permissions.add(*permissions)

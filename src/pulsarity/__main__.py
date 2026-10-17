@@ -19,9 +19,9 @@ from granian.server.embed import Server
 from starlette.middleware.cors import CORSMiddleware
 
 import pulsarity
-from pulsarity.events.client import ClientServerRestart, ClientServerShutdown
-from pulsarity.utils import config
-from pulsarity.webserver import application, websockets
+from pulsarity._core.events.client import ClientServerRestart, ClientServerShutdown
+from pulsarity._core.utils import config
+from pulsarity._core.webserver import application, websockets
 
 if TYPE_CHECKING:
     from starlette.types import ASGIApp

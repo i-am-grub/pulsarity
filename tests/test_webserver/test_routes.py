@@ -5,8 +5,8 @@ HTTP route tests
 import pytest
 from httpx import AsyncClient
 
-from pulsarity._protobuf import http_pb2, database_pb2
-from pulsarity._protobuf.ui_pb2 import (
+from pulsarity._core._protobuf import http_pb2, database_pb2
+from pulsarity._core._protobuf.ui_pb2 import (
     UIButtonFields,
     UIETreeMapping,
     UIElementTrees,
@@ -15,12 +15,12 @@ from pulsarity._protobuf.ui_pb2 import (
     UISubPages,
     UIValueFields,
 )
-from pulsarity.database.heat import Heat
-from pulsarity.database.pilot import Pilot
-from pulsarity.database.raceclass import RaceClass
-from pulsarity.database.raceevent import RaceEvent
-from pulsarity.database.round import Round
-from pulsarity.user_interface.elements import (
+from pulsarity._core.database.heat import Heat
+from pulsarity._core.database.pilot import Pilot
+from pulsarity._core.database.raceclass import RaceClass
+from pulsarity._core.database.raceevent import RaceEvent
+from pulsarity._core.database.round import Round
+from pulsarity._core.user_interface.elements import (
     UIButtonField,
     UICheckboxValueField,
     UIDateValueField,
@@ -37,8 +37,8 @@ from pulsarity.user_interface.elements import (
     UIURLValueField,
     UIValueField,
 )
-from pulsarity.user_interface.pages import UIMainPage, UISubPage
-from pulsarity.webserver._status_codes import HTTPStatusCodes
+from pulsarity._core.user_interface.pages import UIMainPage, UISubPage
+from pulsarity._core.webserver._status_codes import HTTPStatusCodes
 
 # pylint:disable=W0212,E1123
 

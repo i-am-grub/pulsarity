@@ -1,12 +1,11 @@
 from collections.abc import Iterable, Sequence
 from itertools import count
-from typing import ClassVar
 
 import pytest
 
-from pulsarity.database.raceformat import RaceFormat
-from pulsarity.timing_interface.timer_manager import FullLapData
-from pulsarity.race.ruleset import (
+from pulsarity._core.database.raceformat import RaceFormat
+from pulsarity._core.timing_interface.timer_manager import FullLapData
+from pulsarity._core.race.ruleset import (
     LapsManager,
     RaceRuleset,
     RaceRulesetManager,

@@ -1,8 +1,8 @@
 from collections.abc import Iterable, Sequence
 
-from pulsarity.database.raceformat import RaceFormat
-from pulsarity.timing_interface.timer_manager import FullLapData
-from pulsarity.race.ruleset import RaceRuleset, SlotResult
+from pulsarity._core.database.raceformat import RaceFormat
+from pulsarity._core.timing_interface.timer_manager import FullLapData
+from pulsarity._core.race.ruleset import RaceRuleset, SlotResult
 
 
 class MostLapsruleset(RaceRuleset):

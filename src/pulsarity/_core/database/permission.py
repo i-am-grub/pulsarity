@@ -1,0 +1,105 @@
+"""
+ORM classes for Permission data
+"""
+
+from __future__ import annotations
+
+from enum import StrEnum, auto, unique
+from typing import TYPE_CHECKING
+
+from tortoise import fields
+
+from pulsarity._core.database._base import PulsarityBase as _PulsarityBase
+
+if TYPE_CHECKING:
+    from pulsarity._core.database.role import Role
+
+
+class Permission(_PulsarityBase):
+    """
+    Role for the application
+    """
+
+    class Meta:
+        """Tortoise ORM metadata"""
+
+        app = "system"
+        table = "permission"
+
+    value = fields.CharField(max_length=64, unique=True)
+    """Name of role"""
+    persistent = fields.BooleanField(default=False)
+    """Entry is persistent in database"""
+    roles: fields.ManyToManyRelation[Role]
+    """Roles permission is assigned to"""
+
+    @classmethod
+    async def verify_persistant(cls) -> None:
+        """
+        Verify all nessessary permissions are in the user database.
+        """
+
+        def generate_permissions():
+            for permission_class in UserPermission.__subclasses__():
+                persistent = permission_class is SystemDefaultPerms
+                for e in permission_class:
+                    if e not in permissions:
+                        yield Permission(value=e, persistent=persistent)
+
+        permissions: set[str] = set(await cls.all().values_list("value", flat=True))  # type: ignore
+
+        await cls.bulk_create(generate_permissions())  # pyright: ignore[reportArgumentType]
+
+
+class UserPermission(StrEnum):
+    """
+    Parent class for all user permissions enums
+
+    Plugins can inherit from this class to add
+    and use custom permissions.
+    """
+
+
+@unique
+class SystemDefaultPerms(UserPermission):
+    """
+    Default user permissions for the system
+    """
+
+    AUTHENTICATED = auto()
+    """Permission to force user authentication"""
+
+    SIMPLEX_WEBSOCKET = auto()
+    """Permission to user the simplex websocket (listen to server events)"""
+    DUPLEX_WEBSOCKET = auto()
+    """Permission to use the duplex websocket"""
+
+    SYSTEM_CONTROL = auto()
+    """Permission to configure the application server"""
+    RACE_CONTROL = auto()
+    """Permission to control the race sequence"""
+
+    READ_PILOTS = auto()
+    """Permission to read pilots"""
+    WRITE_PILOTS = auto()
+    """Permission to write pilots"""
+
+    READ_EVENTS = auto()
+    """Permission to read race events"""
+    WRITE_EVENTS = auto()
+    """Permission to write race events"""
+
+    READ_RACECLASS = auto()
+    """Permission to read race classes"""
+    WRITE_RACECLASS = auto()
+    """Permission to write race classes"""
+
+    READ_ROUND = auto()
+    """Permission to read race rounds"""
+    WRITE_ROUND = auto()
+    """Permission to write race rounds"""
+
+    READ_HEAT = auto()
+    """Permission to read race heats"""
+    WRITE_HEAT = auto()
+    """Permission to write race heats"""

@@ -4,7 +4,7 @@ Test the system database
 
 import pytest
 
-from pulsarity.database.user import User
+from pulsarity._core.database.user import User
 
 
 @pytest.mark.asyncio

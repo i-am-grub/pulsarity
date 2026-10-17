@@ -10,8 +10,8 @@ import pytest
 from httpx import AsyncClient
 from httpx_ws.transport import ASGIWebSocketTransport
 
-from pulsarity._protobuf import http_pb2, websocket_pb2
-from pulsarity.webserver import application
+from pulsarity._core._protobuf import http_pb2, websocket_pb2
+from pulsarity._core.webserver import application
 
 
 @pytest.mark.asyncio
