@@ -1,9 +1,7 @@
 [project]
 name = "pulsarity"
 description = "A demonstrator project for a RotorHazard variant"
-authors = [
-    { name = "Bryce Gruber", email = "dev@brycegruber.com"}
-]
+authors = [{ name = "Bryce Gruber", email = "dev@brycegruber.com" }]
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.14,<3.16"
@@ -12,7 +10,7 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Framework :: AsyncIO",
     "Programming Language :: Python :: 3.14",
-    "Programming Language :: Python :: 3.15"
+    "Programming Language :: Python :: 3.15",
 ]
 dynamic = ["version"]
 
@@ -27,19 +25,18 @@ dependencies = [
     "anyio==4.15.1",
     "protobuf==7.36.2",
     "async-lru==2.3.0",
-    "semver==3.1.0", # To be used for parsing plugin versions
     "pulsarity-localization", # Added repo as source until an offical release is made
     # Upstream Dependencies
-    "idna==3.20", # anyio
+    "idna==3.20",                                         # anyio
     "typing-extensions==4.16.0; python_version < '3.15'", # anyio
-    "cffi==2.1.1", # argon, cryptography
-    "argon2-cffi-bindings==26.1.0", # argon
-    "pycparser==3.11", # cffi
-    "click==8.5.0", # granian
-    "itsdangerous==2.2.0", # star-sessions
-    "aiosqlite==0.22.1", # tortoise-orm
-    "iso8601==2.1.0", # tortoise-orm
-    "pypika-tortoise==0.6.5" # tortoise-orm
+    "cffi==2.1.1",                                        # argon, cryptography
+    "argon2-cffi-bindings==26.1.0",                       # argon
+    "pycparser==3.11",                                    # cffi
+    "click==8.5.0",                                       # granian
+    "itsdangerous==2.2.0",                                # star-sessions
+    "aiosqlite==0.22.1",                                  # tortoise-orm
+    "iso8601==2.1.0",                                     # tortoise-orm
+    "pypika-tortoise==0.6.5",                             # tortoise-orm
 ]
 
 [project.urls]
@@ -68,9 +65,9 @@ default-tag = "0.0.0"
 method = "minor-release"
 
 [tool.versioningit.format]
-distance = "{next_version}-dev.{distance}+{vcs}{rev}"
+distance = "{next_version}.dev{distance}+{vcs}{rev}"
 dirty = "{version}+dirty"
-distance-dirty = "{next_version}-dev.{distance}+{vcs}{rev}.dirty"
+distance-dirty = "{next_version}dev{distance}+{vcs}{rev}.dirty"
 
 [dependency-groups]
 dev = [
@@ -94,12 +91,10 @@ docs = [
     "sphinx-substitution-extensions==2026.10.9",
     "urllib3>=2.8.0",
 ]
-profile = [
-    "viztracer==1.1.1"
-]
+profile = ["viztracer==1.1.1"]
 
 [tool.uv.sources]
-pulsarity-localization = { git = "https://github.com/i-am-grub/pulsarity-localization", branch = 'master'}
+pulsarity-localization = { git = "https://github.com/i-am-grub/pulsarity-localization", branch = 'master' }
 
 [tool.basedpyright]
 typeCheckingMode = "basic" # eventually work towards "recommended"
@@ -116,63 +111,67 @@ exclude = [
     "**/node_modules",
     "**/__pycache__",
     "**/.*",
-    ".venv"
+    ".venv",
 ]
 
 [tool.ruff.lint]
-exclude = ["tests/*", "docs/*", ".mypy_cache", "env", "src/pulsarity/_core/_protobuf/*"]
+exclude = [
+    "tests/*",
+    "docs/*",
+    ".mypy_cache",
+    "env",
+    "src/pulsarity/_core/_protobuf/*",
+]
 select = [
-    "A",        # don't shadow builtins
-    "ASYNC",    # flake8-async
-    "ARG",      # flake8-unused-arguments
-    "B",        # enable bugbear
-    "BLE",      # blind exception checks
-    "C4",       # use comprehensions
-    "C90",      # mccabe
-    "COM",      # catch weird comma situations
-    "DTZ",      # flake8-datetimez
-    "E",        # pycodestyle error
-    "EM",       # error message standards
-    "ERA",      # commented out code
-    "EXE",      # shebang and permissions checks
-    "F",        # pyflakes
-    "FA",       # validate __future__ annotate usage
-    "FIX",      # flake8-fixme
-    "FURB",     # refurbishment & modernization
-    "FLY",      # flynt
-    "G",        # flake8-logging-format
-    "I",        # isort
-    "ICN",      # flake8-import-conventions
-    "INP",      # packages should have __init__.py
-    "INT",      # flake8-gettext
-    "ISC",      # flake8-implicit-str-concat
-    "LOG",      # flake8-logging
-    "N",        # pep8 object naming rules
-    "PERF",     # performance hits
-    "PIE",      # flake8-pie misc. checks
-    "PL",       # pylint
-    "PT",       # pytest style control
-    "PTH",      # flake8-use-pathlib
-    "Q",        # quote controls
-    "RSE",      # flake8-raise
-    "RET",      # check usage of return
-    "RUF",      # ruff-specific rules
-    "S",        # bandit (security checks)
-    "SIM",      # code simplicity
-    "SLOT",     # flaske8-slots
-    "T10",      # don't leave debugger breakpoints around
-    "T20",      # don't leave print() or pprint() around
-    "TC",       # type checking quality stuff (that mypy doesn't check for)
-    "TD",       # flake8-todos
-    "TID",      # flake8-tidy-imports
-    "TRY",      # better handling of exceptions
-    "W",        # pycodestyle warnings
-    "YTT",      # year2020: python3 version checks
-    "UP",       # pyupgrade
+    "A",     # don't shadow builtins
+    "ASYNC", # flake8-async
+    "ARG",   # flake8-unused-arguments
+    "B",     # enable bugbear
+    "BLE",   # blind exception checks
+    "C4",    # use comprehensions
+    "C90",   # mccabe
+    "COM",   # catch weird comma situations
+    "DTZ",   # flake8-datetimez
+    "E",     # pycodestyle error
+    "EM",    # error message standards
+    "ERA",   # commented out code
+    "EXE",   # shebang and permissions checks
+    "F",     # pyflakes
+    "FA",    # validate __future__ annotate usage
+    "FIX",   # flake8-fixme
+    "FURB",  # refurbishment & modernization
+    "FLY",   # flynt
+    "G",     # flake8-logging-format
+    "I",     # isort
+    "ICN",   # flake8-import-conventions
+    "INP",   # packages should have __init__.py
+    "INT",   # flake8-gettext
+    "ISC",   # flake8-implicit-str-concat
+    "LOG",   # flake8-logging
+    "N",     # pep8 object naming rules
+    "PERF",  # performance hits
+    "PIE",   # flake8-pie misc. checks
+    "PL",    # pylint
+    "PT",    # pytest style control
+    "PTH",   # flake8-use-pathlib
+    "Q",     # quote controls
+    "RSE",   # flake8-raise
+    "RET",   # check usage of return
+    "RUF",   # ruff-specific rules
+    "S",     # bandit (security checks)
+    "SIM",   # code simplicity
+    "SLOT",  # flaske8-slots
+    "T10",   # don't leave debugger breakpoints around
+    "T20",   # don't leave print() or pprint() around
+    "TC",    # type checking quality stuff (that mypy doesn't check for)
+    "TD",    # flake8-todos
+    "TID",   # flake8-tidy-imports
+    "TRY",   # better handling of exceptions
+    "W",     # pycodestyle warnings
+    "YTT",   # year2020: python3 version checks
+    "UP",    # pyupgrade
 ]
-ignore = [
-    "COM812"
-]
+ignore = ["COM812"]
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -188,4 +187,4 @@ testpaths = ["tests"]
 exclude-newer = "7 days"
 
 [tool.uv.audit]
-malware-check=true
+malware-check = true
