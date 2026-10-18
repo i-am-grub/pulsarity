@@ -7,12 +7,13 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 
-from pulsarity import __version__ as release
+import pulsarity
 
 project = "Pulsarity"
 copyright = "2024, Bryce Gruber"
 author = "Bryce Gruber"
-version = ".".join(release.split(".")[:3])
+version = pulsarity.version.base_version
+release = pulsarity.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
