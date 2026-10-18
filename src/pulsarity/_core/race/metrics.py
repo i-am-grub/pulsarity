@@ -27,7 +27,7 @@ def calculate_num_laps(lap_data: Sequence[FullLapData], holeshot: bool = False) 
     return max(num_laps, 0)
 
 
-def calculate_total_time(
+def calculate_total_time_ms(
     sorted_lap_data: Sequence[FullLapData], holeshot: bool = False
 ) -> int:
     """
@@ -50,7 +50,7 @@ def calculate_total_time(
     return 0
 
 
-def calculate_average_lap_time(
+def calculate_average_lap_time_ms(
     sorted_lap_data: Sequence[FullLapData], holeshot: bool = False
 ) -> int | None:
     """
@@ -60,7 +60,7 @@ def calculate_average_lap_time(
     :param holeshot: Holeshot active, defaults to False
     :return: The average time in milliseconds
     """
-    total_time = calculate_total_time(sorted_lap_data, holeshot)
+    total_time = calculate_total_time_ms(sorted_lap_data, holeshot)
     num_laps = calculate_num_laps(sorted_lap_data, holeshot)
 
     if total_time and num_laps:
@@ -69,7 +69,7 @@ def calculate_average_lap_time(
     return None
 
 
-def calculate_fastest_time(
+def calculate_fastest_time_ms(
     sorted_lap_data: Iterable[FullLapData], holeshot: bool = False
 ) -> int | None:
     """
@@ -106,7 +106,7 @@ class ConsecutiveMetric(NamedTuple):
     """
 
     consec_base: int
-    consec_time: int
+    consec_time_ms: int
 
 
 def calculate_fastest_consecutive_metric(

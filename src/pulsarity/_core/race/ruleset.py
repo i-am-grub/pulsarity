@@ -202,14 +202,14 @@ class LapsManager(ABC):
         """
         return metrics.calculate_num_laps(self._primary_laps.values(), holeshot)
 
-    def get_total_time(self, holeshot: bool = False) -> int:
+    def get_total_time_ms(self, holeshot: bool = False) -> int:
         """
         Get the total time
 
         :param holeshot: Holeshot active, defaults to False
         :return: The total time
         """
-        return metrics.calculate_total_time(self._primary_laps.values(), holeshot)
+        return metrics.calculate_total_time_ms(self._primary_laps.values(), holeshot)
 
     def get_average_lap_time(self, holeshot: bool = False) -> int | None:
         """
@@ -218,7 +218,9 @@ class LapsManager(ABC):
         :param holeshot: Holeshot active, defaults to False
         :return: The average time
         """
-        return metrics.calculate_average_lap_time(self._primary_laps.values(), holeshot)
+        return metrics.calculate_average_lap_time_ms(
+            self._primary_laps.values(), holeshot
+        )
 
     def get_fastest_time(self, holeshot: bool = False) -> int | None:
         """
@@ -227,7 +229,7 @@ class LapsManager(ABC):
         :param holeshot: Holeshot active, defaults to False
         :return: The time associated with the fastest lap
         """
-        return metrics.calculate_fastest_time(self._primary_laps.values(), holeshot)
+        return metrics.calculate_fastest_time_ms(self._primary_laps.values(), holeshot)
 
     def get_fastest_consecutive_metric(
         self,

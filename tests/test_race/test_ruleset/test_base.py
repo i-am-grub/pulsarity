@@ -109,13 +109,13 @@ def test_all_metrics():
     metrics = manager.get_combined_metrics()
     assert metrics is not None
     assert metrics.total_laps == manager.get_num_laps()
-    assert metrics.total_time_ms == manager.get_total_time()
+    assert metrics.total_time_ms == manager.get_total_time_ms()
     assert metrics.average_lap_time_ms == manager.get_average_lap_time()
     assert metrics.fastest_time_ms == manager.get_fastest_time()
     consec_metrics = manager.get_fastest_consecutive_metric()
     assert consec_metrics is not None
     assert metrics.fastest_consec_base == consec_metrics.consec_base
-    assert metrics.fastest_consec_time_ms == consec_metrics.consec_time
+    assert metrics.fastest_consec_time_ms == consec_metrics.consec_time_ms
 
 
 def test_all_metrics_holeshot():
@@ -140,13 +140,13 @@ def test_all_metrics_holeshot():
     metrics = manager.get_combined_metrics(True)
     assert metrics is not None
     assert metrics.total_laps == manager.get_num_laps(True)
-    assert metrics.total_time_ms == manager.get_total_time(True)
+    assert metrics.total_time_ms == manager.get_total_time_ms(True)
     assert metrics.average_lap_time_ms == manager.get_average_lap_time(True)
     assert metrics.fastest_time_ms == manager.get_fastest_time(True)
     consec_metrics = manager.get_fastest_consecutive_metric(True)
     assert consec_metrics is not None
     assert metrics.fastest_consec_base == consec_metrics.consec_base
-    assert metrics.fastest_consec_time_ms == consec_metrics.consec_time
+    assert metrics.fastest_consec_time_ms == consec_metrics.consec_time_ms
 
 
 def test_laps_manager_fastest():
