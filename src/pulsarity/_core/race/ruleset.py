@@ -202,7 +202,7 @@ class LapsManager(ABC):
         """
         return metrics.calculate_num_laps(self._primary_laps.values(), holeshot)
 
-    def get_total_time(self, holeshot: bool = False) -> float:
+    def get_total_time(self, holeshot: bool = False) -> int:
         """
         Get the total time
 
@@ -211,7 +211,7 @@ class LapsManager(ABC):
         """
         return metrics.calculate_total_time(self._primary_laps.values(), holeshot)
 
-    def get_average_lap_time(self, holeshot: bool = False) -> float | None:
+    def get_average_lap_time(self, holeshot: bool = False) -> int | None:
         """
         Get the average lap time
 
@@ -220,7 +220,7 @@ class LapsManager(ABC):
         """
         return metrics.calculate_average_lap_time(self._primary_laps.values(), holeshot)
 
-    def get_fastest_time(self, holeshot: bool = False) -> float | None:
+    def get_fastest_time(self, holeshot: bool = False) -> int | None:
         """
         Get the fastest lap time
 
@@ -364,11 +364,11 @@ class SoloResultData(ResultData):
     """
 
     total_laps: int
-    total_time: float
-    average_lap_time: float
-    fastest_time: float
+    total_time_ms: int
+    average_lap_time_ms: int
+    fastest_time_ms: int
     fastest_consec_base: int
-    fastest_consec_time: float
+    fastest_consec_time_ms: int
 
 
 class RaceRuleset[T: ResultData](ABC):
@@ -518,5 +518,4 @@ def register_ruleset(interface_class: type[RaceRuleset]) -> type[RaceRuleset]:
     :param interface_class: The race ruleset class to register
     :return: The registered race ruleset
     """
-    RaceRulesetManager.register(interface_class)
-    return interface_class
+    return RaceRulesetManager.register(interface_class)

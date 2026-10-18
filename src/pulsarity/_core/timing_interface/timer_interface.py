@@ -22,8 +22,8 @@ class BasicSignalData(NamedTuple):
     other parts of the system
     """
 
-    timedelta: float
-    """The time of processing the value"""
+    millis: int
+    """Time of processing after race start (milliseconds)"""
     node_index: int
     """Index of the node"""
     value: float
@@ -38,8 +38,8 @@ class BasicLapData(NamedTuple):
     other parts of the system
     """
 
-    timedelta: float
-    """The time of processing the value"""
+    millis: int
+    """Time of processing after race start (milliseconds)"""
     node_index: int
     """Index of the node"""
     timer_identifier: str

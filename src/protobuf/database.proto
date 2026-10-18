@@ -60,11 +60,7 @@ message Heats {
     repeated Heat heats = 1;
 }
 
-message SignalRecord {
-    float timedelta = 1;
-    float value = 2;
-}
-
 message SignalHistory {
-    repeated SignalRecord records = 1;
+    repeated uint32 millis = 1;
+    repeated float value = 2;
 }

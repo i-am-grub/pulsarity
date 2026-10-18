@@ -40,7 +40,7 @@ class FullSignalData(NamedTuple):
     other parts of the system
     """
 
-    timedelta: float
+    millis: int
     """The time of processing the value"""
     node_index: int
     """Index of the node"""
@@ -67,7 +67,7 @@ class FullLapData(NamedTuple):
     other parts of the system
     """
 
-    timedelta: float
+    millis: int
     """The time of processing the value"""
     node_index: int
     """Index of the node"""

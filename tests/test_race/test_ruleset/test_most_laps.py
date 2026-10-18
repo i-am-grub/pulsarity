@@ -17,34 +17,34 @@ def test_most_laps_ruleset():
     ruleset = MostLapsRuleset(race_format)
 
     # Test adding 1 lap
-    lap1 = FullLapData(1.0, 0, "foo", 0)
+    lap1 = FullLapData(1000, 0, "foo", 0)
     id_ = ruleset.add_lap_record(0, lap1)
     assert id_ == 0
-    assert not ruleset.is_slot_done(0)
+    assert ruleset.is_slot_done(0) is False
 
     # Test adding 2 laps (slot not finished)
-    lap2 = FullLapData(3.0, 0, "foo", 0)
+    lap2 = FullLapData(3000, 0, "foo", 0)
     id_ = ruleset.add_lap_record(0, lap2)
     assert id_ == 1
-    assert not ruleset.is_slot_done(0)
+    assert ruleset.is_slot_done(0) is False
 
     # Test adding 3 laps (slot finished)
-    lap3 = FullLapData(5.0, 0, "foo", 0)
+    lap3 = FullLapData(5000, 0, "foo", 0)
     id_ = ruleset.add_lap_record(0, lap3)
     assert id_ == 2
-    assert ruleset.is_slot_done(0)
+    assert ruleset.is_slot_done(0) is True
 
     # Test adding second slot (4 laps)
-    lap4 = FullLapData(2.0, 1, "foo", 0)
+    lap4 = FullLapData(2000, 1, "foo", 0)
     id_ = ruleset.add_lap_record(1, lap4)
     assert id_ == 3
-    assert not ruleset.is_slot_done(1)
+    assert ruleset.is_slot_done(1) is False
 
     # Test adding additional lap for second slot (slot not finished)
-    lap5 = FullLapData(4.0, 1, "foo", 0)
+    lap5 = FullLapData(4000, 1, "foo", 0)
     id_ = ruleset.add_lap_record(1, lap5)
     assert id_ == 4
-    assert not ruleset.is_slot_done(1)
+    assert ruleset.is_slot_done(1) is False
 
     # Check race results
     results = ruleset.get_race_results()
@@ -54,10 +54,10 @@ def test_most_laps_ruleset():
     assert results[1].position == 2
 
     # Add additional lap to change results
-    lap6 = FullLapData(4.5, 1, "foo", 0)
+    lap6 = FullLapData(4500, 1, "foo", 0)
     id_ = ruleset.add_lap_record(1, lap6)
     assert id_ == 5
-    assert ruleset.is_slot_done(1)
+    assert ruleset.is_slot_done(1) is True
 
     # Verify results changed as expected
     results = ruleset.get_race_results()
@@ -90,7 +90,7 @@ def test_most_laps_ruleset():
     assert results[1].position == 2
 
     # Test adding lap out of timed order (last lap was at 4.5)
-    lap7 = FullLapData(1.0, 1, "foo", 0)
+    lap7 = FullLapData(1000, 1, "foo", 0)
     id_ = ruleset.add_lap_record(1, lap7)
     assert id_ == 6
 

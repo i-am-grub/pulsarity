@@ -44,11 +44,11 @@ class Lap(_PulsarityBase):
 
         app = "event"
         table = "lap"
-        unique_together = (("slot", "timedelta", "timer_index"),)
+        unique_together = (("slot", "millis", "timer_index"),)
 
     slot: fields.ForeignKeyRelation[Slot] = fields.ForeignKeyField("event.Slot", "laps")
     """The slot the lap belongs to"""
-    timedelta = fields.TimeDeltaField()
+    millis = fields.IntegerField()
     """The time delta from race start"""
     timer_index = fields.IntField()
     """The index of the timer the lap was recorded from"""

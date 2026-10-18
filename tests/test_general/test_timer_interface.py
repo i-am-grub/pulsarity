@@ -48,7 +48,7 @@ class TestTimerInterface(TimerInterface):
     def add_lap(self):
         if self.lap_queue is not None:
             data = BasicLapData(
-                timedelta=time.monotonic(),
+                millis=time.monotonic_ns() // 1_000_000,
                 node_index=0,
                 timer_identifier=self.identifier,
             )
@@ -58,7 +58,7 @@ class TestTimerInterface(TimerInterface):
     def add_signal(self, value: float):
         if self.signal_queue is not None:
             data = BasicSignalData(
-                timedelta=time.monotonic(),
+                millis=time.monotonic_ns() // 1_000_000,
                 node_index=0,
                 value=value,
                 timer_identifier=self.identifier,

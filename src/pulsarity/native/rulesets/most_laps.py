@@ -78,14 +78,14 @@ class _MostLapsManager(LapsManager):
         if self._primary_laps:
             primary_laps = len(self._primary_laps)
             last_lap = self._primary_laps.values()[-1]
-            last_timestamp = last_lap.timedelta
+            last_timestamp = last_lap.millis
 
         if self._split_laps:
             last_split = self._split_laps.values()[-1]
 
-            if last_split.timedelta > last_timestamp:
+            if last_split.millis > last_timestamp:
                 last_index = last_split.timer_index
-                last_timestamp = last_split.timedelta
+                last_timestamp = last_split.millis
 
         self._score = (primary_laps, last_index, -last_timestamp)
 
@@ -98,7 +98,7 @@ class MostLapsRuleset(RaceRuleset[SoloResultData]):
     ruleset to enforce the most laps ruleset
     """
 
-    __slots__ = ("_cache", "_count", "_format", "_lap_data")
+    __slots__ = ("_cache", "_count", "_format", "_lap_data", "_race_time_millis")
 
     __meta__ = RulesetMeta(
         uid="most_laps",
@@ -113,12 +113,10 @@ class MostLapsRuleset(RaceRuleset[SoloResultData]):
         self._lap_data: dict[int, _MostLapsManager] = defaultdict(_MostLapsManager)
         self._cache: dict[int, SlotResult[SoloResultData]] = {}
         self._count = count()
+        self._race_time_millis = self._format.race_time_sec * 1000
 
     def add_lap_record(self, slot, record):
-        if (
-            self._format.overtime_sec == 0
-            and record.timedelta >= self._format.race_time_sec
-        ):
+        if self._format.overtime_sec == 0 and record.millis >= self._race_time_millis:
             return None
 
         id_ = next(self._count)
@@ -134,7 +132,7 @@ class MostLapsRuleset(RaceRuleset[SoloResultData]):
         slot_data = self._lap_data[slot_num]
         last_lap = slot_data.get_last_primary_lap()
         if last_lap is not None:
-            return last_lap.timedelta > self._format.race_time_sec
+            return last_lap.millis > self._race_time_millis
         return False
 
     def all_slots_finished(self):

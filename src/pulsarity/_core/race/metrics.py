@@ -29,58 +29,49 @@ def calculate_num_laps(lap_data: Sequence[FullLapData], holeshot: bool = False) 
 
 def calculate_total_time(
     sorted_lap_data: Sequence[FullLapData], holeshot: bool = False
-) -> float:
+) -> int:
     """
     Get the total time
 
     :param sorted_lap_data: A sequence of sorted lap data
     :param holeshot: Holeshot active, defaults to False
-    :return: The total time
+    :return: The total time in milliseconds
     """
     if sorted_lap_data:
         last_lap = sorted_lap_data[-1]
-        last_time = last_lap.timedelta
+        last_time = last_lap.millis
 
         if holeshot:
             first_lap = sorted_lap_data[0]
-            return last_time - first_lap.timedelta
+            return last_time - first_lap.millis
 
         return last_time
 
-    return 0.0
+    return 0
 
 
 def calculate_average_lap_time(
     sorted_lap_data: Sequence[FullLapData], holeshot: bool = False
-) -> float | None:
+) -> int | None:
     """
     Get the average lap time
 
     :param sorted_lap_data: A sequence of sorted lap data
     :param holeshot: Holeshot active, defaults to False
-    :return: The average time
+    :return: The average time in milliseconds
     """
     total_time = calculate_total_time(sorted_lap_data, holeshot)
     num_laps = calculate_num_laps(sorted_lap_data, holeshot)
 
     if total_time and num_laps:
-        return total_time / num_laps
+        return total_time // num_laps
 
     return None
 
 
-class ConsecutiveMetric(NamedTuple):
-    """
-    Number of laps and the time associated with consecutive laps
-    """
-
-    consec_base: int
-    consec_time: float
-
-
 def calculate_fastest_time(
     sorted_lap_data: Iterable[FullLapData], holeshot: bool = False
-) -> float | None:
+) -> int | None:
     """
     Get the fastest lap time
 
@@ -89,24 +80,33 @@ def calculate_fastest_time(
     :return: The time associated with the fastest lap
     """
     fastest_time = float("inf")
-    prev_time: float = 0.0
-    num_laps: int = 0
+    prev_time = 0
+    num_laps = 0
 
     start = 0 if holeshot else 1
     for num_laps, lap in enumerate(sorted_lap_data, start):
         if not num_laps:
-            prev_time = lap.timedelta
+            prev_time = lap.millis
             continue
 
-        time_diff = lap.timedelta - prev_time
-        prev_time = lap.timedelta
+        time_diff = lap.millis - prev_time
+        prev_time = lap.millis
 
         fastest_time = min(fastest_time, time_diff)
 
     if not num_laps:
         return None
 
-    return fastest_time
+    return int(fastest_time)
+
+
+class ConsecutiveMetric(NamedTuple):
+    """
+    Number of laps and the time associated with consecutive laps
+    """
+
+    consec_base: int
+    consec_time: int
 
 
 def calculate_fastest_consecutive_metric(
@@ -131,7 +131,7 @@ def calculate_fastest_consecutive_metric(
         return None
     return ConsecutiveMetric(
         metrics.fastest_consec_base,
-        metrics.fastest_consec_time,
+        metrics.fastest_consec_time_ms,
     )
 
 
@@ -142,11 +142,11 @@ class CombinedMetrics(NamedTuple):
     """
 
     total_laps: int
-    total_time: float
-    average_lap_time: float
-    fastest_time: float
+    total_time_ms: int
+    average_lap_time_ms: int
+    fastest_time_ms: int
     fastest_consec_base: int
-    fastest_consec_time: float
+    fastest_consec_time_ms: int
 
 
 def calculate_combined_metrics(
@@ -174,22 +174,22 @@ def calculate_combined_metrics(
     fastest_time = float("inf")
     fastest_consec_time = float("inf")
 
-    prev_time: float = 0.0
-    windowed_time: float = 0.0
-    num_laps: int = 0
-    total_time: float = 0.0
+    prev_time = 0
+    windowed_time = 0.0
+    num_laps = 0
+    total_time = 0
 
     start = 0 if holeshot else 1
     for num_laps, lap in enumerate(sorted_lap_data, start):
         if not num_laps:
-            prev_time = lap.timedelta
+            prev_time = lap.millis
             continue
 
-        time_diff = lap.timedelta - prev_time
+        time_diff = lap.millis - prev_time
         store.append(time_diff)
         windowed_time += time_diff
         total_time += time_diff
-        prev_time = lap.timedelta
+        prev_time = lap.millis
 
         fastest_time = min(fastest_time, time_diff)
 
@@ -206,8 +206,8 @@ def calculate_combined_metrics(
     return CombinedMetrics(
         num_laps,
         total_time,
-        total_time / num_laps,
-        fastest_time,
+        total_time // num_laps,
+        int(fastest_time),
         consec_laps_,
-        fastest_consec_time,
+        int(fastest_consec_time),
     )

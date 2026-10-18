@@ -19,6 +19,7 @@ from pulsarity._core.database import (
     SignalHistory,
     Slot,
 )
+from pulsarity._core.race.manager import _SignalHistory, _sort_history
 
 
 @pytest.mark.asyncio
@@ -227,16 +228,17 @@ async def test_basic_lap(basic_slot: Slot):
     """
     Test creating and deleting laps under a parent slot
     """
-    delta = dt.timedelta(seconds=1)
+
+    millis = 1000
 
     lap1 = await Lap.create(
-        slot=basic_slot, timedelta=delta, timer_index=0, timer_identifier="foo"
+        slot=basic_slot, millis=millis, timer_index=0, timer_identifier="foo"
     )
     num_laps = await basic_slot.laps.all().count()
     assert num_laps == 1
 
     lap2 = await Lap.create(
-        slot=basic_slot, timedelta=delta, timer_index=1, timer_identifier="foo"
+        slot=basic_slot, millis=millis, timer_index=1, timer_identifier="foo"
     )
     num_laps = await basic_slot.laps.all().count()
     assert num_laps == 2
@@ -252,15 +254,15 @@ async def test_unique_lap(basic_slot: Slot):
     """
     Test creating a lap with non-unique parameters
     """
-    delta = dt.timedelta(seconds=1)
+    millis = 1000
 
     await Lap.create(
-        slot=basic_slot, timedelta=delta, timer_index=0, timer_identifier="foo"
+        slot=basic_slot, millis=millis, timer_index=0, timer_identifier="foo"
     )
 
     with pytest.raises(IntegrityError):
         await Lap.create(
-            slot=basic_slot, timedelta=delta, timer_index=0, timer_identifier="foo"
+            slot=basic_slot, millis=millis, timer_index=0, timer_identifier="foo"
         )
 
 
@@ -272,9 +274,9 @@ async def test_cascade_delete(basic_slot: Slot):
     slot = await Slot.get_by_id(basic_slot.id)
     assert slot is not None
 
-    delta = dt.timedelta(seconds=1)
+    millis = 1000
     lap = await Lap.create(
-        slot=basic_slot, timedelta=delta, timer_index=0, timer_identifier="foo"
+        slot=basic_slot, millis=millis, timer_index=0, timer_identifier="foo"
     )
     assert await Lap.get_by_id(lap.id) is not None
 
@@ -306,16 +308,19 @@ async def test_slot_history(basic_slot: Slot):
     Test raceclass deletion as a result of event deletion
     """
     num = 5
-    records = (
-        database_pb2.SignalRecord(timedelta=0.1 * i, value=i * 0.1) for i in range(num)
-    )
+    history = _SignalHistory(list(range(num)), [0.1 * i for i in range(num)])
+    sorted_history = _sort_history(history)
+
     history = await SignalHistory.create(
         slot=basic_slot,
-        history=database_pb2.SignalHistory(records=records),
+        history=database_pb2.SignalHistory(
+            millis=sorted_history.millis, value=sorted_history.value
+        ),
         timer_identifier="foo",
         timer_timer_index=0,
         timer_index=1,
     )
 
     assert history.id
-    assert len(history.history.records) == num
+    assert len(history.history.millis) == num
+    assert len(history.history.value) == num

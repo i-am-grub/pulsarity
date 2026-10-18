@@ -3,8 +3,8 @@ Race state/timing management
 """
 
 import asyncio
-import datetime as dt
 from collections import defaultdict
+from dataclasses import dataclass, field
 from functools import partial
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -22,9 +22,28 @@ if TYPE_CHECKING:
     )
 
 
-class _SignalRecord(NamedTuple):
-    timedelta: float
-    value: float
+@dataclass(frozen=True, slots=True)
+class _SignalHistory:
+    millis: list[int] = field(default_factory=list)
+    value: list[float] = field(default_factory=list)
+
+
+class _SignalHistoryTuple(NamedTuple):
+    millis: tuple[int, ...]
+    value: tuple[float, ...]
+
+
+def _sort_history(history: _SignalHistory) -> _SignalHistoryTuple:
+    """
+    Sort the history based on the millis
+    """
+
+    return _SignalHistoryTuple(
+        *zip(*sorted(zip(history.millis, history.value, strict=True)), strict=True)
+    )
+
+
+SlotData = dict[tuple[int, str], _SignalHistory]
 
 
 class RaceManager:
@@ -39,8 +58,8 @@ class RaceManager:
         """The underlying race state manager"""
         self._save_lock = asyncio.Lock()
         """Save in progress lock"""
-        self._signal_data: dict[int, dict[tuple[int, str], list[_SignalRecord]]] = (
-            defaultdict(partial(defaultdict, list))
+        self._signal_data: dict[int, SlotData] = defaultdict(
+            partial(defaultdict, _SignalHistory)
         )
         """Race signal data storage"""
         self._ruleset: RaceRuleset | None = None
@@ -156,8 +175,9 @@ class RaceManager:
         :param record: The signal record to store
         """
         key = (record.timer_index, record.timer_identifier)
-        record_ = _SignalRecord(record.timedelta, record.value)
-        self._signal_data[record.node_index][key].append(record_)
+        a = self._signal_data[record.node_index][key]
+        a.millis.append(record.millis)
+        a.value.append(record.value)
 
     def status_aware_signal_record(self, record: FullSignalData) -> None:
         """
@@ -193,7 +213,7 @@ class RaceManager:
             laps = (
                 Lap(
                     slot_id=lap.node_index,
-                    time=dt.timedelta(seconds=lap.timedelta),
+                    millis=lap.millis,
                     timer_index=lap.timer_index,
                     timer_identifier=lap.timer_identifier,
                 )
@@ -206,30 +226,27 @@ class RaceManager:
 
     async def _save_signal_data(self) -> None:
         """
-        Saves the signal history to the database
+        Saves the signal history to the database. Each history is lazily processed
+        before it is written to the database.
         """
 
-        def signal_history_protobuf(signal_data: list[_SignalRecord]):
-            for record in signal_data:
-                yield database_pb2.SignalRecord(
-                    timedelta=record.timedelta,
-                    value=record.value,
+        def generate_slot_history(slot: int, slot_data: SlotData):
+            for (idx, ident), history in slot_data.items():
+                sorted_history = _sort_history(history)
+                yield SignalHistory(
+                    slot_id=slot,
+                    timer_index=idx,
+                    timer_identifier=ident,
+                    history=database_pb2.SignalHistory(
+                        millis=sorted_history.millis, value=sorted_history.value
+                    ),
                 )
 
-        def get_slot_data():
-            for slot, data_ in self._signal_data.items():
-                for (idx, ident), data in data_.items():
-                    data.sort()
-                    history = signal_history_protobuf(data)
-                    yield SignalHistory(
-                        slot_id=slot,
-                        timer_index=idx,
-                        timer_identifier=ident,
-                        history=database_pb2.SignalHistory(records=history),
-                    )
+        def generate_slot_data():
+            for slot, slot_data in self._signal_data.items():
+                yield from generate_slot_history(slot, slot_data)
 
-        if self._signal_data:
-            await SignalHistory.bulk_create(get_slot_data(), batch_size=5)
+        await SignalHistory.bulk_create(generate_slot_data(), batch_size=5)
 
     async def save_race_data(self) -> None:
         """
