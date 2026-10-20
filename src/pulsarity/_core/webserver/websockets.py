@@ -4,7 +4,8 @@ Webserver Websocket Connections
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING
+from enum import Enum
+from typing import TYPE_CHECKING, NamedTuple
 
 from google.protobuf.message import DecodeError
 from starlette.routing import BaseRoute, WebSocketRoute
@@ -56,6 +57,25 @@ class _WebSocketConnTracker:
 
 
 conn_tracker = _WebSocketConnTracker()
+
+
+class _WebsocketClosureInfo(NamedTuple):
+    """
+    Websocket closure status and message pairing
+    """
+
+    code: WebSocketStatusCodes
+    message: str
+
+
+class _WebsocketClosure(_WebsocketClosureInfo, Enum):
+    """
+    Enum for different types of websocket closures
+    """
+
+    NORMAL_CLOSURE = WebSocketStatusCodes.NORMAL_CLOSURE, "standard client disconnect"
+    GOING_AWAY = WebSocketStatusCodes.GOING_AWAY, "server shutting down"
+    INTERNAL_ERROR = WebSocketStatusCodes.INTERNAL_ERROR, "internal server error"
 
 
 async def send_event_data() -> None:
@@ -154,7 +174,7 @@ async def ws_connection(
     :param rev_coro_func: The coroutine function to use for handling incoming data
     from the connected client
     """
-    close_info = WebSocketStatusCodes.NORMAL_CLOSURE, "standard client disconnect"
+    close_info = _WebsocketClosure.NORMAL_CLOSURE
 
     await websocket.accept(headers=[(b"Content-Type", b"application/x-protobuf")])
 
@@ -175,7 +195,7 @@ async def ws_connection(
             recv_task.cancel()
             send_task.cancel()
 
-        close_info = WebSocketStatusCodes.GOING_AWAY, "server shutting down"
+        close_info = _WebsocketClosure.GOING_AWAY
 
     except* WebSocketDisconnect:
         logger.debug(
@@ -184,7 +204,7 @@ async def ws_connection(
         )
 
     except* BaseException:
-        close_info = WebSocketStatusCodes.INTERNAL_ERROR, "internal server error"
+        close_info = _WebsocketClosure.INTERNAL_ERROR
         raise
 
     finally:
@@ -194,7 +214,7 @@ async def ws_connection(
         ctx.user_permsissions_ctx.reset(permission_token)
 
 
-@requires(SystemDefaultPerms.SIMPLEX_WEBSOCKET)
+@requires(SystemDefaultPerms.READ_WEBSOCKET)
 async def simplex_ws(websocket: PulsarityWebsocket):
     """
     The simplex event websocket connection for clients.
@@ -203,7 +223,7 @@ async def simplex_ws(websocket: PulsarityWebsocket):
     if the server is signalled to shut down.
     """
     if ws_shutdown_evt.is_set():
-        await websocket.close(WebSocketStatusCodes.GOING_AWAY, "server shutting down")
+        await websocket.close(*_WebsocketClosure.GOING_AWAY)
         return
 
     user: PulsarityUser = websocket.user
@@ -214,7 +234,7 @@ async def simplex_ws(websocket: PulsarityWebsocket):
         await ws_connection(websocket, simplex_recieve_event_data)
 
 
-@requires(SystemDefaultPerms.DUPLEX_WEBSOCKET)
+@requires((SystemDefaultPerms.READ_WEBSOCKET, SystemDefaultPerms.WRITE_WEBSOCKET))
 async def duplex_ws(websocket: PulsarityWebsocket):
     """
     The full duplex event websocket connection for clients
@@ -223,7 +243,7 @@ async def duplex_ws(websocket: PulsarityWebsocket):
     if the server is signalled to shut down.
     """
     if ws_shutdown_evt.is_set():
-        await websocket.close(WebSocketStatusCodes.GOING_AWAY, "server shutting down")
+        await websocket.close(*_WebsocketClosure.GOING_AWAY)
         return
 
     user: PulsarityUser = websocket.user

@@ -80,7 +80,7 @@ class Role(_PulsarityBase):
                 SystemDefaultPerms.READ_RACECLASS,
                 SystemDefaultPerms.READ_ROUND,
                 SystemDefaultPerms.READ_HEAT,
-                SystemDefaultPerms.SIMPLEX_WEBSOCKET,
+                SystemDefaultPerms.READ_WEBSOCKET,
             ]
             permissions = await Permission.filter(value__in=perm_values)
             await unauth_role.permissions.add(*permissions)

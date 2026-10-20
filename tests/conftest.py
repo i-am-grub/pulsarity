@@ -31,7 +31,7 @@ from pulsarity._core.user_interface.elements import (
     UIMarkdownField,
     UIValueField,
 )
-from pulsarity._core.user_interface.pages import UIMainPage, UIPage, UISubPage
+from pulsarity._core.user_interface.pages import UIPage
 from pulsarity._core.utils import background
 from pulsarity._core.utils.config import PulsarityConfig
 from pulsarity._core.webserver import application
@@ -50,9 +50,7 @@ def clear_register():
     UIMarkdownField._clear_registered()
     UIButtonField._clear_registered()
     UIValueField._clear_registered()
-    UIPage._reset_pages()
-    UIMainPage._clear_registered()
-    UISubPage._clear_registered()
+    UIPage._clear_registered()
 
 
 @pytest_asyncio.fixture(autouse=True)

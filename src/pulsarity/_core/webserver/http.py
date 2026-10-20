@@ -31,8 +31,7 @@ from pulsarity._core.user_interface.elements import (
     UIValueField,
 )
 from pulsarity._core.user_interface.pages import (
-    UIMainPage,
-    UISubPage,
+    UIPage,
 )
 from pulsarity._core.utils import config
 from pulsarity._core.webserver._status_codes import HTTPStatusCodes
@@ -408,7 +407,7 @@ async def get_server_info() -> Response:
     packs = pulsarity_localization.get_language_packs()
 
     message = http_pb2.ServerData(
-        version=pulsarity.__version__,
+        version=pulsarity.version.public,
         server_name=configs.general.server_name,
         language_version=pulsarity_localization.__version__,
         language_packs=packs,
@@ -445,24 +444,13 @@ async def get_localization_pack(path: _LocalizationPack) -> Response:
 
 
 @endpoint(requires_auth=True)
-async def get_main_pages() -> Response:
+async def get_pages() -> Response:
     """
-    Get the stored ui main page data.
+    Get the stored ui page data.
 
     Data is filtered based on user permissions.
     """
-    response = UIMainPage.store_to_message()
-    return ProtobufResponse(response)
-
-
-@endpoint(requires_auth=True)
-async def get_sub_pages() -> Response:
-    """
-    Get the stored ui sub page data.
-
-    Data is filtered based on user permissions.
-    """
-    response = UISubPage.store_to_message()
+    response = UIPage.store_to_message()
     return ProtobufResponse(response)
 
 
@@ -522,15 +510,13 @@ async def get_value_fields() -> Response:
 
 
 @endpoint(requires_auth=True)
-async def get_all_ui() -> Response:
+async def get_all_elements() -> Response:
     """
     Load all user interface data from the server.
 
     Data is filtered based on user permissions.
     """
     response = ui_pb2.UIData(
-        pages=UIMainPage.store_to_message(),
-        sub_pages=UISubPage.store_to_message(),
         mappings=UIETree.mappings_to_message(),
         etrees=UIETree.store_to_message(),
         markdown=UIMarkdownField.store_to_message(),
@@ -557,12 +543,11 @@ ROUTES: list[BaseRoute] = [
     Route("/heats/{id:int}", endpoint=get_heat),
     Route("/server-info", endpoint=get_server_info),
     Route("/localization-pack/{key:str}", endpoint=get_localization_pack),
-    Route("/main-pages", endpoint=get_main_pages),
-    Route("/sub-pages", endpoint=get_sub_pages),
+    Route("/ui-pages", endpoint=get_pages),
     Route("/etree-mappings", endpoint=get_etree_mappings),
     Route("/etrees", endpoint=get_etrees),
     Route("/markdown-fields", endpoint=get_markdown_fields),
     Route("/button-fields", endpoint=get_button_fields),
     Route("/value-fields", endpoint=get_value_fields),
-    Route("/all-ui", endpoint=get_all_ui),
+    Route("/all-elements", endpoint=get_all_elements),
 ]

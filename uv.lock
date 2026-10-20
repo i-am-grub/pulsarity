@@ -887,7 +887,7 @@ requires-dist = [
     { name = "idna", specifier = "==3.20" },
     { name = "iso8601", specifier = "==2.1.0" },
     { name = "itsdangerous", specifier = "==2.2.0" },
-    { name = "packaging", specifier = ">=26.3" },
+    { name = "packaging", specifier = "==26.3" },
     { name = "protobuf", specifier = "==7.36.2" },
     { name = "pulsarity-localization", git = "https://github.com/i-am-grub/pulsarity-localization?branch=master" },
     { name = "pycparser", specifier = "==3.11" },

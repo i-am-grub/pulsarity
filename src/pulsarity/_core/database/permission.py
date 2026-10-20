@@ -69,9 +69,9 @@ class SystemDefaultPerms(UserPermission):
     AUTHENTICATED = auto()
     """Permission to force user authentication"""
 
-    SIMPLEX_WEBSOCKET = auto()
+    READ_WEBSOCKET = auto()
     """Permission to user the simplex websocket (listen to server events)"""
-    DUPLEX_WEBSOCKET = auto()
+    WRITE_WEBSOCKET = auto()
     """Permission to use the duplex websocket"""
 
     SYSTEM_CONTROL = auto()

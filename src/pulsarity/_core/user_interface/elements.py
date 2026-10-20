@@ -37,7 +37,7 @@ class UIElementUpdate(SystemEventData):
 
     event_id: ClassVar = websocket_pb2.EVENT_UI_UPDATE
     priority: ClassVar = EvtPriority.LOW
-    permission: ClassVar = SystemDefaultPerms.SIMPLEX_WEBSOCKET
+    permission: ClassVar = SystemDefaultPerms.READ_WEBSOCKET
 
     ui_element: UIElement
 

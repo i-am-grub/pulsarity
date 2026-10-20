@@ -75,22 +75,18 @@ class UIButtonFields(_message.Message):
     def __init__(self, fields: _Optional[_Iterable[_Union[UIButtonField, _Mapping]]] = ...) -> None: ...
 
 class UIData(_message.Message):
-    __slots__ = ["buttons", "etrees", "mappings", "markdown", "pages", "sub_pages", "values"]
+    __slots__ = ["buttons", "etrees", "mappings", "markdown", "values"]
     BUTTONS_FIELD_NUMBER: _ClassVar[int]
     ETREES_FIELD_NUMBER: _ClassVar[int]
     MAPPINGS_FIELD_NUMBER: _ClassVar[int]
     MARKDOWN_FIELD_NUMBER: _ClassVar[int]
-    PAGES_FIELD_NUMBER: _ClassVar[int]
-    SUB_PAGES_FIELD_NUMBER: _ClassVar[int]
     VALUES_FIELD_NUMBER: _ClassVar[int]
     buttons: UIButtonFields
     etrees: UIElementTrees
     mappings: UIETreeMapping
     markdown: UIMarkdownFields
-    pages: UIMainPages
-    sub_pages: UISubPages
     values: UIValueFields
-    def __init__(self, pages: _Optional[_Union[UIMainPages, _Mapping]] = ..., sub_pages: _Optional[_Union[UISubPages, _Mapping]] = ..., mappings: _Optional[_Union[UIETreeMapping, _Mapping]] = ..., etrees: _Optional[_Union[UIElementTrees, _Mapping]] = ..., markdown: _Optional[_Union[UIMarkdownFields, _Mapping]] = ..., buttons: _Optional[_Union[UIButtonFields, _Mapping]] = ..., values: _Optional[_Union[UIValueFields, _Mapping]] = ...) -> None: ...
+    def __init__(self, mappings: _Optional[_Union[UIETreeMapping, _Mapping]] = ..., etrees: _Optional[_Union[UIElementTrees, _Mapping]] = ..., markdown: _Optional[_Union[UIMarkdownFields, _Mapping]] = ..., buttons: _Optional[_Union[UIButtonFields, _Mapping]] = ..., values: _Optional[_Union[UIValueFields, _Mapping]] = ...) -> None: ...
 
 class UIETreeMapping(_message.Message):
     __slots__ = ["mapping"]
@@ -145,20 +141,6 @@ class UIElementUpdate(_message.Message):
     value: UIValueField
     def __init__(self, element_type: _Optional[_Union[UIElementType, str]] = ..., element_id: _Optional[int] = ..., etree: _Optional[_Union[UIElementTree, _Mapping]] = ..., markdown: _Optional[_Union[UIMarkdownField, _Mapping]] = ..., button: _Optional[_Union[UIButtonField, _Mapping]] = ..., value: _Optional[_Union[UIValueField, _Mapping]] = ...) -> None: ...
 
-class UIMainPage(_message.Message):
-    __slots__ = ["element_id", "name"]
-    ELEMENT_ID_FIELD_NUMBER: _ClassVar[int]
-    NAME_FIELD_NUMBER: _ClassVar[int]
-    element_id: int
-    name: str
-    def __init__(self, element_id: _Optional[int] = ..., name: _Optional[str] = ...) -> None: ...
-
-class UIMainPages(_message.Message):
-    __slots__ = ["pages"]
-    PAGES_FIELD_NUMBER: _ClassVar[int]
-    pages: _containers.RepeatedCompositeFieldContainer[UIMainPage]
-    def __init__(self, pages: _Optional[_Iterable[_Union[UIMainPage, _Mapping]]] = ...) -> None: ...
-
 class UIMarkdownField(_message.Message):
     __slots__ = ["element_id", "text", "visible"]
     ELEMENT_ID_FIELD_NUMBER: _ClassVar[int]
@@ -175,7 +157,7 @@ class UIMarkdownFields(_message.Message):
     fields: _containers.RepeatedCompositeFieldContainer[UIMarkdownField]
     def __init__(self, fields: _Optional[_Iterable[_Union[UIMarkdownField, _Mapping]]] = ...) -> None: ...
 
-class UISubPage(_message.Message):
+class UIPage(_message.Message):
     __slots__ = ["element_id", "name", "parent_name"]
     ELEMENT_ID_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
@@ -185,11 +167,11 @@ class UISubPage(_message.Message):
     parent_name: str
     def __init__(self, element_id: _Optional[int] = ..., parent_name: _Optional[str] = ..., name: _Optional[str] = ...) -> None: ...
 
-class UISubPages(_message.Message):
+class UIPages(_message.Message):
     __slots__ = ["pages"]
     PAGES_FIELD_NUMBER: _ClassVar[int]
-    pages: _containers.RepeatedCompositeFieldContainer[UISubPage]
-    def __init__(self, pages: _Optional[_Iterable[_Union[UISubPage, _Mapping]]] = ...) -> None: ...
+    pages: _containers.RepeatedCompositeFieldContainer[UIPage]
+    def __init__(self, pages: _Optional[_Iterable[_Union[UIPage, _Mapping]]] = ...) -> None: ...
 
 class UIValueField(_message.Message):
     __slots__ = ["boolean", "datetime", "description", "element_id", "field_type", "number", "select", "text", "visible"]

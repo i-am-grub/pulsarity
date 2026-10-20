@@ -10,9 +10,8 @@ from pulsarity._core._protobuf.ui_pb2 import (
     UIButtonFields,
     UIETreeMapping,
     UIElementTrees,
-    UIMainPages,
     UIMarkdownFields,
-    UISubPages,
+    UIPages,
     UIValueFields,
 )
 from pulsarity._core.database.heat import Heat
@@ -37,7 +36,8 @@ from pulsarity._core.user_interface.elements import (
     UIURLValueField,
     UIValueField,
 )
-from pulsarity._core.user_interface.pages import UIMainPage, UISubPage
+
+from pulsarity._core.user_interface.pages import UIPage
 from pulsarity._core.webserver._status_codes import HTTPStatusCodes
 
 header = {"Content-Type": "application/x-protobuf"}
@@ -633,7 +633,7 @@ async def test_get_main_pages_unauth(client: AsyncClient):
     """
     Test accessing value fields while being unauthenticated
     """
-    response = await client.get("/main-pages")
+    response = await client.get("/ui-pages")
     assert response.status_code == HTTPStatusCodes.UNAUTHORIZED
 
 
@@ -642,80 +642,33 @@ async def test_get_main_pages(authed_client: AsyncClient):
     """
     Test accessing value fields while being authenticated
     """
-    response = await authed_client.get("/main-pages")
+    response = await authed_client.get("/ui-pages")
     assert response.status_code == HTTPStatusCodes.OK
 
 
 @pytest.mark.asyncio
-async def test_get_main_pages_content(authed_client: AsyncClient):
+async def test_get_pages_content(authed_client: AsyncClient):
     """
     Test recieved etree mapping data
     """
-    assert len(UIMainPage._store) == 0
+    assert len(UIPage._store) == 0
 
-    response = await authed_client.get("/main-pages")
+    response = await authed_client.get("/ui-pages")
     assert response.status_code == HTTPStatusCodes.OK
 
-    main_page_container = UIMainPages.FromString(response.content)
+    main_page_container = UIPages.FromString(response.content)
     assert len(main_page_container.pages) == 0
 
     # # Create two main pages
-    UIMainPage("foo", auto_register=True)
-    UIMainPage("bar", auto_register=True)
+    UIPage("foo", auto_register=True)
+    UIPage("bar", auto_register=True)
 
-    assert len(UIMainPage._store) == 2
+    assert len(UIPage._store) == 2
 
-    response = await authed_client.get("/main-pages")
+    response = await authed_client.get("/ui-pages")
     assert response.status_code == HTTPStatusCodes.OK
 
-    main_page_container = UIMainPages.FromString(response.content)
-    assert len(main_page_container.pages) == 2
-    for page in main_page_container.pages:
-        assert page.name in ("foo", "bar")
-
-
-@pytest.mark.asyncio
-async def test_get_sub_pages_unauth(client: AsyncClient):
-    """
-    Test accessing value fields while being unauthenticated
-    """
-    response = await client.get("/sub-pages")
-    assert response.status_code == HTTPStatusCodes.UNAUTHORIZED
-
-
-@pytest.mark.asyncio
-async def test_get_sub_pages(authed_client: AsyncClient):
-    """
-    Test accessing value fields while being authenticated
-    """
-    response = await authed_client.get("/sub-pages")
-    assert response.status_code == HTTPStatusCodes.OK
-
-
-@pytest.mark.asyncio
-async def test_get_sub_pages_content(authed_client: AsyncClient):
-    """
-    Test recieved etree mapping data
-    """
-    assert len(UISubPage._store) == 0
-
-    response = await authed_client.get("/sub-pages")
-    assert response.status_code == HTTPStatusCodes.OK
-
-    sub_page_container = UISubPages.FromString(response.content)
-    assert len(sub_page_container.pages) == 0
-
-    # # Create two main pages
-    main = UIMainPage("main", auto_register=True)
-    UISubPage("foo", main, auto_register=True)
-    UISubPage("bar", main, auto_register=True)
-
-    assert len(UISubPage._store) == 2
-
-    response = await authed_client.get("/sub-pages")
-    assert response.status_code == HTTPStatusCodes.OK
-
-    main_page_container = UISubPages.FromString(response.content)
+    main_page_container = UIPages.FromString(response.content)
     assert len(main_page_container.pages) == 2
     for page in main_page_container.pages:
         assert page.name in ("foo", "bar")
@@ -726,7 +679,7 @@ async def test_get_all_ui_data_unauth(client: AsyncClient):
     """
     Test accessing value fields while being unauthenticated
     """
-    response = await client.get("/all-ui")
+    response = await client.get("/all-elements")
     assert response.status_code == HTTPStatusCodes.UNAUTHORIZED
 
 
@@ -735,5 +688,5 @@ async def test_get_all_ui_data(authed_client: AsyncClient):
     """
     Test accessing value fields while being authenticated
     """
-    response = await authed_client.get("/all-ui")
+    response = await authed_client.get("/all-elements")
     assert response.status_code == HTTPStatusCodes.OK
