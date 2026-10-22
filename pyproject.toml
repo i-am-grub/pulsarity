@@ -83,6 +83,8 @@ dev = [
     "types-protobuf==7.35.1.20260906",
     "ruff==0.17.0",
     "basedpyright==1.40.2",
+    # Upstream Dependencies
+    "certifi>=2026.10.19",
 ]
 docs = [
     "myst-parser==5.1.0",
@@ -90,7 +92,9 @@ docs = [
     "sphinx-book-theme==1.4.0",
     "sphinx-copybutton==0.5.2",
     "sphinx-substitution-extensions==2026.10.9",
+    # Upstream Dependencies
     "urllib3>=2.8.0",
+    "certifi>=2026.10.19",
 ]
 profile = ["viztracer==1.1.1"]
 
@@ -186,6 +190,7 @@ testpaths = ["tests"]
 
 [tool.uv]
 exclude-newer = "7 days"
+exclude-newer-package = { certifi = false }
 
 [tool.uv.audit]
 malware-check = true
