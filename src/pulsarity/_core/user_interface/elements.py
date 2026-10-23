@@ -101,10 +101,14 @@ class UIElement[T: Message](ABC):
     def publish_update_event(self) -> None:
         """
         Publish an UI element update event
+
+        Passes `None` as a default to prevent issues with fields
+        being updated before the context is valid
         """
-        broker = ctx.event_broker_ctx.get()
-        evt = UIElementUpdate(ui_element=self)
-        broker.publish(evt)
+        broker = ctx.event_broker_ctx.get(None)
+        if broker is not None:
+            evt = UIElementUpdate(ui_element=self)
+            broker.publish(evt)
 
     @abstractmethod
     def element_to_message(self) -> T:
@@ -460,7 +464,7 @@ class UIURLValueField(UITextValueField):
 
 
 @dataclass(frozen=True, slots=True)
-class UITelValueField:
+class UITelValueField(UITextValueField):
     """
     User interface telephone value field
     """
@@ -482,7 +486,7 @@ class UINumberValueField(UIValueField[float]):
 
     @override
     def _validate_value(self, value):
-        if not isinstance(value, float):
+        if not isinstance(value, (float, int)):
             msg = "Value is not a number"
             raise TypeError(msg)
 
@@ -494,8 +498,6 @@ class UINumberValueField(UIValueField[float]):
 
             if self.step is not None and (value - self.min) % self.step:
                 raise ValueError(msg)
-
-            return
 
         if self.max is not None and value > self.max:
             raise ValueError(msg)
@@ -595,7 +597,8 @@ class UIDatetimeValueField(UIValueField[dt.datetime]):
         Convert the element data to message
         """
         if self._value is not None:
-            datetime_ = Timestamp().FromDatetime(self._value)
+            datetime_ = Timestamp()
+            datetime_.FromDatetime(self._value)
         else:
             datetime_ = None
 
@@ -633,7 +636,8 @@ class UIDateValueField(UIValueField[dt.date]):
                 day=self._value.day,
                 tzinfo=dt.UTC,
             )
-            datetime_ = Timestamp().FromDatetime(dt_)
+            datetime_ = Timestamp()
+            datetime_.FromDatetime(dt_)
         else:
             datetime_ = None
 
