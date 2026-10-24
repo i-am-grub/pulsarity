@@ -24,7 +24,7 @@ from pulsarity._core.database.user import User
 from pulsarity._core.webserver._status_codes import HTTPStatusCodes
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Sequence
+    from collections.abc import Callable, Iterable
 
 
 _P = ParamSpec("_P")
@@ -37,8 +37,8 @@ class PulsarityCredentials(AuthCredentials):
 
     __slots__ = ("scopes",)
 
-    def __init__(self, scopes: Iterable[str] | None = None):
-        self.scopes: set[str] = set() if scopes is None else set(scopes)
+    def __init__(self, scopes: set[str] | None = None):
+        self.scopes: set[str] = set() if scopes is None else scopes
 
 
 def has_required_scope(conn: HTTPConnection, scopes: Iterable[str]) -> bool:
@@ -46,12 +46,12 @@ def has_required_scope(conn: HTTPConnection, scopes: Iterable[str]) -> bool:
     Reimplementation of starlette's `has_required_scope`. Assumes that the
     connection scope container is set based.
     """
-    connection_scopes: set[str] = conn.auth.scopes
-    return connection_scopes.issuperset(scopes)
+    auth: PulsarityCredentials = conn.auth
+    return auth.scopes.issuperset(scopes)
 
 
 def requires(  # noqa: C901
-    scopes: str | Sequence[str],
+    scopes: str | Iterable[str],
     status_code: int = HTTPStatusCodes.FORBIDDEN,
     redirect: str | None = None,
 ) -> Callable[[Callable[_P, Any]], Callable[_P, Any]]:
@@ -176,11 +176,6 @@ class PulsarityAuthenticatedUser(PulsarityUser):
 
     @property
     def username(self) -> str:
-        """
-        _summary_
-
-        :return: _description_
-        """
         return self._username
 
 
@@ -219,17 +214,17 @@ class PulsarityAuthBackend(AuthenticationBackend):
         """
         if (uuid_hex := conn.session.get("auth_id")) is not None:
             user_uuid = UUID(hex=uuid_hex)
-            user: User | None = await User.get_by_uuid_prefetch(user_uuid)
+            user: User | None = await User.get_authentication_by_uuid(user_uuid)
 
             if user is not None:
                 return PulsarityCredentials(
                     user.permissions,
                 ), PulsarityAuthenticatedUser(user)
 
-            User.get_by_uuid_prefetch.cache_invalidate(user_uuid)
+            User.get_authentication_by_uuid.cache_invalidate(user_uuid)
 
         role = await Role.get(name="UNAUTHENTICATED").prefetch_related("permissions")
-        unauth_perms = (perm.value for perm in role.permissions)
+        unauth_perms = {perm.value for perm in role.permissions}
         return PulsarityCredentials(unauth_perms), PulsarityUnauthenticatedUser()
 
 

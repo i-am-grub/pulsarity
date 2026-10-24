@@ -171,15 +171,12 @@ class User(_PulsarityBase):
         Checks a hash of the provided password against the hash in the database by
         UUID.
         """
-        pw_hash: str | None = await cls.get_or_none(auth_id=uuid).values_list(  # pyright: ignore[reportAssignmentType]
-            "_password_hash",
-            flat=True,
-        )
+        user = await cls.get_or_none(auth_id=uuid).only("_password_hash")
 
-        if pw_hash is None:
+        if user is None:
             return False
 
-        return await _verify_password(pw_hash, password, uuid)
+        return await _verify_password(user._password_hash, password, uuid)
 
     async def check_password_rehash(self) -> bool:
         """
@@ -232,16 +229,22 @@ class User(_PulsarityBase):
         return await cls.get_or_none(auth_id=uuid)
 
     @classmethod
-    @async_lru.alru_cache()
-    async def get_by_uuid_prefetch(cls, uuid: UUID) -> Self | None:
+    @async_lru.alru_cache(ttl=300, jitter=60)
+    async def get_authentication_by_uuid(cls, uuid: UUID) -> Self | None:
         """
         Attempt to retrieve a user by uuid. A successful retrieval will
         prefetch data down to the permissions level for the user.
 
+        This class method only loads part of the object from the database
+
         :param uuid: The uuid to search for
         """
-        return await cls.get_or_none(auth_id=uuid).prefetch_related(
-            "roles__permissions",
+        return (
+            await cls.get_or_none(auth_id=uuid)
+            .prefetch_related(
+                "roles__permissions",
+            )
+            .only("id", "auth_id", "username", "first_name", "last_name")
         )
 
     @classmethod
