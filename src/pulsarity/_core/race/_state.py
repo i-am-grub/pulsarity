@@ -138,7 +138,7 @@ class RaceStateManager:
 
         last_status, timestamp = self._race_records[-1]
         if last_status in RaceStatus.UNDERWAY:
-            return duration + (ctx.loop_ctx.get().time() - timestamp)
+            return duration + (ctx.evt_loop.time() - timestamp)
 
         return duration
 
@@ -189,7 +189,7 @@ class RaceStateManager:
         :param status: The status to set the the manager to
         """
         self._status = status
-        self._race_records.append(_RaceEventRecord(status, ctx.loop_ctx.get().time()))
+        self._race_records.append(_RaceEventRecord(status, ctx.evt_loop.time()))
         self._duration_cache = 0.0
 
     def schedule_race(self, format_: SafeRaceFormat, assigned_start: float) -> None:
@@ -200,7 +200,7 @@ class RaceStateManager:
         :param assigned_start: The event loop start time of the race.
         Currently equivalent to monotonic time
         """
-        if assigned_start < ctx.loop_ctx.get().time():
+        if assigned_start < ctx.evt_loop.time():
             msg = "Assigned start is in the past"
             raise ValueError(msg)
 
@@ -210,7 +210,7 @@ class RaceStateManager:
 
         if self.status is RaceStatus.READY:
             self._format = format_
-            self._program_handle = ctx.loop_ctx.get().call_at(
+            self._program_handle = ctx.evt_loop.call_at(
                 assigned_start,
                 self._stage,
                 start_time,
@@ -225,8 +225,6 @@ class RaceStateManager:
         """
         Stop the race
         """
-        event_broker = ctx.event_broker_ctx.get()
-
         if self._program_handle is not None:
             self._program_handle.cancel()
             self._program_handle = None
@@ -237,13 +235,13 @@ class RaceStateManager:
             logger.info("Stopped race before start. Race manager reset")
 
         elif self.status is RaceStatus.RACING:
-            event_broker.trigger_background(server_evts.RaceFinish())
-            event_broker.trigger_background(server_evts.RaceStop())
+            ctx.event_broker.trigger_background(server_evts.RaceFinish())
+            ctx.event_broker.trigger_background(server_evts.RaceStop())
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
 
         elif self.status is RaceStatus.OVERTIME:
-            event_broker.trigger_background(server_evts.RaceStop())
+            ctx.event_broker.trigger_background(server_evts.RaceStop())
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
 
@@ -256,10 +254,10 @@ class RaceStateManager:
                 raise RuntimeError(msg)
 
             if record.status is RaceStatus.RACING:
-                event_broker.trigger_background(server_evts.RaceFinish())
-                event_broker.trigger_background(server_evts.RaceStop())
+                ctx.event_broker.trigger_background(server_evts.RaceFinish())
+                ctx.event_broker.trigger_background(server_evts.RaceStop())
             else:
-                event_broker.trigger_background(server_evts.RaceStop())
+                ctx.event_broker.trigger_background(server_evts.RaceStop())
 
             self._set_status(RaceStatus.STOPPED)
             logger.info("Race stopped")
@@ -268,10 +266,8 @@ class RaceStateManager:
         """
         Pause the race
         """
-        event_broker = ctx.event_broker_ctx.get()
-
         if self.status in RaceStatus.UNDERWAY:
-            event_broker.trigger_background(server_evts.RacePause())
+            ctx.event_broker.trigger_background(server_evts.RacePause())
             self._set_status(RaceStatus.PAUSED)
             logger.info("Race paused")
 
@@ -283,8 +279,6 @@ class RaceStateManager:
         """
         Resme the race
         """
-        event_broker = ctx.event_broker_ctx.get()
-
         if self.status is not RaceStatus.PAUSED:
             msg = "Unable to resume a race state when race status is not paused"
             raise RuntimeError(msg)
@@ -305,7 +299,7 @@ class RaceStateManager:
 
         elif (time_ := self.get_race_time()) < self._format.race_time_sec:
             remaining_duration = self._format.race_time_sec - time_
-            self._program_handle = ctx.loop_ctx.get().call_later(
+            self._program_handle = ctx.evt_loop.call_later(
                 remaining_duration,
                 self._finish,
             )
@@ -315,13 +309,13 @@ class RaceStateManager:
             remaining_duration = (
                 self._format.race_time_sec + self._format.overtime_sec - time_
             )
-            self._program_handle = ctx.loop_ctx.get().call_later(
+            self._program_handle = ctx.evt_loop.call_later(
                 remaining_duration,
                 self._stop,
             )
             self._set_status(RaceStatus.OVERTIME)
 
-        event_broker.trigger_background(server_evts.RaceResume())
+        ctx.event_broker.trigger_background(server_evts.RaceResume())
         logger.info("Race resumed")
 
     def _stage(self, start_time: float) -> None:
@@ -332,13 +326,11 @@ class RaceStateManager:
         :param start_time: The time to start to schedule race start
         :param schedule: The format's race schedule
         """
-        event_broker = ctx.event_broker_ctx.get()
-
-        event_broker.trigger_background(server_evts.RaceStage())
+        ctx.event_broker.trigger_background(server_evts.RaceStage())
         self._set_status(RaceStatus.STAGING)
         logger.info("Race scheduled for %d", start_time)
 
-        self._program_handle = ctx.loop_ctx.get().call_at(start_time, self._start)
+        self._program_handle = ctx.evt_loop.call_at(start_time, self._start)
 
     def _start(self) -> None:
         """
@@ -347,17 +339,16 @@ class RaceStateManager:
 
         :param schedule: The format's race schedule
         """
-        event_broker = ctx.event_broker_ctx.get()
         if self._format is None:
             msg = "Can not start a race with an unset schedule"
             raise RuntimeError(msg)
 
-        event_broker.trigger_background(server_evts.RaceStart())
+        ctx.event_broker.trigger_background(server_evts.RaceStart())
         self._set_status(RaceStatus.RACING)
         logger.info("Race started")
 
         if not self._format.unlimited_time:
-            self._program_handle = ctx.loop_ctx.get().call_later(
+            self._program_handle = ctx.evt_loop.call_later(
                 self._format.race_time_sec,
                 self._finish,
             )
@@ -372,15 +363,14 @@ class RaceStateManager:
 
         :param schedule: The format's race schedule
         """
-        event_broker = ctx.event_broker_ctx.get()
         if self._format is None:
             msg = "Can not finish a race with an unset schedule"
             raise RuntimeError(msg)
 
-        event_broker.trigger_background(server_evts.RaceFinish())
+        ctx.event_broker.trigger_background(server_evts.RaceFinish())
 
         if self._format.overtime_sec > 0:
-            self._program_handle = ctx.loop_ctx.get().call_later(
+            self._program_handle = ctx.evt_loop.call_later(
                 self._format.overtime_sec,
                 self._stop,
             )
@@ -398,9 +388,7 @@ class RaceStateManager:
         """
         Put the system into race stop mode
         """
-        event_broker = ctx.event_broker_ctx.get()
-
-        event_broker.trigger_background(server_evts.RaceStop())
+        ctx.event_broker.trigger_background(server_evts.RaceStop())
         self._set_status(RaceStatus.STOPPED)
         self._program_handle = None
         logger.info("Race stopped")

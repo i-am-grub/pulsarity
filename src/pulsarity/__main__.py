@@ -19,7 +19,11 @@ from granian.server.embed import Server
 from starlette.middleware.cors import CORSMiddleware
 
 import pulsarity
+from pulsarity._core import ctx
+from pulsarity._core.events.broker import EventBroker
 from pulsarity._core.events.client import ClientServerRestart, ClientServerShutdown
+from pulsarity._core.race.manager import RaceManager
+from pulsarity._core.timing_interface.timer_manager import TimerInterfaceManager
 from pulsarity._core.utils import config
 from pulsarity._core.webserver import application, websockets
 
@@ -91,6 +95,11 @@ async def _server() -> None:
     """
     The Pulsarity webserver coroutine.
     """
+    ctx.evt_loop = asyncio.get_running_loop()
+    ctx.event_broker = EventBroker()
+    ctx.race_manager = RaceManager()
+    ctx.timer_manager = TimerInterfaceManager()
+
     if sys.platform == "win32":
         signal.signal(signal.Signals.SIGINT, _signal_shutdown)
         signal.signal(signal.Signals.SIGTERM, _signal_shutdown)

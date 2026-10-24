@@ -19,13 +19,13 @@ if TYPE_CHECKING:
         PulsarityWebsocket,
     )
 
+# These values should be populated immediately by the application
+evt_loop: AbstractEventLoop
+event_broker: EventBroker
+race_manager: RaceManager
+timer_manager: TimerInterfaceManager
 
-loop_ctx: ContextVar[AbstractEventLoop] = ContextVar("loop_ctx")
-
-event_broker_ctx: ContextVar[EventBroker] = ContextVar("event_broker_ctx")
-race_manager_ctx: ContextVar[RaceManager] = ContextVar("race_manager_ctx")
-timer_manager_ctx: ContextVar[TimerInterfaceManager] = ContextVar("timer_manager_ctx")
-
+# Context values will be populated as needed (typically for api requests)
 request_ctx: ContextVar[PulsarityRequest] = ContextVar("request_ctx")
 websocket_ctx: ContextVar[PulsarityWebsocket] = ContextVar("websocket_ctx")
 user_ctx: ContextVar[PulsarityUser] = ContextVar("user_ctx")

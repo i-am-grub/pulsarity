@@ -56,7 +56,7 @@ async def check_auth() -> Response:
     :return: The user's authentication status
     """
     auth_user = ctx.user_ctx.get()
-    user_perms: set[str] = ctx.request_ctx.get().auth.scopes
+    user_perms = ctx.request_ctx.get().auth.scopes
 
     user_info = http_pb2.UserInfo(
         authenticated=auth_user.is_authenticated,
@@ -173,8 +173,7 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
     if request.new_password == request.old_password:
         return Response(status_code=HTTPStatusCodes.BAD_REQUEST)
 
-    loop = ctx.loop_ctx.get()
-    start = loop.time()
+    start = ctx.evt_loop.time()
     evt = asyncio.Event()
 
     auth_user = ctx.user_ctx.get()
@@ -185,12 +184,12 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
 
         logger.info("Password reset for %s completed", auth_user.identity)
 
-        loop.call_at(start + rng.uniform(0.2, 0.5), evt.set)
+        ctx.evt_loop.call_at(start + rng.uniform(0.2, 0.5), evt.set)
         await evt.wait()
 
         return Response(status_code=HTTPStatusCodes.OK)
 
-    loop.call_at(start + rng.uniform(1.0, 2.0), evt.set)
+    ctx.evt_loop.call_at(start + rng.uniform(1.0, 2.0), evt.set)
     await evt.wait()
 
     return Response(status_code=HTTPStatusCodes.UNAUTHORIZED)

@@ -26,7 +26,7 @@ def ensure_async[**P, T](func: Callable[P, T], *args, **kwargs) -> Awaitable[T]:
     if inspect.iscoroutinefunction(func):
         return func(*args, **kwargs)
 
-    return ctx.loop_ctx.get().run_in_executor(None, func, *args, **kwargs)
+    return ctx.evt_loop.run_in_executor(None, func, *args, **kwargs)
 
 
 def run_coroutine_from_thread(coro: Coroutine) -> Future:
@@ -39,7 +39,7 @@ def run_coroutine_from_thread(coro: Coroutine) -> Future:
     :return: A `concurrent.futures` Future
     """
 
-    return asyncio.run_coroutine_threadsafe(coro, ctx.loop_ctx.get())
+    return asyncio.run_coroutine_threadsafe(coro, ctx.evt_loop)
 
 
 async def wait_task_cancellation(

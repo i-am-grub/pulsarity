@@ -82,11 +82,10 @@ async def send_event_data() -> None:
     """
     Handles writing event data over the websocket
     """
-    event_broker = ctx.event_broker_ctx.get()
     websocket = ctx.websocket_ctx.get()
     permissions = ctx.user_permsissions_ctx.get()
 
-    async for event in event_broker.subscribe():
+    async for event in ctx.event_broker.subscribe():
         if permissions is None:
             continue
 

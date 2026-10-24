@@ -147,8 +147,6 @@ class TimerInterfaceManager:
 
         :param manager: The manager to use for processing
         """
-        race_manager = ctx.race_manager_ctx.get()
-
         while not self._shutdown_evt.is_set():
             recieved = await self._lap_queue.get()
             interface = self._active_interfaces[recieved.timer_identifier]
@@ -157,7 +155,7 @@ class TimerInterfaceManager:
                 interface.index,
             )
 
-            race_manager.status_aware_lap_record(recieved.node_index, outgoing)
+            ctx.race_manager.status_aware_lap_record(recieved.node_index, outgoing)
 
     async def _process_signal_data(self):
         """
@@ -166,8 +164,6 @@ class TimerInterfaceManager:
 
         :param manager: The manager to use for processing
         """
-        race_manager = ctx.race_manager_ctx.get()
-
         while not self._shutdown_evt.is_set():
             recieved = await self._signal_queue.get()
             interface = self._active_interfaces[recieved.timer_identifier]
@@ -176,7 +172,7 @@ class TimerInterfaceManager:
                 interface.index,
             )
 
-            race_manager.status_aware_signal_record(outgoing)
+            ctx.race_manager.status_aware_signal_record(outgoing)
 
     @classmethod
     def register(cls, interface: type[TimerInterface]) -> type[TimerInterface]:

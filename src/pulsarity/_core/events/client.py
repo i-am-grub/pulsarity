@@ -156,7 +156,7 @@ class ClientStopRace(ClientEventData):
         return cls(uuid)
 
     async def run_handler(self):
-        ctx.race_manager_ctx.get().stop_race()
+        ctx.race_manager.stop_race()
 
 
 @client_event

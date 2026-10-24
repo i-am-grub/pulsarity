@@ -38,7 +38,7 @@ def add_background_task[T](
 
     awaitable = ensure_async(func, *args, **kwargs)
 
-    task = ctx.loop_ctx.get().create_task(_wrapper(awaitable))
+    task = ctx.evt_loop.create_task(_wrapper(awaitable))
     _tasks.add(task)
     task.add_done_callback(_tasks.discard)
 

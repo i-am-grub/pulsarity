@@ -21,7 +21,7 @@ dependencies = [
     "granian==2.8.4",
     "cryptography==50.0.2",
     "argon2-cffi==25.1.0",
-    "tortoise-orm==1.1.8",
+    "tortoise-orm==1.1.9",
     "anyio==4.15.1",
     "protobuf==7.36.2",
     "async-lru==2.3.0",

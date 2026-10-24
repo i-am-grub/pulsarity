@@ -105,10 +105,8 @@ class UIElement[T: Message](ABC):
         Passes `None` as a default to prevent issues with fields
         being updated before the context is valid
         """
-        broker = ctx.event_broker_ctx.get(None)
-        if broker is not None:
-            evt = UIElementUpdate(ui_element=self)
-            broker.publish(evt)
+        evt = UIElementUpdate(ui_element=self)
+        ctx.event_broker.publish(evt)
 
     @abstractmethod
     def element_to_message(self) -> T:
