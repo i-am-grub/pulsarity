@@ -10,16 +10,16 @@ on:
   push:
     branches: [main]
     paths: [
-      'src/pulsarity/*',
-      'tests/*',
+      'src/pulsarity/**',
+      'tests/**',
       'pyproject.toml',
       'uv.lock',
       '.github/workflows/python-linting.yml'
     ]
   pull_request:
     paths: [
-      'src/pulsarity/*',
-      'tests/*',
+      'src/pulsarity/**',
+      'tests/**',
       'pyproject.toml',
       'uv.lock',
       '.github/workflows/python-linting.yml'
