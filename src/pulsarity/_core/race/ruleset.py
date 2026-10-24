@@ -8,12 +8,14 @@ import inspect
 import logging
 from abc import ABC, abstractmethod
 from collections import ChainMap
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from typing import (
     TYPE_CHECKING,
+    Any,
     ClassVar,
     NamedTuple,
     Self,
+    override,
 )
 
 from pulsarity._core.race import metrics
@@ -25,14 +27,20 @@ if TYPE_CHECKING:
 
     from _typeshed import SupportsAllComparisons, SupportsBool
 
-    from pulsarity._core.database._base import JsonParsable
     from pulsarity._core.database.raceformat import RaceFormat
 
 
 logger = logging.getLogger(__name__)
 
 
-class SafeRaceFormat(NamedTuple):
+@dataclass(frozen=True, slots=True)
+class FormatCustomFields:
+    """
+    Base class for race format fields
+    """
+
+
+class SafeRaceFormat[T: FormatCustomFields](NamedTuple):
     """
     Immutable for holding race format data
     """
@@ -42,24 +50,39 @@ class SafeRaceFormat(NamedTuple):
     unlimited_time: bool
     race_time_sec: int
     overtime_sec: int
-    fields: dict[str, JsonParsable]
+    fields: T
 
     @classmethod
     def from_format(cls, format_: RaceFormat) -> Self:
         """
         Builds an immutable from the a database race format instance and
         the ruleset fields default values.
+
+        This classmethod checks current database values against the current
+        definition of the format's custom fields. This prevent issues in the
+        event fields saved in the database no longer reflect the defined field(s)
         """
-        ruleset = RaceRulesetManager.get_ruleset(format_.ruleset_id)
-        fields = {field.name: field.default for field in ruleset.__meta__.fields}
-        fields.update({field.name: field.value for field in format_.ruleset_fields})
+        ruleset: RaceRuleset[Any, T] = RaceRulesetManager.get_ruleset(  # pyright: ignore[reportAssignmentType]
+            format_.ruleset_id
+        )
+        fmt_fields = ruleset.__meta__.fields
+        keys_types = {field.name: field.type for field in fields(fmt_fields)}
+
+        fields_ = {
+            field.name: field.value
+            for field in format_.ruleset_fields
+            if field.name in keys_types
+            and isinstance(type_ := keys_types[field.name], type)
+            and isinstance(field.value, type_)
+        }
+
         return cls(
             format_.stage_time_sec,
             format_.random_stage_delay,
             format_.unlimited_time,
             format_.race_time_sec,
             format_.overtime_sec,
-            fields,
+            fmt_fields(**fields_),
         )
 
 
@@ -79,15 +102,17 @@ class SlotResult[T]:
     data: T | None = None
     """additional data"""
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, SlotResult):
-            return False
-        return self.position == other.position
+    @override
+    def __eq__(self, other: object):
+        if isinstance(other, SlotResult):
+            return self.position == other.position
+        return NotImplemented
 
-    def __ne__(self, other: object) -> bool:
-        if not isinstance(other, SlotResult):
-            return True
-        return self.position != other.position
+    @override
+    def __ne__(self, other: object):
+        if isinstance(other, SlotResult):
+            return self.position != other.position
+        return NotImplemented
 
     def __lt__(self, other: Self) -> bool:
         return self.position < other.position
@@ -101,6 +126,7 @@ class SlotResult[T]:
     def __ge__(self, other: Self) -> bool:
         return self.position >= other.position
 
+    @override
     def __hash__(self):
         return object.__hash__(self)
 
@@ -304,15 +330,17 @@ class LapsManager(ABC):
         (See tuple comparsions in Python)
         """
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, LapsManager):
-            return False
-        return self.get_score() == other.get_score()
+    @override
+    def __eq__(self, other: object):
+        if isinstance(other, LapsManager):
+            return self.get_score() == other.get_score()
+        return NotImplemented
 
-    def __ne__(self, other: object) -> bool:
-        if not isinstance(other, LapsManager):
-            return True
-        return self.get_score() != other.get_score()
+    @override
+    def __ne__(self, other: object):
+        if isinstance(other, LapsManager):
+            return self.get_score() != other.get_score()
+        return NotImplemented
 
     def __lt__(self, other: Self) -> SupportsBool:
         return self.get_score() < other.get_score()
@@ -326,29 +354,19 @@ class LapsManager(ABC):
     def __ge__(self, other: Self) -> SupportsBool:
         return self.get_score() >= other.get_score()
 
+    @override
     def __hash__(self):
         return object.__hash__(self)
 
 
-class RulesetFieldData[T: JsonParsable](NamedTuple):
-    """
-    Custom field data for ruleset
-    """
-
-    name: str
-    display_name: str
-    type_: type[T]
-    default: T
-
-
-class RulesetMeta(NamedTuple):
+class RulesetMeta[T: FormatCustomFields](NamedTuple):
     """
     Ruleset metadata
     """
 
     uid: str
     """ruleset unique identifier"""
-    fields: Iterable[RulesetFieldData]
+    fields: type[T]
     """custom fields for ruleset"""
 
 
@@ -373,13 +391,13 @@ class SoloResultData(ResultData):
     fastest_consec_time_ms: int
 
 
-class RaceRuleset[T: ResultData](ABC):
+class RaceRuleset[T: ResultData, U: FormatCustomFields](ABC):
     """
     Abstract base class for processing race data.
     Can be used to enforce custom rulesets
     """
 
-    __meta__: RulesetMeta
+    __meta__: RulesetMeta[U]
 
     @abstractmethod
     def __init__(self, race_format: SafeRaceFormat) -> None:
@@ -476,7 +494,7 @@ class RaceRulesetManager:
                 msg = "Attempted to register an abstract race ruleset"
                 raise TypeError(msg)
 
-            uid = ruleset_class.__meta__.uid
+            uid = ruleset_class.__meta__.uid  # pyright: ignore[reportGeneralTypeIssues]
             if uid in cls._registered_ruleset:
                 msg = "Interface type with matching identifier already registered"
                 raise RuntimeError(msg)

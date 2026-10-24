@@ -3,13 +3,14 @@ Most laps implementation
 """
 
 from collections import defaultdict
+from dataclasses import dataclass, field
 from itertools import count
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, final
 
 from pulsarity._core.race.ruleset import (
+    FormatCustomFields,
     LapsManager,
     RaceRuleset,
-    RulesetFieldData,
     RulesetMeta,
     SafeRaceFormat,
     SlotResult,
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
     from pulsarity._core.race.metrics import CombinedMetrics
 
 
+@final
 class _MostLapsManager(LapsManager):
     """
     Lap data manager for a single slot
@@ -92,23 +94,29 @@ class _MostLapsManager(LapsManager):
         return self._score
 
 
+@final
+@dataclass(frozen=True, slots=True)
+class _MostLapsFields(FormatCustomFields):
+    """
+    Fields for MostLapsRuleset
+    """
+
+    holeshot: bool = field(default=False, metadata={"display_name": "Holeshot"})
+    consecutive: int = field(default=3, metadata={"display_name": "Consecutive Laps"})
+
+
 @register_ruleset
-class MostLapsRuleset(RaceRuleset[SoloResultData]):
+@final
+class MostLapsRuleset(RaceRuleset[SoloResultData, _MostLapsFields]):
     """
     ruleset to enforce the most laps ruleset
     """
 
     __slots__ = ("_cache", "_count", "_format", "_lap_data", "_race_time_millis")
 
-    __meta__ = RulesetMeta(
-        uid="most_laps",
-        fields=(
-            RulesetFieldData("holeshot", "holeshot", bool, False),
-            RulesetFieldData("consecutive", "consecutive laps", int, 3),
-        ),
-    )
+    __meta__ = RulesetMeta(uid="most_laps", fields=_MostLapsFields)
 
-    def __init__(self, race_format: SafeRaceFormat) -> None:
+    def __init__(self, race_format: SafeRaceFormat[_MostLapsFields]) -> None:
         self._format = race_format
         self._lap_data: dict[int, _MostLapsManager] = defaultdict(_MostLapsManager)
         self._cache: dict[int, SlotResult[SoloResultData]] = {}
@@ -147,14 +155,14 @@ class MostLapsRuleset(RaceRuleset[SoloResultData]):
         if self._cache:
             return self._cache
 
+        sorted_slots = sorted(
+            self._lap_data.items(), key=lambda pair: pair[1], reverse=True
+        )
+
         pos, step = 0, 1
         prev_manager: _MostLapsManager | None = None
 
-        for slot_id, manager in sorted(
-            self._lap_data.items(),
-            key=lambda pair: pair[1],
-            reverse=True,
-        ):
+        for slot_id, manager in sorted_slots:
             if manager == prev_manager:
                 step += 1
             else:
@@ -162,8 +170,7 @@ class MostLapsRuleset(RaceRuleset[SoloResultData]):
                 step = 1
 
             metrics = manager.get_metrics(
-                self._format.fields["holeshot"],  # pyright: ignore[reportArgumentType]
-                self._format.fields["consecutive"],  # pyright: ignore[reportArgumentType]
+                self._format.fields.holeshot, self._format.fields.consecutive
             )
 
             result: SlotResult[SoloResultData]
