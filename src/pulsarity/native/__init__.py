@@ -1,5 +1,8 @@
 """
-Built-in Plugin Implementations
+Native Plugin-like Implementations
+
+Files contained in this structure will be imported when calling
+the `import_all_submodules` function found within this module.
 
 Note: The current architecture for the bundled plugins in this
 module is not finalized.

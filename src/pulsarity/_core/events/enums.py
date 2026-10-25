@@ -22,7 +22,9 @@ class _EvtData:
 @unique
 class SystemEvt(_EvtData, Enum):
     """
-    System events
+    Enum for system events.
+
+    Typically used for registering event callbacks
     """
 
     # Special Events

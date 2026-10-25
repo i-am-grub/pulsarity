@@ -12,7 +12,6 @@ from pulsarity._core.race.ruleset import (
     LapsManager,
     RaceRuleset,
     RulesetMeta,
-    SafeRaceFormat,
     SlotResult,
     SoloResultData,
     register_ruleset,
@@ -107,7 +106,7 @@ class _MostLapsFields(FormatCustomFields):
 
 @register_ruleset
 @final
-class MostLapsRuleset(RaceRuleset[SoloResultData, _MostLapsFields]):
+class MostLapsRuleset(RaceRuleset[_MostLapsFields, SoloResultData]):
     """
     ruleset to enforce the most laps ruleset
     """
@@ -116,7 +115,7 @@ class MostLapsRuleset(RaceRuleset[SoloResultData, _MostLapsFields]):
 
     __meta__ = RulesetMeta(uid="most_laps", fields=_MostLapsFields)
 
-    def __init__(self, race_format: SafeRaceFormat[_MostLapsFields]) -> None:
+    def __init__(self, race_format) -> None:
         self._format = race_format
         self._lap_data: dict[int, _MostLapsManager] = defaultdict(_MostLapsManager)
         self._cache: dict[int, SlotResult[SoloResultData]] = {}

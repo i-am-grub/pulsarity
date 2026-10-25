@@ -10,6 +10,7 @@ import pytest_asyncio
 
 from pulsarity._core.database import RaceFormat
 from pulsarity._core.race._state import RaceStateManager, RaceStatus
+from pulsarity._core.race.ruleset import FormatCustomFields, SafeRaceFormat
 from pulsarity._core.utils import background
 
 
@@ -21,7 +22,18 @@ async def _race_manager():
     yield RaceStateManager()
 
 
-def future_schedule(limited_schedule_: RaceFormat, race_manager: RaceStateManager):
+def schedule_to_safe(schedule: RaceFormat):
+    return SafeRaceFormat(
+        stage_time_sec=schedule.stage_time_sec,
+        random_stage_delay=schedule.random_stage_delay,
+        unlimited_time=schedule.unlimited_time,
+        race_time_sec=schedule.race_time_sec,
+        overtime_sec=schedule.overtime_sec,
+        fields=FormatCustomFields(),
+    )
+
+
+def future_schedule(limited_schedule: RaceFormat, race_manager: RaceStateManager):
     """
     Schedules a race 1 second into the future
     """
@@ -29,7 +41,8 @@ def future_schedule(limited_schedule_: RaceFormat, race_manager: RaceStateManage
     schedule_offset = 1
     schedule_time = time.monotonic() + schedule_offset
 
-    race_manager.schedule_race(limited_schedule_, assigned_start=schedule_time)  # pyright: ignore[reportArgumentType]
+    safe_format = schedule_to_safe(limited_schedule)
+    race_manager.schedule_race(safe_format, assigned_start=schedule_time)
     return schedule_offset
 
 
@@ -54,8 +67,10 @@ async def test_past_schedule(
 
     now = time.monotonic() - 0.1
 
+    safe_format = schedule_to_safe(limited_schedule)
+
     with pytest.raises(ValueError):
-        race_manager.schedule_race(limited_schedule, assigned_start=now)  # pyright: ignore[reportArgumentType]
+        race_manager.schedule_race(safe_format, assigned_start=now)  # pyright: ignore[reportArgumentType]
 
     assert race_manager.status == RaceStatus.READY
 

@@ -34,59 +34,6 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
-class FormatCustomFields:
-    """
-    Base class for race format fields
-    """
-
-
-class SafeRaceFormat[T: FormatCustomFields](NamedTuple):
-    """
-    Immutable for holding race format data
-    """
-
-    stage_time_sec: int
-    random_stage_delay: int
-    unlimited_time: bool
-    race_time_sec: int
-    overtime_sec: int
-    fields: T
-
-    @classmethod
-    def from_format(cls, format_: RaceFormat) -> Self:
-        """
-        Builds an immutable from the a database race format instance and
-        the ruleset fields default values.
-
-        This classmethod checks current database values against the current
-        definition of the format's custom fields. This prevent issues in the
-        event fields saved in the database no longer reflect the defined field(s)
-        """
-        ruleset: RaceRuleset[Any, T] = RaceRulesetManager.get_ruleset(  # pyright: ignore[reportAssignmentType]
-            format_.ruleset_id
-        )
-        fmt_fields = ruleset.__meta__.fields
-        keys_types = {field.name: field.type for field in fields(fmt_fields)}
-
-        fields_ = {
-            field.name: field.value
-            for field in format_.ruleset_fields
-            if field.name in keys_types
-            and isinstance(type_ := keys_types[field.name], type)
-            and isinstance(field.value, type_)
-        }
-
-        return cls(
-            format_.stage_time_sec,
-            format_.random_stage_delay,
-            format_.unlimited_time,
-            format_.race_time_sec,
-            format_.overtime_sec,
-            fmt_fields(**fields_),
-        )
-
-
-@dataclass(frozen=True, slots=True)
 class SlotResult[T]:
     """
     Basic class for representing race data.
@@ -359,6 +306,59 @@ class LapsManager(ABC):
         return object.__hash__(self)
 
 
+@dataclass(frozen=True, slots=True)
+class FormatCustomFields:
+    """
+    Base class for race format fields
+    """
+
+
+class SafeRaceFormat[T: FormatCustomFields](NamedTuple):
+    """
+    Immutable for holding race format data
+    """
+
+    stage_time_sec: int
+    random_stage_delay: int
+    unlimited_time: bool
+    race_time_sec: int
+    overtime_sec: int
+    fields: T
+
+    @classmethod
+    def from_format(cls, format_: RaceFormat) -> Self:
+        """
+        Builds an immutable from the a database race format instance and
+        the ruleset fields default values.
+
+        This classmethod checks current database values against the current
+        definition of the format's custom fields. This prevent issues in the
+        event fields saved in the database no longer reflect the defined field(s)
+        """
+        ruleset: RaceRuleset[T, Any] = RaceRulesetManager.get_ruleset(  # pyright: ignore[reportAssignmentType]
+            format_.ruleset_id
+        )
+        fmt_fields = ruleset.__meta__.fields
+        keys_types = {field.name: field.type for field in fields(fmt_fields)}
+
+        fields_ = {
+            field.name: field.value
+            for field in format_.ruleset_fields
+            if field.name in keys_types
+            and isinstance(type_ := keys_types[field.name], type)
+            and isinstance(field.value, type_)
+        }
+
+        return cls(
+            format_.stage_time_sec,
+            format_.random_stage_delay,
+            format_.unlimited_time,
+            format_.race_time_sec,
+            format_.overtime_sec,
+            fmt_fields(**fields_),
+        )
+
+
 class RulesetMeta[T: FormatCustomFields](NamedTuple):
     """
     Ruleset metadata
@@ -391,16 +391,16 @@ class SoloResultData(ResultData):
     fastest_consec_time_ms: int
 
 
-class RaceRuleset[T: ResultData, U: FormatCustomFields](ABC):
+class RaceRuleset[T: FormatCustomFields, U: ResultData](ABC):
     """
     Abstract base class for processing race data.
     Can be used to enforce custom rulesets
     """
 
-    __meta__: RulesetMeta[U]
+    __meta__: RulesetMeta[T]
 
     @abstractmethod
-    def __init__(self, race_format: SafeRaceFormat) -> None:
+    def __init__(self, race_format: SafeRaceFormat[T]) -> None:
         """
         Class initializer
 
@@ -445,7 +445,7 @@ class RaceRuleset[T: ResultData, U: FormatCustomFields](ABC):
         """
 
     @abstractmethod
-    def get_race_results(self) -> Sequence[SlotResult[T]]:
+    def get_race_results(self) -> Sequence[SlotResult[U]]:
         """
         Get the results of the race
 
@@ -453,7 +453,7 @@ class RaceRuleset[T: ResultData, U: FormatCustomFields](ABC):
         """
 
     @abstractmethod
-    def get_slot_result(self, slot_num: int) -> SlotResult[T] | None:
+    def get_slot_result(self, slot_num: int) -> SlotResult[U] | None:
         """
         Get the race results for a slot
 

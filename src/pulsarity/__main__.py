@@ -96,9 +96,6 @@ async def _server() -> None:
     The Pulsarity webserver coroutine.
     """
     ctx.evt_loop = asyncio.get_running_loop()
-    ctx.event_broker = EventBroker()
-    ctx.race_manager = RaceManager()
-    ctx.timer_manager = TimerInterfaceManager()
 
     if sys.platform == "win32":
         signal.signal(signal.Signals.SIGINT, _signal_shutdown)
@@ -145,6 +142,10 @@ def main() -> None:
     Run the default Pulsarity server
     """
     Path("logs").mkdir(exist_ok=True)
+
+    ctx.event_broker = EventBroker()
+    ctx.race_manager = RaceManager()
+    ctx.timer_manager = TimerInterfaceManager()
 
     asyncio.run(_server())
 

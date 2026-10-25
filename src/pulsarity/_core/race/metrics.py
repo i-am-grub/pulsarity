@@ -81,20 +81,20 @@ def calculate_fastest_time_ms(
     """
     fastest_time = float("inf")
     prev_time = 0
-    num_laps = 0
+    lap_num = 0
 
     start = 0 if holeshot else 1
-    for num_laps, lap in enumerate(sorted_lap_data, start):
-        if not num_laps:
-            prev_time = lap.millis
+    for lap_num, lap_data in enumerate(sorted_lap_data, start):
+        if not lap_num:
+            prev_time = lap_data.millis
             continue
 
-        time_diff = lap.millis - prev_time
-        prev_time = lap.millis
+        time_diff = lap_data.millis - prev_time
+        prev_time = lap_data.millis
 
         fastest_time = min(fastest_time, time_diff)
 
-    if not num_laps:
+    if not lap_num:
         return None
 
     return int(fastest_time)
@@ -176,20 +176,20 @@ def calculate_combined_metrics(
 
     prev_time = 0
     windowed_time = 0.0
-    num_laps = 0
+    lap_num = 0
     total_time = 0
 
     start = 0 if holeshot else 1
-    for num_laps, lap in enumerate(sorted_lap_data, start):
-        if not num_laps:
-            prev_time = lap.millis
+    for lap_num, lap_data in enumerate(sorted_lap_data, start):
+        if not lap_num:
+            prev_time = lap_data.millis
             continue
 
-        time_diff = lap.millis - prev_time
+        time_diff = lap_data.millis - prev_time
         store.append(time_diff)
         windowed_time += time_diff
         total_time += time_diff
-        prev_time = lap.millis
+        prev_time = lap_data.millis
 
         fastest_time = min(fastest_time, time_diff)
 
@@ -199,14 +199,14 @@ def calculate_combined_metrics(
         else:
             fastest_consec_time = windowed_time
 
-    if not num_laps:
+    if not lap_num:
         return None
 
-    consec_laps_ = min(consec_laps, num_laps)
+    consec_laps_ = min(consec_laps, lap_num)
     return CombinedMetrics(
-        num_laps,
+        lap_num,
         total_time,
-        total_time // num_laps,
+        total_time // lap_num,
         int(fastest_time),
         consec_laps_,
         int(fastest_consec_time),
