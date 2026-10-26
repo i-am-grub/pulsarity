@@ -24,7 +24,7 @@ dependencies = [
     "tortoise-orm==1.1.9",
     "anyio==4.15.1",
     "protobuf==7.36.2",
-    "async-lru==2.3.0",
+    "async-lru==2.4.0",
     "packaging==26.3",
     "pulsarity-localization", # Added repo as source until an offical release is made
     # Upstream Dependencies
