@@ -5,20 +5,18 @@ Most laps implementation
 from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import count
-from typing import TYPE_CHECKING, final
+from typing import final
 
-from pulsarity._core.race.ruleset import (
-    FormatCustomFields,
+from pulsarity.api.ruleset import (
+    CombinedMetrics,
     LapsManager,
     RaceRuleset,
+    RulesetCustomFields,
     RulesetMeta,
     SlotResult,
     SoloResultData,
     register_ruleset,
 )
-
-if TYPE_CHECKING:
-    from pulsarity._core.race.metrics import CombinedMetrics
 
 
 @final
@@ -95,7 +93,7 @@ class _MostLapsManager(LapsManager):
 
 @final
 @dataclass(frozen=True, slots=True)
-class _MostLapsFields(FormatCustomFields):
+class _MostLapsFields(RulesetCustomFields):
     """
     Fields for MostLapsRuleset
     """

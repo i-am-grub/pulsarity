@@ -37,10 +37,7 @@ def system_event[T: SystemEventData](cls: type[T]) -> type[T]:
 class EvtPriority(Enum):
     """
     The priority of the event over other events that may
-    be queued. By default, this is does not determine the
-    execution order of tasks in the event loop, but
-    addtional logic can be combined to create an instant
-    action.
+    be queued.
     """
 
     HIGHEST = 1

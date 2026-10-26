@@ -10,7 +10,7 @@ import pytest_asyncio
 
 from pulsarity._core.database import RaceFormat
 from pulsarity._core.race._state import RaceStateManager, RaceStatus
-from pulsarity._core.race.ruleset import FormatCustomFields, SafeRaceFormat
+from pulsarity._core.race.ruleset import RulesetCustomFields, SafeRaceFormat
 from pulsarity._core.utils import background
 
 
@@ -29,7 +29,7 @@ def schedule_to_safe(schedule: RaceFormat):
         unlimited_time=schedule.unlimited_time,
         race_time_sec=schedule.race_time_sec,
         overtime_sec=schedule.overtime_sec,
-        fields=FormatCustomFields(),
+        fields=RulesetCustomFields(),
     )
 
 

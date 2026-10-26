@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True, slots=True)
 class UIPage(ABC):
     """
-    Abstract class for user interface runtime pages
+    Class for plugin based user interface pages/routes
     """
 
     _registered_names: ClassVar[set[str]] = _default_names.copy()
