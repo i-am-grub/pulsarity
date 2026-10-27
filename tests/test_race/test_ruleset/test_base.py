@@ -6,12 +6,12 @@ import pytest
 from pulsarity._core.database.raceformat import RaceFormat
 from pulsarity._core.timing_interface.timer_manager import FullLapData
 from pulsarity._core.race.ruleset import (
-    LapsManager,
     RaceRuleset,
     RaceRulesetManager,
     RulesetMeta,
     SlotResult,
 )
+from pulsarity.api.ruleset import LapsManager, RulesetCustomFields
 
 
 class _TestManager(LapsManager):
@@ -33,7 +33,7 @@ class _Testruleset(RaceRuleset):
     ruleset to test good implementation
     """
 
-    __meta__ = RulesetMeta(uid="foo", fields=())
+    __meta__ = RulesetMeta(uid="foo", fields=RulesetCustomFields)
 
     def __init__(self, race_format: RaceFormat) -> None: ...
 
