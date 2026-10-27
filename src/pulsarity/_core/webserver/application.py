@@ -18,7 +18,7 @@ from starsessions import CookieStore, SessionAutoloadMiddleware, SessionMiddlewa
 from tortoise import Tortoise
 from tortoise.contrib.starlette import register_tortoise
 
-from pulsarity import native
+from pulsarity import _native
 from pulsarity._core import ctx, database
 from pulsarity._core.events.server import ServerShutdown, ServerStartup, SystemHeartBeat
 from pulsarity._core.utils import background, config
@@ -189,7 +189,7 @@ async def server_starup_workflow() -> None:
     """
     Startup workflow
     """
-    native.import_all_submodules()
+    _native.import_all_submodules()
     ctx.timer_manager.start()
     await ctx.event_broker.trigger(ServerStartup())
 
