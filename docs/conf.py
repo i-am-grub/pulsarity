@@ -25,6 +25,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.coverage",
+    "sphinx_autodoc_typehints",
 ]
 
 templates_path = ["_templates"]
@@ -57,6 +58,16 @@ autodoc_typehints = "description"
 autodoc_typehints_description_target = "all"
 autodoc_typehints_format = "short"
 autosummary_generate = True
+autosummary_ignore_module_all = False
+autosummary_imported_members = True
+
+always_document_param_types = True
+
+autodoc_default_options = {
+    "members": True,
+    "special-members": "__contains__, __version__, __len__",
+    "exclude-members": "__weakref__",
+}
 
 
 # -- MySt  ---------------------------------------

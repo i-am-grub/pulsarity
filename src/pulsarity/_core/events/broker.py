@@ -141,7 +141,6 @@ class EventBroker:
         :param event: The id of the event to register the callback against
         :param priority: The priority associated with scheduling the callback.
         :param default_kwargs: Default key word arguments to use and/or include
-        when the event is triggered
         """
         if default_kwargs is None:
             default_kwargs = {}
@@ -192,32 +191,3 @@ class EventBroker:
                 yield await connection.get()
         finally:
             self._connections.remove(connection)
-
-
-def register_as_callback(
-    event: SystemEvt,
-    *,
-    priority: EvtPriority = EvtPriority.LOWEST,
-    default_kwargs: dict[str, Any] | None = None,
-):
-    """
-    Decorator for registing a callback function for an event
-
-    :param event: The id of the event to register the callback against
-    :param priority: The priority associated with scheduling the callback.
-    :param default_kwargs: Default key word arguments to use and/or include
-    when the event is triggered
-    """
-
-    @functools.wraps
-    def inner(func):
-        EventBroker.register_event_callback(
-            func,
-            event,
-            priority=priority,
-            default_kwargs=default_kwargs,
-        )
-
-        return func
-
-    return inner

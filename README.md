@@ -1,6 +1,6 @@
 # Pulsarity
 
-> [!CAUTION]  
+> [!CAUTION]
 > This project is currently in early development -
 > it is not a usable appication at this point in time.
 
@@ -33,28 +33,26 @@ installed as a command line tool, the standard _and_ development
 dependencies can be installed with running the following
 command in the root of the repo:
 
-```
+```bash
 uv sync
 ```
 
-> [!NOTE] 
+> [!NOTE]
 > This automatially installs the basic dependencies needed to
-> run the application as well as the development dependencies 
-> located under the `dev` dependency group found in the 
+> run the application as well as the development dependencies
+> located under the `dev` dependency group found in the
 > `pyproject.toml` file.
 
-> [!NOTE] 
-> Additional extra dependencies or dependency groups can also be 
+> [!NOTE]
+> Additional extra dependencies or dependency groups can also be
 > install by either including the `--extra` or `--group` arguments.
-> 
-> E.g. To install the `pgsql` extra dependencies, append `--extra pgsql`
 >
 > E.g. To install the `docs` dependency group, append `--group docs`
 
 To start the default webserver, the following command can
 be used:
 
-```
+```bash
 uv run pulsarity
 ```
 
@@ -68,24 +66,24 @@ the repo and use the following command to install the
 dependencies and an editable version of the project into
 the virtual environment:
 
-```
+```bash
 python -m pip install . -e
 ```
 
-> [!Note] 
+> [!NOTE]
 > This only installs the basic dependencies needed to
 > run the application.
 
 To install the the application with the `pgsql` extra dependency,
 use the following command instead:
 
-```
+```bash
 python -m pip install .[pgsql] -e
 ```
 
 To start the default webserver, the following command can
 be used:
 
-```
+```bash
 python -m pulsarity
 ```

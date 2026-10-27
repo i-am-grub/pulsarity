@@ -1,4 +1,4 @@
-Developer documentation
+Project Development
 =======================
 
 .. toctree::
