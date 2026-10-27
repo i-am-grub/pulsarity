@@ -2,6 +2,7 @@
 User interface building blocks
 """
 
+from pulsarity._core.database import SystemDefaultPerms
 from pulsarity._core.user_interface.elements import (
     UIButtonField,
     UICheckboxValueField,
@@ -22,6 +23,7 @@ from pulsarity._core.user_interface.elements import (
 from pulsarity._core.user_interface.pages import UIPage
 
 __all__ = (
+    "SystemDefaultPerms",
     "UIButtonField",
     "UICheckboxValueField",
     "UIDateValueField",

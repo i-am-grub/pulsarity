@@ -62,8 +62,8 @@ class UIElement[T: Message](ABC):
 
     visible: bool = field(default=True, init=False)
 
-    permission: SystemDefaultPerms | str | None = field(default=None, kw_only=True)
     auto_register: InitVar[bool] = field(default=False, kw_only=True)
+    permission: SystemDefaultPerms | str | None = field(default=None, kw_only=True)
 
     def __post_init__(self, auto_register: bool) -> None:
         if auto_register:

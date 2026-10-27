@@ -46,8 +46,6 @@ uv sync
 > [!NOTE]
 > Additional extra dependencies or dependency groups can also be
 > install by either including the `--extra` or `--group` arguments.
-> 
-> E.g. To install the `pgsql` extra dependencies, append `--extra pgsql`
 >
 > E.g. To install the `docs` dependency group, append `--group docs`
 

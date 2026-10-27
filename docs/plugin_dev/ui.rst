@@ -18,11 +18,11 @@ The following user interface elements are currently supported:
 +---------------------+-----------------------------------------------+
 | Element Tree        | :py:class:`~pulsarity.api.ui.UIETree`         |
 +---------------------+-----------------------------------------------+
-| Markdown Renderer   | :py:class:`~pulsarity.api.ui.UIMarkdownField` |
+| Markdown Field      | :py:class:`~pulsarity.api.ui.UIMarkdownField` |
 +---------------------+-----------------------------------------------+
-| Button              | :py:class:`~pulsarity.api.ui.UIButtonField`   |
+| Button Field        | :py:class:`~pulsarity.api.ui.UIButtonField`   |
 +---------------------+-----------------------------------------------+
-| Value Fields        | (See table below)                             |
+| Value Field         | (See table below)                             |
 +---------------------+-----------------------------------------------+
 
 Value fields are based on HTML input types. The following are currently
@@ -56,13 +56,13 @@ supported:
 | URL                 | :py:class:`~pulsarity.api.ui.UIURLValueField`          |
 +---------------------+--------------------------------------------------------+
 
+
 Element Registration
 --------------------
 
 All user interface objects must be registered before use. Each element
-mush be explictly registered before it is included.
-
-The 
+mush be explictly registered before it is included. Two ways to register an
+user interface element are demonstrated in the following snippet:
 
 .. code-block:: python
 
@@ -74,3 +74,115 @@ The
 
     # register an element tree with an explict initialization variable
     tree2 = UIETree(auto_register=True)
+
+
+Element Permission
+--------------------
+
+All user interface objects can be assigned a permission that an
+authenticated user is required to hold in order for the user interface
+element to be rendered in the user interface. When the required
+permission is held by the system's `UNAUTHENTICATED` role, elements
+are visible to unauthenticated users.
+
+.. code-block:: python
+
+    from pulsarity.api.ui import SystemDefaultPerms, UIETree
+
+    # Create a new tree that is only accessible to users holding the
+    # the `SYSTEM_CONTROL` permission. Elements attached under this
+    # tree will not be rendered for usering missing the required
+    # permission
+    page_tree = UIETree(permission=SystemDefaultPerms.SYSTEM_CONTROL)
+    page_tree.register()
+
+
+
+Pages
+--------------------
+
+.. code-block:: python
+    
+    from pulsarity.api.ui import UIPage
+
+    # Create a new page in the admin menu
+    custom_page = UIPage("my-plugin-page", parent="admin")
+    custom_page.register()
+
+    # Create a sub page of our main plugin page
+    sub_custom_page = UIPage("plugin-sub-page", parent=custom_page)
+    sub_custom_page.register()
+
+
+Element Trees
+--------------------
+
+Element trees are the backbone of building menus from plugins. They are the glue that
+map fields to specific pages (or routes) within the user interface. The element tree
+can be linked to a route in the following example:
+
+.. code-block:: python
+
+    from pulsarity.api.ui import UIETree, UIPage
+
+    # Create a new page in the admin menu
+    custom_page = UIPage("my-plugin-page", parent="admin", auto_register=True)
+
+    # Create a new tree that is automatically registed upon creation
+    page_tree = UIETree(auto_register=True)
+
+    # Map the tree to be attached to the custom page
+    page_tree.map_to_page(custom_page)
+
+
+Fields
+--------------------
+
+Fields are elements that can be attached to element trees. There are a variety
+of different kinds depending on the need of the plugin - the following snippet
+demonstrates adding a field to an element tree.
+
+.. code-block:: python
+
+    from pulsarity.api.ui import UIETree, UIMarkdownField, UIPage
+
+    # Create a new page with an element tree in the admin menu
+    custom_page = UIPage("my-plugin-page", parent="admin", auto_register=True)
+    page_tree = UIETree(auto_register=True)
+    page_tree.map_to_page(custom_page)
+
+    # Create a markdown field with a heading of "Hello World"
+    text = "# Hello World"
+    markdown_field = UIMarkdownField(text, auto_register=True)
+
+    # Add the markdown field to the element tree
+    page_tree.add_element(markdown_field)
+
+Fields can also be mapped to multiple element trees at once. This behavior
+allows for efficient reuse of data across user interface menus.
+
+.. code-block:: python
+
+    from pulsarity.api.ui import UIETree, UIMarkdownField, UIPage
+
+    # Create a new page with an element tree in the admin menu
+    custom_page = UIPage("my-plugin-page-1", parent="admin", auto_register=True)
+    page_1_tree = UIETree(auto_register=True)
+    page_1_tree.map_to_page(custom_page)
+
+    # Create another page with an element tree in the admin menu
+    custom_page = UIPage("my-plugin-page-2", parent="admin", auto_register=True)
+    page_2_tree = UIETree(auto_register=True)
+    page_2_tree.map_to_page(custom_page)
+
+    # Create a markdown field with a heading of "Hello World"
+    text = "# Hello World"
+    markdown_field = UIMarkdownField(text, auto_register=True)
+
+    # Add the markdown field to the element tree 1
+    page_1_tree.add_element(markdown_field)
+
+    # Also register the element to be rendered from element tree 2
+    page_2_tree.add_element(markdown_field)
+
+
