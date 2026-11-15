@@ -33,7 +33,7 @@ dependencies = [
     "cffi==2.1.1",                                        # argon, cryptography
     "argon2-cffi-bindings==26.1.0",                       # argon
     "pycparser==3.12",                                    # cffi
-    "click==8.5.0",                                       # granian
+    "click==8.5.1",                                       # granian
     "itsdangerous==2.2.0",                                # star-sessions
     "aiosqlite==0.22.1",                                  # tortoise-orm
     "iso8601==2.1.0",                                     # tortoise-orm
