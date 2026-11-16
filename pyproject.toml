@@ -22,7 +22,7 @@ dependencies = [
     "cryptography==50.0.2",
     "argon2-cffi==25.1.0",
     "tortoise-orm==1.1.9",
-    "anyio==4.15.1",
+    "anyio==4.16.0",
     "protobuf==7.36.2",
     "async-lru==2.4.0",
     "packaging==26.3",
