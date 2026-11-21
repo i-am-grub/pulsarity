@@ -406,7 +406,7 @@ async def get_server_info() -> Response:
     packs = pulsarity_localization.get_language_packs()
 
     message = http_pb2.ServerData(
-        version=pulsarity.version.public,
+        version=pulsarity.__version__,
         server_name=configs.general.server_name,
         language_version=pulsarity_localization.__version__,
         language_packs=packs,

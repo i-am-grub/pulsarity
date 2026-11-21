@@ -110,7 +110,7 @@ async def _server() -> None:
     logger.info("Platform: %s", platform.platform())
     logger.info("CPU count: %s", os.cpu_count())
     logger.info("Python: %s", platform.python_version())
-    logger.info("GIL disabled: %s", not sys._is_gil_enabled())
+    logger.info("GIL enabled: %s", sys._is_gil_enabled())
     logger.info("JIT enabled: %s", sys._jit.is_enabled())
     logger.debug("Granian server: %s", granian.__version__)
     logger.info("Pulsarity application: %s", pulsarity.__version__)
