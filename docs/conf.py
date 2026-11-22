@@ -26,6 +26,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.coverage",
     "sphinx_autodoc_typehints",
+    "sphinx.ext.napoleon",
 ]
 
 templates_path = ["_templates"]
@@ -74,3 +75,8 @@ autodoc_default_options = {
 # https://myst-parser.readthedocs.io/en/stable/syntax/optional.html#syntax-extensions
 
 myst_enable_extensions = ["alert"]
+
+
+# -- Napoleon  ---------------------------------------
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False

@@ -1,6 +1,4 @@
-"""
-ORM classes for Format data
-"""
+"""ORM classes for Format data."""
 
 from tortoise import fields
 
@@ -9,13 +7,11 @@ from pulsarity._core.database._base import PulsarityBase as _PulsarityBase
 from pulsarity._core.database._base import PulsarityMessageBase as _PulsarityMessageBase
 
 
-class RulesetField[ATTRIBUTE](_PulsarityMessageBase):
-    """
-    Unique fields for a race ruleset.
-    """
+class RulesetField[T](_PulsarityMessageBase):
+    """Unique fields for a race ruleset."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "ruleset_field"
@@ -26,19 +22,17 @@ class RulesetField[ATTRIBUTE](_PulsarityMessageBase):
         related_name="ruleset_fields",
     )
     name = fields.CharField(max_length=80)
-    value = fields.JSONField[ATTRIBUTE]()
+    value = fields.JSONField[T]()
 
     def to_message(self) -> database_pb2.Attribute:
         return database_pb2.Attribute(name=self.name)
 
 
 class RaceFormat(_PulsarityBase):
-    """
-    The properties that govern how a race is conducted
-    """
+    """The properties that govern how a race is conducted."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "raceformat"

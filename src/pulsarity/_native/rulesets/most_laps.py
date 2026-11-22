@@ -1,6 +1,4 @@
-"""
-Most laps implementation
-"""
+"""Most laps implementation."""
 
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -21,9 +19,7 @@ from pulsarity.api.ruleset import (
 
 @final
 class _MostLapsManager(LapsManager):
-    """
-    Lap data manager for a single slot
-    """
+    """Lap data manager for a single slot."""
 
     __slots__ = ("_all_laps", "_metrics", "_primary_laps", "_score", "_split_laps")
 
@@ -45,27 +41,31 @@ class _MostLapsManager(LapsManager):
         holeshot: bool = False,
         consec_laps: int = 3,
     ) -> CombinedMetrics | None:
-        """
-        Gets the combined metrics
+        """Gets the combined metrics.
 
-        :param holeshot: Holeshot active, defaults to False
-        :param consec_laps: The max consecutive laps, defaults to 3
-        :return: The generated metrics
+        Args:
+            holeshot: Holeshot active, defaults to False
+            consec_laps: The max consecutive laps, defaults to 3
+
+        Returns:
+            The calculated metrics
         """
         if self._metrics is None:
             self._metrics = self.get_combined_metrics(holeshot, consec_laps)
         return self._metrics
 
     def get_score(self):
-        """
-        Return from cache or build slot score based on the following order:
+        """Return from cache or build slot score.
+
+        The score is based on the following order:
         - Primary laps completed
         - Index of the timer who recorded the last split lap that proceeds
         the last recorded primary lap
         - The timestamp of the last recorded lap
-        (inverted to make smaller timestamps ranked higher)
+        (inverted to make smaller timestamps ranked higher).
 
-        :return: The tuple containing the score
+        Returns:
+            The tuple containing the score
         """
         if self._score is not None:
             return self._score
@@ -94,9 +94,7 @@ class _MostLapsManager(LapsManager):
 @final
 @dataclass(frozen=True, slots=True)
 class _MostLapsFields(RulesetCustomFields):
-    """
-    Fields for MostLapsRuleset
-    """
+    """Fields for MostLapsRuleset."""
 
     holeshot: bool = field(default=False, metadata={"display_name": "Holeshot"})
     consecutive: int = field(default=3, metadata={"display_name": "Consecutive Laps"})
@@ -105,9 +103,7 @@ class _MostLapsFields(RulesetCustomFields):
 @register_ruleset
 @final
 class MostLapsRuleset(RaceRuleset[_MostLapsFields, SoloResultData]):
-    """
-    ruleset to enforce the most laps ruleset
-    """
+    """Ruleset to enforce the most laps ruleset."""
 
     __slots__ = ("_cache", "_count", "_format", "_lap_data", "_race_time_millis")
 
@@ -144,8 +140,8 @@ class MostLapsRuleset(RaceRuleset[_MostLapsFields, SoloResultData]):
         return all(self.is_slot_done(slot) for slot in self._lap_data)
 
     def _get_cache(self) -> dict[int, SlotResult[SoloResultData]]:
-        """
-        Reads from the cache; if it doesn't exist, build it first.
+        """Reads from the cache. If it doesn't exist, build it first.
+
         Makes use of the `_MostLapsManager`'s ability to be sorted
         against itself by each instance's current score.
         """

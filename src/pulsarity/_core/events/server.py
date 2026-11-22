@@ -1,6 +1,4 @@
-"""
-System events originating on the server
-"""
+"""System events originating on the server."""
 
 import itertools
 import uuid
@@ -18,9 +16,7 @@ _registered: set[websocket_pb2.EventID] = set()
 
 @dataclass_transform(frozen_default=True)
 def system_event[T: SystemEventData](cls: type[T]) -> type[T]:
-    """
-    Decorator for generating registering system event handlers as dataclasses
-    """
+    """Decorator for generating registering system event handlers as dataclasses."""
     if cls.event_id in _registered:
         msg = f"Class with event_id={cls.event_id} already registered"
         raise ValueError(msg)
@@ -35,10 +31,7 @@ def system_event[T: SystemEventData](cls: type[T]) -> type[T]:
 
 @unique
 class EvtPriority(Enum):
-    """
-    The priority of the event over other events that may
-    be queued.
-    """
+    """The priority of the event over other events that may be queued."""
 
     HIGHEST = 1
     HIGHER = 2
@@ -54,9 +47,7 @@ class EvtPriority(Enum):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class SystemEventData(ABC):
-    """
-    ABC for event data originating on the server
-    """
+    """ABC for event data originating on the server."""
 
     _counter: ClassVar = itertools.count()
     """Event data ID generator"""
@@ -76,18 +67,14 @@ class SystemEventData(ABC):
     """Serialized message cache"""
 
     def serialize_message(self) -> bytes:
-        """
-        Generate the serialized message
-        """
+        """Generate the serialized message."""
         return websocket_pb2.WebsocketEvent(
             uuid=self.uuid.bytes,
             event_id=self.event_id,
         ).SerializeToString()
 
     def message_dump_protobuf(self) -> bytes:
-        """
-        Serialize as a protocol buffer message
-        """
+        """Serialize as a protocol buffer message."""
         if self._cached_message is None:
             serialized_message = self.serialize_message()
             object.__setattr__(self, "_cached_message", serialized_message)
@@ -99,9 +86,7 @@ class SystemEventData(ABC):
 
 @system_event
 class SystemHeartBeat(SystemEventData):
-    """
-    Heartbeat echo
-    """
+    """Heartbeat echo."""
 
     event_id = websocket_pb2.EVENT_HEARTBEAT
     priority = EvtPriority.LOW
@@ -110,9 +95,7 @@ class SystemHeartBeat(SystemEventData):
 
 @system_event
 class SystemPermissionUpdate(SystemEventData):
-    """
-    Permission update
-    """
+    """Permission update."""
 
     event_id = websocket_pb2.EVENT_PERMISSIONS_UPDATE
     priority = EvtPriority.HIGH
@@ -121,9 +104,7 @@ class SystemPermissionUpdate(SystemEventData):
 
 @system_event
 class ServerStartup(SystemEventData):
-    """
-    System startup event
-    """
+    """System startup event."""
 
     event_id = websocket_pb2.EVENT_STARTUP
     priority = EvtPriority.HIGHEST
@@ -132,9 +113,7 @@ class ServerStartup(SystemEventData):
 
 @system_event
 class ServerShutdown(SystemEventData):
-    """
-    System shutdown event
-    """
+    """System shutdown event."""
 
     event_id = websocket_pb2.EVENT_SHUTDOWN
     priority = EvtPriority.HIGHEST
@@ -143,9 +122,7 @@ class ServerShutdown(SystemEventData):
 
 @system_event
 class ServerRestart(SystemEventData):
-    """
-    System restart event
-    """
+    """System restart event."""
 
     event_id = websocket_pb2.EVENT_RESTART
     priority = EvtPriority.LOW
@@ -154,9 +131,7 @@ class ServerRestart(SystemEventData):
 
 @system_event
 class RaceSchedule(SystemEventData):
-    """
-    Race schedule event
-    """
+    """Race schedule event."""
 
     event_id = websocket_pb2.EVENT_RACE_SCHEDULE
     priority = EvtPriority.HIGHEST
@@ -165,9 +140,7 @@ class RaceSchedule(SystemEventData):
 
 @system_event
 class RaceStage(SystemEventData):
-    """
-    Race stage event
-    """
+    """Race stage event."""
 
     event_id = websocket_pb2.EVENT_RACE_STAGE
     priority = EvtPriority.HIGHEST
@@ -176,9 +149,7 @@ class RaceStage(SystemEventData):
 
 @system_event
 class RaceStart(SystemEventData):
-    """
-    Race schedule event
-    """
+    """Race schedule event."""
 
     event_id = websocket_pb2.EVENT_RACE_START
     priority = EvtPriority.HIGHEST
@@ -187,9 +158,7 @@ class RaceStart(SystemEventData):
 
 @system_event
 class RaceFinish(SystemEventData):
-    """
-    Race stop event
-    """
+    """Race stop event."""
 
     event_id = websocket_pb2.EVENT_RACE_FINISH
     priority = EvtPriority.HIGHEST
@@ -198,9 +167,7 @@ class RaceFinish(SystemEventData):
 
 @system_event
 class RaceStop(SystemEventData):
-    """
-    Race stop event
-    """
+    """Race stop event."""
 
     event_id = websocket_pb2.EVENT_RACE_STOP
     priority = EvtPriority.HIGHEST
@@ -209,9 +176,7 @@ class RaceStop(SystemEventData):
 
 @system_event
 class RacePause(SystemEventData):
-    """
-    Race stop event
-    """
+    """Race stop event."""
 
     event_id = websocket_pb2.EVENT_RACE_PAUSE
     priority = EvtPriority.HIGHEST
@@ -220,9 +185,7 @@ class RacePause(SystemEventData):
 
 @system_event
 class RaceResume(SystemEventData):
-    """
-    Race stop event
-    """
+    """Race stop event."""
 
     event_id = websocket_pb2.EVENT_RACE_RESUME
     priority = EvtPriority.HIGHEST
@@ -231,9 +194,7 @@ class RaceResume(SystemEventData):
 
 @system_event
 class PilotAdd(SystemEventData):
-    """
-    Pilot Add event
-    """
+    """Pilot Add event."""
 
     event_id = websocket_pb2.EVENT_PILOT_ADD
     priority = EvtPriority.MEDIUM
@@ -253,9 +214,7 @@ class PilotAdd(SystemEventData):
 
 @system_event
 class PilotAlter(SystemEventData):
-    """
-    Pilot alter event
-    """
+    """Pilot alter event."""
 
     event_id = websocket_pb2.EVENT_PILOT_ALTER
     priority = EvtPriority.MEDIUM
@@ -275,9 +234,7 @@ class PilotAlter(SystemEventData):
 
 @system_event
 class PilotDelete(SystemEventData):
-    """
-    Pilot delete event
-    """
+    """Pilot delete event."""
 
     event_id = websocket_pb2.EVENT_PILOT_DELETE
     priority = EvtPriority.MEDIUM

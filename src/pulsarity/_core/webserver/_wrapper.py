@@ -1,6 +1,4 @@
-"""
-Endpoint wrappers
-"""
+"""Endpoint wrappers."""
 
 from __future__ import annotations
 
@@ -38,9 +36,7 @@ logger = logging.getLogger(__name__)
 
 @final
 class ProtobufResponse(Response):
-    """
-    Response sending protocol buffer data
-    """
+    """Response sending protocol buffer data."""
 
     __slots__ = ("background", "body", "status_code")
 
@@ -62,8 +58,7 @@ class ProtobufResponse(Response):
 
 @dataclass(frozen=True, slots=True)
 class _HttpModel:
-    """
-    Base class for http route data
+    """Base class for http route data.
 
     When data is being validated with `__post_init__`, validation errors
     should raise `ValueError`
@@ -72,38 +67,28 @@ class _HttpModel:
 
 @dataclass_transform(frozen_default=True)
 def http_route_dataclass[T: _HttpModel](cls: type[T]) -> type[T]:
-    """
-    Decorator for generating dataclasses for http requests
-    """
+    """Decorator for generating dataclasses for http requests."""
     return dataclass(cls, frozen=True, slots=True)
 
 
 @http_route_dataclass
 class QueryDataModelType(_HttpModel):
-    """
-    Dataclass for query parameter data
-    """
+    """Dataclass for query parameter data."""
 
 
 @http_route_dataclass
 class PathDataModelType(_HttpModel):
-    """
-    Dataclass for request path data
-    """
+    """Dataclass for request path data."""
 
 
 @http_route_dataclass
 class RequestModelType(_HttpModel, ABC):
-    """
-    Dataclass for post/put request data
-    """
+    """Dataclass for post/put request data."""
 
     @classmethod
     @abstractmethod
     def from_protobuf(cls, data: bytes) -> Self:
-        """
-        Generate a request instance from recieved bytes
-        """
+        """Generate a request instance from recieved bytes."""
 
 
 class _ValModels(NamedTuple):
@@ -119,15 +104,14 @@ def endpoint(
     query_model: type[QueryDataModelType] | None = None,
     path_model: type[PathDataModelType] | None = None,
 ):
-    """
-    Decorator for validating request data, user permissions, and
-    response data for a route
+    """Decorator for validating request data, user permissions, and response data.
 
-    :param permission: The permissions required to access the route
-    :param requires_auth: Whether the endpoint request authentication or not
-    :param request_model: The model to use to validate the request
-    :param query_model: The adapter model to use to validate the query parameters
-    :param path_model: The adapter model to use to validate the query parameters
+    Args:
+        permissions: The permissions required to access the route
+        requires_auth: Whether authentication is required or not. Defaults to True.
+        request_model: The model to use to validate the request.
+        query_model: The adapter model to use to validate the query parameters.
+        path_model: The adapter model to use to validate the query parameters.
     """
 
     def inner(
@@ -198,10 +182,7 @@ def _validate_compatibility(
     used_kwargs: set[str],
     arg_id: str,
 ):
-    """
-    Validate the compatibility between the function and provided model
-    """
-
+    """Validate the compatibility between the function and provided model."""
     if model is not None:
         if arg_id not in used_kwargs:
             msg = (
@@ -227,9 +208,7 @@ async def _process_request(  # noqa: C901
     request: Request,
     val_models: _ValModels,
 ) -> Response:
-    """
-    Processes the incoming request
-    """
+    """Processes the incoming request."""
     kwargs: dict[str, _HttpModel] = {}
 
     if val_models.request is not None:

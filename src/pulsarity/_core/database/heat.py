@@ -1,6 +1,4 @@
-"""
-ORM classes for heat data
-"""
+"""ORM classes for heat data."""
 
 from __future__ import annotations
 
@@ -20,13 +18,11 @@ if TYPE_CHECKING:
     from pulsarity._core.database.slot import Slot
 
 
-class HeatAttribute[ATTRIBUTE](_PulsarityMessageBase):
-    """
-    Unique and stored individually stored values for each heat.
-    """
+class HeatAttribute[T](_PulsarityMessageBase):
+    """Unique and stored individually stored values for each heat."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "heat_attr"
@@ -37,19 +33,17 @@ class HeatAttribute[ATTRIBUTE](_PulsarityMessageBase):
         "event.Heat",
         related_name="attributes",
     )
-    value = fields.JSONField[ATTRIBUTE]()
+    value = fields.JSONField[T]()
 
     def to_message(self) -> database_pb2.Attribute:
         return database_pb2.Attribute(name=self.name)
 
 
 class Heat(_PulsarityRaceBase):
-    """
-    Database content for race heats
-    """
+    """Database content for race heats."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "heat"

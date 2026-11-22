@@ -1,6 +1,4 @@
-"""
-Application context managment
-"""
+"""Application context managment."""
 
 from __future__ import annotations
 

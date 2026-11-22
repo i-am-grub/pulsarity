@@ -1,6 +1,4 @@
-"""
-ORM classes for Role data
-"""
+"""ORM classes for Role data."""
 
 from __future__ import annotations
 
@@ -16,12 +14,10 @@ if TYPE_CHECKING:
 
 
 class Role(_PulsarityBase):
-    """
-    Role for the application
-    """
+    """Role for the application."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "system"
         table = "role"
@@ -40,28 +36,27 @@ class Role(_PulsarityBase):
     """Entry is persistent in database"""
 
     async def get_permissions(self) -> set[str]:
-        """
-        Gets the permissions for the role. Should be ran while the database
-        session is still active.
+        """Gets the permissions for the role.
 
-        :return: The set of permissions
+        Should be ran while the database session is still active.
+
+        Returns:
+            The set of permissions
         """
         return set(await self.permissions.all().values_list("value", flat=True))  # pyright: ignore[reportReturnType]
 
     async def add_permissions(self, *permissions: Permission) -> None:
-        """
-        Set the permissions for a role. Overwrites any previous values
+        """Set the permissions for a role. Overwrites any previous values.
 
-        :param value: The permissions to set
+        Args:
+            permissions: The permission(s) to set
         """
         await self.permissions.clear()
         await self.permissions.add(*permissions)
 
     @classmethod
     async def verify_persistant(cls) -> None:
-        """
-        Verify all system roles are in the user database.
-        """
+        """Verify all system roles are in the user database."""
         admin_role, _ = await cls.get_or_create(name="SYSTEM_ADMIN", persistent=True)
 
         permissions = await Permission.all()

@@ -1,6 +1,4 @@
-"""
-ORM classes for event data
-"""
+"""ORM classes for event data."""
 
 from __future__ import annotations
 
@@ -20,13 +18,11 @@ if TYPE_CHECKING:
     from pulsarity._core.database.raceclass import RaceClass
 
 
-class RaceEventAttribute[ATTRIBUTE](_PulsarityMessageBase):
-    """
-    Unique and stored individually stored values for each event.
-    """
+class RaceEventAttribute[T](_PulsarityMessageBase):
+    """Unique and stored individually stored values for each event."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "raceevent_attr"
@@ -37,19 +33,17 @@ class RaceEventAttribute[ATTRIBUTE](_PulsarityMessageBase):
         "event.RaceEvent",
         related_name="attributes",
     )
-    value = fields.JSONField[ATTRIBUTE]()
+    value = fields.JSONField[T]()
 
     def to_message(self) -> database_pb2.Attribute:
         return database_pb2.Attribute(name=self.name)
 
 
 class RaceEvent(_PulsarityRaceBase):
-    """
-    Database content for race events
-    """
+    """Database content for race events."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "raceevent"
@@ -65,8 +59,7 @@ class RaceEvent(_PulsarityRaceBase):
 
     @property
     def name(self) -> str:
-        """
-        Generates the displayed name for the user
+        """Generates the displayed name for the user.
 
         :return: The user's display name
         """
@@ -77,10 +70,7 @@ class RaceEvent(_PulsarityRaceBase):
 
     @property
     async def max_raceclass_num(self) -> int | None:
-        """
-        Gets the maximum value number used as a `raceclass_num` in an events
-        raceclasses
-        """
+        """Gets the maximum value number used as a `raceclass_num` in a raceclass."""
         value = await self.raceclasses.all().annotate(max=Max("raceclass_num")).first()
 
         if value is not None:
@@ -89,10 +79,10 @@ class RaceEvent(_PulsarityRaceBase):
         return None
 
     async def get_next_raceclass_num(self) -> int:
-        """
-        The next recommend `raceclass_num` to use
+        """The next recommend `raceclass_num` to use.
 
-        :return: The recommended integer
+        Returns:
+            The recommended integer
         """
         value = await self.max_raceclass_num
 
@@ -102,9 +92,7 @@ class RaceEvent(_PulsarityRaceBase):
         return value + 1
 
     def __lt__(self, obj: Self) -> bool:
-        """
-        Less than comparsion operator. Enables sorting by dates
-        """
+        """Less than comparsion operator. Enables sorting by dates."""
         return self.date < obj.date
 
     def to_message(self) -> database_pb2.RaceEvent:
@@ -120,8 +108,6 @@ class RaceEvent(_PulsarityRaceBase):
 
     @classmethod
     def iterable_to_message(cls, iterable: Iterable[Self]) -> database_pb2.RaceEvents:
-        """
-        Convert iterable to protocol buffer structure
-        """
+        """Convert iterable to protocol buffer structure."""
         evts = (evt.to_message() for evt in iterable)
         return database_pb2.RaceEvents(events=evts)

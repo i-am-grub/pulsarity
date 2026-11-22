@@ -1,6 +1,4 @@
-"""
-HTTP Rest API Routes
-"""
+"""HTTP Rest API Routes."""
 
 import asyncio
 import logging
@@ -50,8 +48,7 @@ rng = secrets.SystemRandom()
 
 @endpoint(requires_auth=False)
 async def check_auth() -> Response:
-    """
-    Check if a user is authenticated
+    """Check if a user is authenticated.
 
     :return: The user's authentication status
     """
@@ -73,9 +70,7 @@ async def check_auth() -> Response:
 
 @http_route_dataclass
 class _LoginRequest(RequestModelType):
-    """
-    Request to login to the server
-    """
+    """Request to login to the server."""
 
     username: str
     password: str
@@ -88,11 +83,7 @@ class _LoginRequest(RequestModelType):
 
 @endpoint(requires_auth=False, request_model=_LoginRequest)
 async def login(request: _LoginRequest) -> Response:
-    """
-    Pass the user credentials to log the user into the server
-
-    :return: JSON containing the status of the request
-    """
+    """Attempt to authenticate the user with the provided credentials."""
     loop = asyncio.get_running_loop()
     start = loop.time()
     evt = asyncio.Event()
@@ -138,11 +129,7 @@ async def login(request: _LoginRequest) -> Response:
 
 @endpoint()
 async def logout() -> Response:
-    """
-    Logout the currently connected client
-
-    :return: JSON containing the status of the request
-    """
+    """Logout the currently connected client."""
     auth_user = ctx.request_ctx.get().user
     logger.info("Logging out user %s", auth_user.identity)
     ctx.request_ctx.get().session.clear()
@@ -151,9 +138,7 @@ async def logout() -> Response:
 
 @http_route_dataclass
 class _ResetPasswordRequest(RequestModelType):
-    """
-    Request to reset a user's password
-    """
+    """Request to reset a user's password."""
 
     old_password: str
     new_password: str
@@ -166,11 +151,7 @@ class _ResetPasswordRequest(RequestModelType):
 
 @endpoint(request_model=_ResetPasswordRequest)
 async def reset_password(request: _ResetPasswordRequest) -> Response:
-    """
-    Resets the password for the client user
-
-    :return: JSON containing the status of the request
-    """
+    """Resets the password for the client user."""
     if request.new_password == request.old_password:
         return Response(status_code=HTTPStatusCodes.BAD_REQUEST)
 
@@ -198,9 +179,7 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
 
 @http_route_dataclass
 class _LookupParams(PathDataModelType):
-    """
-    Model for parsing object id path params
-    """
+    """Model for parsing object id path params."""
 
     id: int
 
@@ -215,11 +194,7 @@ class _LookupParams(PathDataModelType):
     path_model=_LookupParams,
 )
 async def get_pilot(path: _LookupParams) -> Response:
-    """
-    Get the pilot by id
-
-    :return: Pilot data.
-    """
+    """Get the pilot by id."""
     pilot = await Pilot.get_by_id_with_attributes(path.id)
 
     if pilot is None:
@@ -230,9 +205,7 @@ async def get_pilot(path: _LookupParams) -> Response:
 
 @http_route_dataclass
 class _PaginationParams(QueryDataModelType):
-    """
-    Model for parsing pagination query parameters
-    """
+    """Model for parsing pagination query parameters."""
 
     cursor: int = 0
     limit: int = 10
@@ -248,12 +221,7 @@ class _PaginationParams(QueryDataModelType):
 
 @endpoint(SystemDefaultPerms.READ_PILOTS, query_model=_PaginationParams)
 async def get_pilots(query: _PaginationParams) -> Response:
-    """
-    A route for getting all pilots currently stored in the
-    database.
-
-    :return: A JSON model of all pilots
-    """
+    """A route for getting all pilots currently stored in the database."""
     pilots = (
         await Pilot.filter(id__gt=query.cursor)
         .limit(query.limit)
@@ -264,11 +232,7 @@ async def get_pilots(query: _PaginationParams) -> Response:
 
 @endpoint(SystemDefaultPerms.READ_EVENTS, path_model=_LookupParams)
 async def get_event(path: _LookupParams) -> Response:
-    """
-    Get the event by id
-
-    :return: Event data.
-    """
+    """Get the event by id."""
     event = await RaceEvent.get_by_id_with_attributes(path.id)
 
     if event is None:
@@ -279,12 +243,7 @@ async def get_event(path: _LookupParams) -> Response:
 
 @endpoint(SystemDefaultPerms.READ_EVENTS, query_model=_PaginationParams)
 async def get_events(query: _PaginationParams) -> Response:
-    """
-    A route for getting all events currently stored in the
-    database.
-
-    :return: A JSON model of all events
-    """
+    """A route for getting all events currently stored in the database."""
     events = (
         await RaceEvent.filter(id__gt=query.cursor)
         .limit(query.limit)
@@ -295,11 +254,7 @@ async def get_events(query: _PaginationParams) -> Response:
 
 @endpoint(SystemDefaultPerms.READ_RACECLASS, path_model=_LookupParams)
 async def get_racelass(path: _LookupParams) -> Response:
-    """
-    Get the raceclass by id
-
-    :return: Race Class data.
-    """
+    """Get the raceclass by id."""
     raceclass = await RaceClass.get_by_id_with_attributes(path.id)
 
     if raceclass is None:
@@ -317,12 +272,7 @@ async def get_raceclasses_for_event(
     path: _LookupParams,
     query: _PaginationParams,
 ) -> Response:
-    """
-    A route for getting all raceclasses currently stored in the
-    database.
-
-    :return: A JSON model of all raceclasses
-    """
+    """A route for getting all raceclasses currently stored in the database."""
     raceclasses = (
         await RaceClass.filter(event_id=path.id, id__gt=query.cursor)
         .limit(query.limit)
@@ -333,9 +283,7 @@ async def get_raceclasses_for_event(
 
 @endpoint(SystemDefaultPerms.READ_ROUND, path_model=_LookupParams)
 async def get_round(path: _LookupParams) -> Response:
-    """
-    Get the round by id
-    """
+    """Get the round by id."""
     round_ = await Round.get_by_id_with_attributes(path.id)
 
     if round_ is None:
@@ -353,9 +301,7 @@ async def get_rounds_for_raceclass(
     path: _LookupParams,
     query: _PaginationParams,
 ) -> Response:
-    """
-    Gets all rounds for a specific racelass
-    """
+    """Gets all rounds for a specific racelass."""
     rounds = (
         await Round.filter(raceclass_id=path.id, id__gt=query.cursor)
         .limit(query.limit)
@@ -366,9 +312,7 @@ async def get_rounds_for_raceclass(
 
 @endpoint(SystemDefaultPerms.READ_HEAT, path_model=_LookupParams)
 async def get_heat(path: _LookupParams) -> Response:
-    """
-    Get the heat by id
-    """
+    """Get the heat by id."""
     heat = await Heat.get_by_id_with_attributes(path.id)
 
     if heat is None:
@@ -386,9 +330,7 @@ async def get_heats_for_round(
     path: _LookupParams,
     query: _PaginationParams,
 ) -> Response:
-    """
-    Gets all heats for a specific round
-    """
+    """Gets all heats for a specific round."""
     heats = (
         await Heat.filter(round_id=path.id, id__gt=query.cursor)
         .limit(query.limit)
@@ -399,9 +341,7 @@ async def get_heats_for_round(
 
 @endpoint(requires_auth=False)
 async def get_server_info() -> Response:
-    """
-    Gets general server information
-    """
+    """Gets general server information."""
     configs = config.config_manager
 
     packs = pulsarity_localization.get_language_packs()
@@ -418,9 +358,7 @@ async def get_server_info() -> Response:
 
 @http_route_dataclass
 class _LocalizationPack(PathDataModelType):
-    """
-    Model for parsing object id path params
-    """
+    """Model for parsing object id path params."""
 
     key: str
 
@@ -428,9 +366,7 @@ class _LocalizationPack(PathDataModelType):
 @endpoint(requires_auth=False, path_model=_LocalizationPack)
 @async_lru.alru_cache()
 async def get_localization_pack(path: _LocalizationPack) -> Response:
-    """
-    Gets a localization pack for the key in the path
-    """
+    """Gets a localization pack for the key in the path."""
     pack = await pulsarity_localization.load_language_pack_async(path.key)
 
     if pack is not None:
@@ -445,8 +381,7 @@ async def get_localization_pack(path: _LocalizationPack) -> Response:
 
 @endpoint(requires_auth=True)
 async def get_pages() -> Response:
-    """
-    Get the stored ui page data.
+    """Get the stored ui page data.
 
     Data is filtered based on user permissions.
     """
@@ -456,8 +391,7 @@ async def get_pages() -> Response:
 
 @endpoint(requires_auth=True)
 async def get_etree_mappings() -> Response:
-    """
-    Get the route to element tree(s) mappings.
+    """Get the route to element tree(s) mappings.
 
     Data is filtered based on user permissions.
     """
@@ -467,8 +401,7 @@ async def get_etree_mappings() -> Response:
 
 @endpoint(requires_auth=True)
 async def get_etrees() -> Response:
-    """
-    Get the stored element tree data.
+    """Get the stored element tree data.
 
     Data is filtered based on user permissions.
     """
@@ -478,8 +411,7 @@ async def get_etrees() -> Response:
 
 @endpoint(requires_auth=True)
 async def get_markdown_fields() -> Response:
-    """
-    Get the stored markdown field data.
+    """Get the stored markdown field data.
 
     Data is filtered based on user permissions.
     """
@@ -489,8 +421,7 @@ async def get_markdown_fields() -> Response:
 
 @endpoint(requires_auth=True)
 async def get_button_fields() -> Response:
-    """
-    Get the stored button field data.
+    """Get the stored button field data.
 
     Data is filtered based on user permissions.
     """
@@ -500,8 +431,7 @@ async def get_button_fields() -> Response:
 
 @endpoint(requires_auth=True)
 async def get_value_fields() -> Response:
-    """
-    Get the stored value field data.
+    """Get the stored value field data.
 
     Data is filtered based on user permissions.
     """
@@ -511,8 +441,7 @@ async def get_value_fields() -> Response:
 
 @endpoint(requires_auth=True)
 async def get_all_elements() -> Response:
-    """
-    Load all user interface data from the server.
+    """Load all user interface data from the server.
 
     Data is filtered based on user permissions.
     """

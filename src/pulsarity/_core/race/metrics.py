@@ -1,6 +1,4 @@
-"""
-Commonly calculated race data metrics
-"""
+"""Commonly calculated race data metrics."""
 
 from collections import deque
 from typing import TYPE_CHECKING, NamedTuple
@@ -12,12 +10,14 @@ if TYPE_CHECKING:
 
 
 def calculate_num_laps(lap_data: Sequence[FullLapData], holeshot: bool = False) -> int:
-    """
-    Get number of laps completed
+    """Get number of laps completed.
 
-    :param lap_data: A sequence of lap data
-    :param holeshot: Holeshot active, defaults to False
-    :return: The number of laps completed
+    Args:
+        lap_data: A sequence of lap data
+        holeshot: Holeshot active. Defaults to False.
+
+    Returns:
+        The number of laps completed
     """
     num_laps = len(lap_data)
 
@@ -30,12 +30,14 @@ def calculate_num_laps(lap_data: Sequence[FullLapData], holeshot: bool = False) 
 def calculate_total_time_ms(
     sorted_lap_data: Sequence[FullLapData], holeshot: bool = False
 ) -> int:
-    """
-    Get the total time
+    """Get the total time.
 
-    :param sorted_lap_data: A sequence of sorted lap data
-    :param holeshot: Holeshot active, defaults to False
-    :return: The total time in milliseconds
+    Args:
+        sorted_lap_data: A sequence of sorted lap data
+        holeshot: Holeshot active. Defaults to False.
+
+    Returns:
+        The total time in milliseconds
     """
     if sorted_lap_data:
         last_lap = sorted_lap_data[-1]
@@ -53,12 +55,14 @@ def calculate_total_time_ms(
 def calculate_average_lap_time_ms(
     sorted_lap_data: Sequence[FullLapData], holeshot: bool = False
 ) -> int | None:
-    """
-    Get the average lap time
+    """Get the average lap time.
 
-    :param sorted_lap_data: A sequence of sorted lap data
-    :param holeshot: Holeshot active, defaults to False
-    :return: The average time in milliseconds
+    Args:
+        sorted_lap_data: A sequence of sorted lap data
+        holeshot: Holeshot active. Defaults to False.
+
+    Returns:
+        The average time in milliseconds
     """
     total_time = calculate_total_time_ms(sorted_lap_data, holeshot)
     num_laps = calculate_num_laps(sorted_lap_data, holeshot)
@@ -72,12 +76,14 @@ def calculate_average_lap_time_ms(
 def calculate_fastest_time_ms(
     sorted_lap_data: Iterable[FullLapData], holeshot: bool = False
 ) -> int | None:
-    """
-    Get the fastest lap time
+    """Get the fastest lap time.
 
-    :param sorted_lap_data: An iterable of sorted lap data
-    :param holeshot: Holeshot active, defaults to False
-    :return: The time associated with the fastest lap
+    Args:
+        sorted_lap_data: An iterable of sorted lap data
+        holeshot: Holeshot active. Defaults to False.
+
+    Returns:
+        The time associated with the fastest lap
     """
     fastest_time = float("inf")
     prev_time = 0
@@ -101,9 +107,7 @@ def calculate_fastest_time_ms(
 
 
 class ConsecutiveMetric(NamedTuple):
-    """
-    Number of laps and the time associated with consecutive laps
-    """
+    """Number of laps and the time associated with consecutive laps."""
 
     consec_base: int
     consec_time_ms: int
@@ -114,17 +118,15 @@ def calculate_fastest_consecutive_metric(
     holeshot: bool = False,
     max_laps: int = 3,
 ) -> ConsecutiveMetric | None:
-    """
-    Get the fastest consecutive lap times
+    """Get the fastest consecutive lap times.
 
-    Uses `get_combined_metrics` to generate the metrics
-    due to most of its logic is allocated to efficiently
-    calculate fastest consecutive time.
+    Args:
+        sorted_lap_data: An iterable of sorted lap data
+        holeshot: Holeshot active. Defaults to False.
+        max_laps: The max consecutive laps. Defaults to 3.
 
-    :param sorted_lap_data: An iterable of sorted lap data
-    :param holeshot: Holeshot active, defaults to False
-    :param max_laps: The max consecutive laps, defaults to 3
-    :return: A tuple of number of laps and the time associated with the laps
+    Returns:
+        A tuple of number of laps and the time associated with the laps
     """
     metrics = calculate_combined_metrics(sorted_lap_data, holeshot, max_laps)
     if metrics is None:
@@ -136,10 +138,7 @@ def calculate_fastest_consecutive_metric(
 
 
 class CombinedMetrics(NamedTuple):
-    """
-    A combination of multiple metrics that can be
-    calculated together efficiently
-    """
+    """A combination of multiple metrics that can be calculated together efficiently."""
 
     total_laps: int
     total_time_ms: int
@@ -154,8 +153,7 @@ def calculate_combined_metrics(
     holeshot: bool = False,
     consec_laps: int = 3,
 ) -> CombinedMetrics | None:
-    """
-    Generate multiple metrics at once.
+    """Generate multiple metrics at once.
 
     Includes the following:
     - number of laps completed
@@ -165,10 +163,13 @@ def calculate_combined_metrics(
     - consecutive lap base
     - fastest consecutive lap time
 
-    :param sorted_lap_data: An iterable of sorted lap data
-    :param holeshot: Holeshot active, defaults to False
-    :param max_laps: The max consecutive laps, defaults to 3
-    :return: The generated metrics
+    Args:
+        sorted_lap_data: An iterable of sorted lap data
+        holeshot: Holeshot active. Defaults to False.
+        consec_laps: The max consecutive laps. Defaults to 3.
+
+    Returns:
+        The generated metrics
     """
     store: deque[float] = deque(maxlen=consec_laps + 1)
     fastest_time = float("inf")

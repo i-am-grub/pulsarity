@@ -1,6 +1,4 @@
-"""
-Webserver Websocket Connections
-"""
+"""Webserver Websocket Connections."""
 
 import asyncio
 import logging
@@ -26,18 +24,14 @@ logger = logging.getLogger(__name__)
 
 
 class _WebsocketClosureInfo(NamedTuple):
-    """
-    Websocket closure status and message pairing
-    """
+    """Websocket closure status and message pairing."""
 
     code: WebSocketStatusCodes
     message: str
 
 
 class _WebsocketClosure(_WebsocketClosureInfo, Enum):
-    """
-    Enum for different types of websocket closures
-    """
+    """Enum for different types of websocket closures."""
 
     NORMAL_CLOSURE = WebSocketStatusCodes.NORMAL_CLOSURE, "standard client disconnect"
     GOING_AWAY = WebSocketStatusCodes.GOING_AWAY, "server shutting down"
@@ -45,9 +39,7 @@ class _WebsocketClosure(_WebsocketClosureInfo, Enum):
 
 
 async def send_event_data() -> None:
-    """
-    Handles writing event data over the websocket
-    """
+    """Handles writing event data over the websocket."""
     websocket = ctx.websocket_ctx.get()
     permissions = ctx.user_permsissions_ctx.get()
 
@@ -61,9 +53,7 @@ async def send_event_data() -> None:
 
 
 async def simplex_recieve_event_data() -> None:
-    """
-    Monitors recieved data for an incoming client disconnect message.
-    """
+    """Monitors recieved data for an incoming client disconnect message."""
     websocket = ctx.websocket_ctx.get()
 
     while True:
@@ -74,8 +64,7 @@ async def simplex_recieve_event_data() -> None:
 
 
 async def duplex_recieve_event_data() -> None:
-    """
-    Handles recieved data from the websocket connection.
+    """Handles recieved data from the websocket connection.
 
     Workflow:
     - Parse protocol buffer data
@@ -129,15 +118,11 @@ async def ws_connection(
     websocket: PulsarityWebsocket,
     rev_coro_func: Callable[[], Coroutine[None, None, None]],
 ) -> None:
-    """
-    Websocket client connection.
+    """Websocket client connection.
 
-    Manages seperate tasks for sending event data to and recieving data from
-    connected clients
-
-    :param websocket: The client websocket connection
-    :param rev_coro_func: The coroutine function to use for handling incoming data
-    from the connected client
+    Args:
+        websocket: The client websocket connection
+        rev_coro_func: The coroutine function to use for handling incoming data
     """
     close_info = _WebsocketClosure.NORMAL_CLOSURE
 
@@ -176,8 +161,7 @@ async def ws_connection(
 
 @requires(SystemDefaultPerms.READ_WEBSOCKET)
 async def simplex_ws(websocket: PulsarityWebsocket):
-    """
-    The simplex event websocket connection for clients.
+    """The simplex event websocket connection for clients.
 
     Prevents the ability to generate new websocket connections
     if the server is signalled to shut down.
@@ -196,8 +180,7 @@ async def simplex_ws(websocket: PulsarityWebsocket):
 
 @requires((SystemDefaultPerms.READ_WEBSOCKET, SystemDefaultPerms.WRITE_WEBSOCKET))
 async def duplex_ws(websocket: PulsarityWebsocket):
-    """
-    The full duplex event websocket connection for clients
+    """The full duplex event websocket connection for clients.
 
     Prevents the ability to generate new websocket connections
     if the server is signalled to shut down.

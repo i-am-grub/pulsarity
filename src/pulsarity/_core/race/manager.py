@@ -1,6 +1,4 @@
-"""
-Race state/timing management
-"""
+"""Race state/timing management."""
 
 import asyncio
 from collections import defaultdict
@@ -34,10 +32,7 @@ class _SignalHistoryTuple(NamedTuple):
 
 
 def _sort_history(history: _SignalHistory) -> _SignalHistoryTuple:
-    """
-    Sort the history based on the millis
-    """
-
+    """Sort the history based on the millis."""
     return _SignalHistoryTuple(
         *zip(*sorted(zip(history.millis, history.value, strict=True)), strict=True)
     )
@@ -48,9 +43,7 @@ SlotData = dict[tuple[int, str], _SignalHistory]
 
 @final
 class RaceManager:
-    """
-    Links race state/timing and race data
-    """
+    """Links race state/timing and race data."""
 
     ___slots__ = ("_state", "_save_lock", "_signal_data", "_ruleset")
 
@@ -68,49 +61,46 @@ class RaceManager:
 
     @property
     def status(self) -> RaceStatus:
-        """The current status of the race"""
+        """The current status of the race."""
         return self._state.status
 
     def get_race_time(self) -> float:
-        """
-        The current time of the race
-        """
+        """The current time of the race."""
         return self._state.get_race_time()
 
     def get_race_start_time(self) -> float:
-        """
-        The start time of the race
+        """The start time of the race.
 
-        :raises RuntimeError: When race is not active
-        :return: The start timestamp
+        Returns:
+            The start timestamp
         """
         return self._state.get_race_start_time()
 
     def get_race_finish_time(self) -> float:
-        """
-        The finish time of the race
+        """The finish time of the race.
 
-        :raises RuntimeError: When race is not active
-        :return: The finish timestamp
+        Returns:
+            The finish timestamp
         """
         return self._state.get_race_finish_time()
 
     def get_race_stop_time(self) -> float:
-        """
-        The stop time of the race
+        """The stop time of the race.
 
-        :raises RuntimeError: When race is not active
-        :return: The stop timestamp
+        Returns:
+            The stop timestamp
         """
         return self._state.get_race_stop_time()
 
     def schedule_race(self, format_: RaceFormat, assigned_start: float):
-        """
-        Schedule the sequence of events for the race
+        """Schedule the sequence of events for the race.
 
-        :param format_: The race format to use
-        :param assigned_start: The event loop start time of the race.
-        Currently equivalent to monotonic time
+        Args:
+            format_: The race format to use
+            assigned_start: The event loop monotonic start time of the race.
+
+        Raises:
+            RuntimeError: Race status is not READY
         """
         if self.status is not RaceStatus.READY:
             msg = f"Unable to schedule race when status is not {RaceStatus.READY}"
@@ -122,21 +112,17 @@ class RaceManager:
         self._state.schedule_race(safe_format, assigned_start)
 
     def stop_race(self) -> None:
-        """
-        Stop the race
-        """
+        """Stop the race."""
         self._state.stop_race()
 
     def pause_race(self) -> None:
-        """
-        Pause the race
-        """
+        """Pause the race."""
         self._state.pause_race()
 
     async def reset(self) -> None:
-        """
-        Reset the manager for the next race. The reset can only occur
-        when the race has been stopped.
+        """Reset the manager for the next race.
+
+        The reset can only occur when the race has been stopped.
 
         `WARNING`: This will clear all unsaved data
         """
@@ -147,11 +133,14 @@ class RaceManager:
                 self._signal_data.clear()
 
     def add_lap_record(self, slot: int, record: FullLapData) -> None:
-        """
-        Add lap record to the ruleset instance
+        """Add lap record to the ruleset instance.
 
-        :param slot: Slot to assign the lap record
-        :param lap_data: Lap data
+        Args:
+            slot: Slot to assign the lap record
+            record: The lap data
+
+        Raises:
+            RuntimeError: Ruleset is not set
         """
         if self._ruleset is not None:
             self._ruleset.add_lap_record(slot, record)
@@ -160,20 +149,20 @@ class RaceManager:
             raise RuntimeError(msg)
 
     def status_aware_lap_record(self, slot: int, record: FullLapData) -> None:
-        """
-        Add a lap record to the ruleset instance if the race status is underway
+        """Add a lap record to the ruleset instance if the race status is underway.
 
-        :param slot: The slot to add the lap record to
-        :param record: The lap record to add
+        Args:
+            slot: The slot to add the lap record to
+            record: The lap record to add
         """
         if self.status in RaceStatus.UNDERWAY:
             self.add_lap_record(slot, record)
 
     def add_signal_record(self, record: FullSignalData) -> None:
-        """
-        Add a signal record to the race manager
+        """Add a signal record to the race manager.
 
-        :param record: The signal record to store
+        Args:
+            record: The signal record to store
         """
         key = (record.timer_index, record.timer_identifier)
         a = self._signal_data[record.node_index][key]
@@ -181,20 +170,24 @@ class RaceManager:
         a.value.append(record.value)
 
     def status_aware_signal_record(self, record: FullSignalData) -> None:
-        """
-        Add a signal record to the race manager if the race status is underway
+        """Add a signal record to the race manager if the race status is underway.
 
-        :param record: The signal record to store
+        Args:
+            record: The signal record to store
         """
         if self.status in RaceStatus.UNDERWAY:
             self.add_signal_record(record)
 
     def remove_lap_record(self, slot: int, key: int) -> None:
-        """
-        Add remove record from the ruleset instance
+        """Add remove record from the ruleset instance.
 
-        :param slot: Slot to assign the lap record
-        :param key: The key to use for removing the record
+        Args:
+            slot: Slot to assign the lap record
+            key: The key to use for removing the record
+
+        Raises:
+            ValueError: Invalid value for lap key
+            RuntimeError: Ruleset not set
         """
         if self._ruleset is not None:
             try:
@@ -207,9 +200,7 @@ class RaceManager:
             raise RuntimeError(msg)
 
     async def _save_lap_data(self) -> None:
-        """
-        Saves the lap data to the database
-        """
+        """Saves the lap data to the database."""
         if self._ruleset is not None:
             laps = (
                 Lap(
@@ -226,9 +217,9 @@ class RaceManager:
             raise RuntimeError(msg)
 
     async def _save_signal_data(self) -> None:
-        """
-        Saves the signal history to the database. Each history is lazily processed
-        before it is written to the database.
+        """Saves the signal history to the database.
+
+        Each history is lazily processed before it is written to the database.
         """
 
         def generate_slot_history(slot: int, slot_data: SlotData):
@@ -250,9 +241,7 @@ class RaceManager:
         await SignalHistory.bulk_create(generate_slot_data(), batch_size=5)
 
     async def save_race_data(self) -> None:
-        """
-        Saves the race data to the database
-        """
+        """Saves the race data to the database."""
         if self._state.status is RaceStatus.STOPPED:
             async with self._save_lock, asyncio.TaskGroup() as tg:
                 tg.create_task(self._save_lap_data())

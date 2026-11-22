@@ -1,5 +1,4 @@
-"""
-Pulsarity core modules.
+"""Pulsarity core modules.
 
 These modules should not be accessed by plugins.
 """

@@ -1,6 +1,4 @@
-"""
-Pulsarity server entry point
-"""
+"""Pulsarity server entry point."""
 
 import asyncio
 import logging
@@ -33,13 +31,10 @@ logger = logging.getLogger(__name__)
 
 
 class PulsarityServer(Server):
-    """
-    Pulsarity ASGI webserver
-    """
+    """Pulsarity ASGI webserver."""
 
     async def shutdown_server(self):
-        """
-        Cleanly shutdown the webserver.
+        """Cleanly shutdown the webserver.
 
         This method will shutdown parts of the server
         that can not be cleaned up before the
@@ -50,17 +45,13 @@ class PulsarityServer(Server):
 
 
 def _signal_shutdown(*_) -> None:
-    """
-    Set the event to shutdown the server gracefully
-    """
+    """Set the event to shutdown the server gracefully."""
     ctx.shutdown_app.set()
     logger.debug("Server shutdown signaled")
 
 
 def _generate_server() -> PulsarityServer:
-    """
-    Serve the Pulsarity application from a Granian server
-    """
+    """Serve the Pulsarity application from a Granian server."""
     configs = config.config_manager
 
     app: ASGIApp = application.generate_pulsarity_application()
@@ -87,9 +78,7 @@ def _generate_server() -> PulsarityServer:
 
 
 async def _server() -> None:
-    """
-    The Pulsarity webserver coroutine.
-    """
+    """The Pulsarity webserver coroutine."""
     ctx.evt_loop = loop = asyncio.get_running_loop()
 
     if sys.platform == "win32":
@@ -123,9 +112,7 @@ async def _server() -> None:
 
 
 def main() -> None:
-    """
-    Run the default Pulsarity server
-    """
+    """Run the default Pulsarity server."""
     Path("logs").mkdir(exist_ok=True)
 
     ctx.event_broker = EventBroker()

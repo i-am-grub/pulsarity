@@ -1,6 +1,4 @@
-"""
-Utilities for managing connections
-"""
+"""Utilities for managing connections."""
 
 import asyncio
 from typing import final
@@ -8,10 +6,7 @@ from typing import final
 
 @final
 class WebsocketConnTracker:
-    """
-    Context manager for tracking the client websocket
-    connections actively connected to the server
-    """
+    """Context manager for tracking the active client websocket connections."""
 
     __slots__ = ("_evt", "_num_conn")
 
@@ -30,7 +25,5 @@ class WebsocketConnTracker:
             self._evt.set()
 
     async def wait_all_closed(self) -> None:
-        """
-        Wait for all websocket connections to close
-        """
+        """Wait for all websocket connections to close."""
         await self._evt.wait()

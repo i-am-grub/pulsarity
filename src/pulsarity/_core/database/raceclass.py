@@ -1,6 +1,4 @@
-"""
-ORM classes for race class data
-"""
+"""ORM classes for race class data."""
 
 from __future__ import annotations
 
@@ -22,13 +20,11 @@ if TYPE_CHECKING:
     from pulsarity._core.database.round import Round
 
 
-class RaceClassAttribute[ATTRIBUTE](_PulsarityMessageBase):
-    """
-    Unique and stored individually stored values for each race class.
-    """
+class RaceClassAttribute[T](_PulsarityMessageBase):
+    """Unique and stored individually stored values for each race class."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "raceclass_attr"
@@ -39,19 +35,17 @@ class RaceClassAttribute[ATTRIBUTE](_PulsarityMessageBase):
         "event.RaceClass",
         related_name="attributes",
     )
-    value = fields.JSONField[ATTRIBUTE]()
+    value = fields.JSONField[T]()
 
     def to_message(self) -> database_pb2.Attribute:
         return database_pb2.Attribute(name=self.name)
 
 
 class RaceClass(_PulsarityRaceBase):
-    """
-    Database content for raceclasses
-    """
+    """Database content for raceclasses."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "raceclass"
@@ -79,10 +73,10 @@ class RaceClass(_PulsarityRaceBase):
 
     @property
     def name(self) -> str:
-        """
-        Generates the displayed name for the user
+        """Generates the displayed name for the user.
 
-        :return: The user's display name
+        Returns:
+            The user's display name
         """
         if self.name_:
             return self.name_
@@ -91,10 +85,7 @@ class RaceClass(_PulsarityRaceBase):
 
     @property
     async def max_round_num(self) -> int | None:
-        """
-        Gets the maximum value number used as a `raceclass_num` in an events
-        raceclasses
-        """
+        """Gets the maximum value number used as a `raceclass_num` in a raceclass."""
         value = await self.rounds.all().annotate(max=Max("round_num")).first()
 
         if value is not None:
@@ -103,10 +94,10 @@ class RaceClass(_PulsarityRaceBase):
         return None
 
     async def get_next_round_num(self) -> int:
-        """
-        The next recommend `raceclass_num` to use
+        """The next recommend `raceclass_num` to use.
 
-        :return: The recommended integer
+        Returns:
+            The recommended integer
         """
         value = await self.max_round_num
 

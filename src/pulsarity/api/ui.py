@@ -1,6 +1,4 @@
-"""
-User interface building blocks
-"""
+"""User interface building blocks."""
 
 from pulsarity._core.database import SystemDefaultPerms
 from pulsarity._core.user_interface.elements import (

@@ -1,15 +1,11 @@
-"""
-Custom logging configs
-"""
+"""Custom logging configs."""
 
 import logging.handlers
 from typing import Literal
 
 
 class AutoQueueListener(logging.handlers.QueueListener):
-    """
-    Auto starting Queue listener
-    """
+    """Auto starting Queue listener."""
 
     def __init__(self, queue, *handlers, respect_handler_level=True):
         super().__init__(queue, *handlers, respect_handler_level=respect_handler_level)
@@ -17,12 +13,14 @@ class AutoQueueListener(logging.handlers.QueueListener):
 
 
 def generate_default_config(level: Literal["INFO", "DEBUG"] = "INFO") -> dict:
-    """
-    Generates the default logging config for the server
+    """Generates the default logging config for the server.
 
-    :return: The default dict config
-    """
+    Args:
+        level: The logging level to use. Defaults to "INFO".
 
+    Returns:
+        The default dict config
+    """
     return {
         "version": 1,
         "disable_existing_loggers": False,

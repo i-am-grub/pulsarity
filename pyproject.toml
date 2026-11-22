@@ -137,6 +137,7 @@ select = [
     "C4",    # use comprehensions
     "C90",   # mccabe
     "COM",   # catch weird comma situations
+    "D",     # docstring formatting
     "DTZ",   # flake8-datetimez
     "E",     # pycodestyle error
     "EM",    # error message standards
@@ -182,6 +183,9 @@ ignore = ["COM812"]
 [tool.ruff.format]
 docstring-code-format = true
 exclude = ["src/pulsarity/_core/_protobuf/*"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.pytest.ini_options]
 addopts = "--no-cov-on-fail --showlocals --strict-markers"

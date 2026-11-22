@@ -1,6 +1,4 @@
-"""
-ORM classes for slot data
-"""
+"""ORM classes for slot data."""
 
 from __future__ import annotations
 
@@ -17,13 +15,11 @@ if TYPE_CHECKING:
     from pulsarity._core.database.signal import SignalHistory
 
 
-class SlotAttribute[ATTRIBUTE](_PulsarityBase):
-    """
-    Unique and stored individually stored values for each round.
-    """
+class SlotAttribute[T](_PulsarityBase):
+    """Unique and stored individually stored values for each round."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "slot_attr"
@@ -34,16 +30,14 @@ class SlotAttribute[ATTRIBUTE](_PulsarityBase):
         "event.Slot",
         related_name="attributes",
     )
-    value = fields.JSONField[ATTRIBUTE]()
+    value = fields.JSONField[T]()
 
 
 class Slot(_PulsarityBase):
-    """
-    Database content for slots
-    """
+    """Database content for slots."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "slot"

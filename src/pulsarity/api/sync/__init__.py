@@ -1,5 +1,4 @@
-"""
-Pulsarity synchronous API for plugins
+"""Pulsarity synchronous API for plugins.
 
 NOTE: This version of the api is typically
 recommended for developers who lack experience

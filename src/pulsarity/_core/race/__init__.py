@@ -1,3 +1,1 @@
-"""
-Race and results management
-"""
+"""Race and results management."""

@@ -1,14 +1,10 @@
-"""
-_summary_
-"""
+"""HTTP and Websocket Status Codes."""
 
 from enum import IntEnum
 
 
 class HTTPStatusCodes(IntEnum):
-    """
-    Common HTTP status codes
-    """
+    """Common HTTP status codes."""
 
     OK = 200
     NO_CONTENT = 204
@@ -22,9 +18,7 @@ class HTTPStatusCodes(IntEnum):
 
 
 class WebSocketStatusCodes(IntEnum):
-    """
-    Common Websocket status codes
-    """
+    """Common Websocket status codes."""
 
     NORMAL_CLOSURE = 1000
     GOING_AWAY = 1001

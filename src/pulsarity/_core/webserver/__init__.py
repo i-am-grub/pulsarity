@@ -1,3 +1,1 @@
-"""
-Application webserver services
-"""
+"""Application webserver services."""

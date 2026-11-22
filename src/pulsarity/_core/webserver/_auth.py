@@ -1,6 +1,4 @@
-"""
-Authorization and permission enforcement
-"""
+"""Authorization and permission enforcement."""
 
 import functools
 import inspect
@@ -32,9 +30,7 @@ _P = ParamSpec("_P")
 
 @final
 class PulsarityCredentials(AuthCredentials):
-    """
-    Reimplementation of starlette's `AuthCredentials`
-    """
+    """Reimplementation of starlette's `AuthCredentials`."""
 
     __slots__ = ("scopes",)
 
@@ -43,9 +39,9 @@ class PulsarityCredentials(AuthCredentials):
 
 
 def has_required_scope(conn: HTTPConnection, scopes: Iterable[str]) -> bool:
-    """
-    Reimplementation of starlette's `has_required_scope`. Assumes that the
-    connection scope container is set based.
+    """Reimplementation of starlette's `has_required_scope`.
+
+    Assumes that the connection scope container is set based.
     """
     auth: PulsarityCredentials = conn.auth
     return auth.scopes.issuperset(scopes)
@@ -56,9 +52,7 @@ def requires(  # noqa: C901
     status_code: int = HTTPStatusCodes.FORBIDDEN,
     redirect: str | None = None,
 ) -> Callable[[Callable[_P, Any]], Callable[_P, Any]]:
-    """
-    Reimplementation of starlette's `requires` decorator
-    """
+    """Reimplementation of starlette's `requires` decorator."""
     scopes_list = (scopes,) if isinstance(scopes, str) else tuple(scopes)
 
     def decorator(  # noqa: C901
@@ -139,23 +133,17 @@ def requires(  # noqa: C901
 
 
 class PulsarityUser(BaseUser, ABC):
-    """
-    Abstract base class for user authentication
-    """
+    """Abstract base class for user authentication."""
 
     @property
     @abstractmethod
     def username(self) -> str:
-        """
-        Username of the authenticated user
-        """
+        """Username of the authenticated user."""
 
 
 @final
 class PulsarityAuthenticatedUser(PulsarityUser):
-    """
-    Container for an authenticated user
-    """
+    """Container for an authenticated user."""
 
     __slots__ = ("_auth_id", "_display_name", "_username")
 
@@ -183,9 +171,7 @@ class PulsarityAuthenticatedUser(PulsarityUser):
 
 @final
 class PulsarityUnauthenticatedUser(PulsarityUser):
-    """
-    An unauthenticated user
-    """
+    """An unauthenticated user."""
 
     __slots__ = ()
 
@@ -208,16 +194,12 @@ class PulsarityUnauthenticatedUser(PulsarityUser):
 
 @final
 class PulsarityAuthBackend(AuthenticationBackend):
-    """
-    Authentication middleware
-    """
+    """Authentication middleware."""
 
     __slots__ = ()
 
     async def authenticate(self, conn) -> tuple[AuthCredentials, BaseUser]:
-        """
-        Checks session info to verify if the user is authenticated or not
-        """
+        """Checks session info to verify if the user is authenticated or not."""
         if (uuid_hex := conn.session.get("auth_id")) is not None:
             user_uuid = UUID(hex=uuid_hex)
             user: User | None = await User.get_authentication_by_uuid(user_uuid)
@@ -235,8 +217,7 @@ class PulsarityAuthBackend(AuthenticationBackend):
 
 
 class PulsarityRequest(Request):
-    """
-    Subclass of Starlette's Request class
+    """Subclass of Starlette's Request class.
 
     Used for typing hinting
     """
@@ -253,8 +234,7 @@ class PulsarityRequest(Request):
 
 
 class PulsarityWebsocket(WebSocket):
-    """
-    Subclass of Starlette's WebSocket class
+    """Subclass of Starlette's WebSocket class.
 
     Used for typing hinting
     """

@@ -1,6 +1,4 @@
-"""
-A race timing and event management application built on asyncio
-"""
+"""A race timing and event management application built on asyncio."""
 
 from __future__ import annotations
 

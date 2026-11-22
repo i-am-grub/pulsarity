@@ -1,6 +1,4 @@
-"""
-Race management
-"""
+"""Race management."""
 
 import logging
 import secrets
@@ -21,9 +19,7 @@ rng = secrets.SystemRandom()
 
 @unique
 class RaceStatus(Flag):
-    """
-    Current status of system.
-    """
+    """Current status of system."""
 
     READY = auto()
     """Ready to start a new race, no race running"""
@@ -58,10 +54,7 @@ class _RaceEventRecord(NamedTuple):
 
 @final
 class RaceStateManager:
-    """
-    Manager for conducting races. Acts as a finite state
-    machine.
-    """
+    """Manager for conducting races. Acts as a finite state machine."""
 
     __slots__ = (
         "_duration_cache",
@@ -85,14 +78,11 @@ class RaceStateManager:
 
     @property
     def status(self) -> RaceStatus:
-        """The current status of the race"""
+        """The current status of the race."""
         return self._status
 
     def _get_duration_cache(self) -> float:
-        """
-        Cache of the calculated race duration based on
-        RaceStatus state changes
-        """
+        """Cache of the calculated race duration based on RaceStatus state changes."""
         if self._duration_cache:
             return self._duration_cache
 
@@ -123,10 +113,13 @@ class RaceStateManager:
         return self._duration_cache
 
     def get_race_time(self) -> float:
-        """
-        The current time of the race
+        """The current time of the race.
 
-        :return: The race time
+        Raises:
+            RuntimeError: The mamanger did not have records while in a non PreRace state
+
+        Returns:
+            The race time
         """
         if self.status in RaceStatus.PRERACE:
             return 0.0
@@ -144,11 +137,13 @@ class RaceStateManager:
         return duration
 
     def get_race_start_time(self) -> float:
-        """
-        The start time of the race
+        """The start time of the race.
 
-        :raises RuntimeError: When race is not active
-        :return: The start timestamp
+        Raises:
+            RuntimeError: The race is not active
+
+        Returns:
+            The start timestamp
         """
         for record in self._race_records:
             if record.status is RaceStatus.RACING:
@@ -157,11 +152,13 @@ class RaceStateManager:
         raise RuntimeError(msg)
 
     def get_race_finish_time(self) -> float:
-        """
-        The finish time of the race
+        """The finish time of the race.
 
-        :raises RuntimeError: When race is not active
-        :return: The finish timestamp
+        Raises:
+            RuntimeError: The race is not active
+
+        Returns:
+            The finish timestamp
         """
         for record in self._race_records:
             if record.status in RaceStatus.FINISHED:
@@ -170,8 +167,7 @@ class RaceStateManager:
         raise RuntimeError(msg)
 
     def get_race_stop_time(self) -> float:
-        """
-        The stop time of the race
+        """The stop time of the race.
 
         :raises RuntimeError: When race is not active
         :return: The stop timestamp
@@ -183,23 +179,25 @@ class RaceStateManager:
         raise RuntimeError(msg)
 
     def _set_status(self, status: RaceStatus) -> None:
-        """
-        Set the current status of the race and create a record of
-        status change
+        """Set the current status of the race and create a record of status change.
 
-        :param status: The status to set the the manager to
+        Args:
+            status: The status to set the the manager to
         """
         self._status = status
         self._race_records.append(_RaceEventRecord(status, ctx.evt_loop.time()))
         self._duration_cache = 0.0
 
     def schedule_race(self, format_: SafeRaceFormat, assigned_start: float) -> None:
-        """
-        Schedule the sequence of events for the race
+        """Schedule the sequence of events for the race.
 
-        :param format_: The race format to use
-        :param assigned_start: The event loop start time of the race.
-        Currently equivalent to monotonic time
+        Args:
+            format_: The race format to use
+            assigned_start: The event loop monotonic start  time of the race.
+
+        Raises:
+            ValueError: Provided value is in the past
+            RuntimeError: Manager is not in the READY state.
         """
         if assigned_start < ctx.evt_loop.time():
             msg = "Assigned start is in the past"
@@ -223,9 +221,7 @@ class RaceStateManager:
             raise RuntimeError(msg)
 
     def stop_race(self) -> None:
-        """
-        Stop the race
-        """
+        """Stop the race."""
         if self._program_handle is not None:
             self._program_handle.cancel()
             self._program_handle = None
@@ -264,9 +260,7 @@ class RaceStateManager:
             logger.info("Race stopped")
 
     def pause_race(self) -> None:
-        """
-        Pause the race
-        """
+        """Pause the race."""
         if self.status in RaceStatus.UNDERWAY:
             ctx.event_broker.trigger_background(server_evts.RacePause())
             self._set_status(RaceStatus.PAUSED)
@@ -277,9 +271,7 @@ class RaceStateManager:
                 self._program_handle = None
 
     def resume_race(self) -> None:
-        """
-        Resme the race
-        """
+        """Resme the race."""
         if self.status is not RaceStatus.PAUSED:
             msg = "Unable to resume a race state when race status is not paused"
             raise RuntimeError(msg)
@@ -320,12 +312,10 @@ class RaceStateManager:
         logger.info("Race resumed")
 
     def _stage(self, start_time: float) -> None:
-        """
-        Put the system into staging mode and schedules the start
-        state.
+        """Put the system into staging mode and schedules the start state.
 
-        :param start_time: The time to start to schedule race start
-        :param schedule: The format's race schedule
+        Args:
+            start_time: The time to start to schedule race start
         """
         ctx.event_broker.trigger_background(server_evts.RaceStage())
         self._set_status(RaceStatus.STAGING)
@@ -334,11 +324,10 @@ class RaceStateManager:
         self._program_handle = ctx.evt_loop.call_at(start_time, self._start)
 
     def _start(self) -> None:
-        """
-        Put the system into race mode. Schedules the next
-        state if applicable.
+        """Put the system into race mode. Schedules the next state if applicable.
 
-        :param schedule: The format's race schedule
+        Raises:
+            RuntimeError: The schedule is unset
         """
         if self._format is None:
             msg = "Can not start a race with an unset schedule"
@@ -358,11 +347,12 @@ class RaceStateManager:
             self._program_handle = None
 
     def _finish(self) -> None:
-        """
-        Put the system into overtime mode. Schedules or runs the next
-        state if applicable.
+        """Put the system into overtime mode.
 
-        :param schedule: The format's race schedule
+        Schedules or runs the next state if applicable.
+
+        Raises:
+            RuntimeError: The schedule is unset
         """
         if self._format is None:
             msg = "Can not finish a race with an unset schedule"
@@ -386,18 +376,14 @@ class RaceStateManager:
             self._program_handle = None
 
     def _stop(self) -> None:
-        """
-        Put the system into race stop mode
-        """
+        """Put the system into race stop mode."""
         ctx.event_broker.trigger_background(server_evts.RaceStop())
         self._set_status(RaceStatus.STOPPED)
         self._program_handle = None
         logger.info("Race stopped")
 
     def reset(self) -> None:
-        """
-        Reset the manager for the next race
-        """
+        """Reset the manager for the next race."""
         if self.status is RaceStatus.STOPPED:
             self._format = None
             self._duration_cache = 0.0

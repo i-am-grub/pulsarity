@@ -1,6 +1,4 @@
-"""
-Database objects and access
-"""
+"""Database objects and access."""
 
 from pulsarity._core.database.heat import Heat, HeatAttribute
 from pulsarity._core.database.lap import Lap
@@ -40,10 +38,7 @@ __all__ = [
 
 
 async def setup_default_objects():
-    """
-    Setup the default objects in the system database
-    """
-
+    """Setup the default objects in the system database."""
     await Permission.verify_persistant()
     await Role.verify_persistant()
     await User.verify_persistant()

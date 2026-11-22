@@ -1,6 +1,4 @@
-"""
-ORM classes for Pilot data
-"""
+"""ORM classes for Pilot data."""
 
 from __future__ import annotations
 
@@ -16,13 +14,11 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 
-class PilotAttribute[ATTRIBUTE](_PulsarityMessageBase):
-    """
-    Unique and stored individually stored values for each pilot.
-    """
+class PilotAttribute[T](_PulsarityMessageBase):
+    """Unique and stored individually stored values for each pilot."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "pilot_attr"
@@ -33,19 +29,17 @@ class PilotAttribute[ATTRIBUTE](_PulsarityMessageBase):
         "event.Pilot",
         related_name="attributes",
     )
-    value = fields.JSONField[ATTRIBUTE]()
+    value = fields.JSONField[T]()
 
     def to_message(self) -> database_pb2.Attribute:
         return database_pb2.Attribute(name=self.name)
 
 
 class Pilot(_PulsarityRaceBase):
-    """
-    Database content for event participants
-    """
+    """Database content for event participants."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "pilot"
@@ -67,12 +61,11 @@ class Pilot(_PulsarityRaceBase):
 
     @property
     def display_callsign(self) -> str:
-        """
-        Generates the displayed callsign for the user.
+        """Generates the displayed callsign for the user.
 
-        :return: The user's displayed callsign
+        Returns:
+            The user's displayed callsign
         """
-
         if self.callsign:
             return self.callsign
 
@@ -83,10 +76,10 @@ class Pilot(_PulsarityRaceBase):
 
     @property
     def display_name(self) -> str:
-        """
-        Generates the displayed name for the user
+        """Generates the displayed name for the user.
 
-        :return: The user's display name
+        Returns:
+            The user's display name
         """
         if self.name:
             return self.name
@@ -98,10 +91,10 @@ class Pilot(_PulsarityRaceBase):
 
     @property
     def spoken_callsign(self) -> str:
-        """
-        Generates the spoken callsign for the user
+        """Generates the spoken callsign for the user.
 
-        :return: The user's spoken callsign
+        Returns:
+            The user's spoken callsign
         """
         if self.phonetic:
             return self.phonetic

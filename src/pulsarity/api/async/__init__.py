@@ -1,3 +1,1 @@
-"""
-Pulsarity asynchronous API for plugins
-"""
+"""Pulsarity asynchronous API for plugins."""
