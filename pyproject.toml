@@ -195,7 +195,6 @@ testpaths = ["tests"]
 
 [tool.uv]
 exclude-newer = "7 days"
-exclude-newer-package = { certifi = false }
 
 [tool.uv.audit]
 malware-check = true
