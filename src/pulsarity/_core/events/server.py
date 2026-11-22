@@ -235,7 +235,7 @@ class PilotAdd(SystemEventData):
     Pilot Add event
     """
 
-    event_id: ClassVar[websocket_pb2.EventID] = websocket_pb2.EVENT_PILOT_ADD
+    event_id = websocket_pb2.EVENT_PILOT_ADD
     priority = EvtPriority.MEDIUM
     permission = SystemDefaultPerms.READ_PILOTS
 
@@ -257,7 +257,7 @@ class PilotAlter(SystemEventData):
     Pilot alter event
     """
 
-    event_id: ClassVar[websocket_pb2.EventID] = websocket_pb2.EVENT_PILOT_ALTER
+    event_id = websocket_pb2.EVENT_PILOT_ALTER
     priority = EvtPriority.MEDIUM
     permission = SystemDefaultPerms.READ_PILOTS
 

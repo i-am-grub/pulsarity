@@ -110,7 +110,7 @@ def generate_pulsarity_application() -> Starlette:
     register_tortoise(
         app,
         config={
-            "connections": config.config_manager.database.model_dump(),
+            "connections": config.get_sqlite_config(),
             "apps": {
                 "system": {
                     "models": ["pulsarity._core.database"],
@@ -200,5 +200,4 @@ async def server_shutdown_workflow() -> None:
     """
     await ctx.event_broker.trigger(ServerShutdown())
     await ctx.timer_manager.shutdown()
-    websockets.ws_shutdown_evt.set()
     await background.shutdown(5)

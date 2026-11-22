@@ -6,7 +6,7 @@ import asyncio
 from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import partial
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, final
 
 from pulsarity._core._protobuf import database_pb2
 from pulsarity._core.database.lap import Lap
@@ -46,6 +46,7 @@ def _sort_history(history: _SignalHistory) -> _SignalHistoryTuple:
 SlotData = dict[tuple[int, str], _SignalHistory]
 
 
+@final
 class RaceManager:
     """
     Links race state/timing and race data

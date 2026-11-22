@@ -5,7 +5,7 @@ Authorization and permission enforcement
 import functools
 import inspect
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ParamSpec, override
+from typing import TYPE_CHECKING, Any, ParamSpec, final, override
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 _P = ParamSpec("_P")
 
 
+@final
 class PulsarityCredentials(AuthCredentials):
     """
     Reimplementation of starlette's `AuthCredentials`
@@ -150,6 +151,7 @@ class PulsarityUser(BaseUser, ABC):
         """
 
 
+@final
 class PulsarityAuthenticatedUser(PulsarityUser):
     """
     Container for an authenticated user
@@ -179,10 +181,13 @@ class PulsarityAuthenticatedUser(PulsarityUser):
         return self._username
 
 
+@final
 class PulsarityUnauthenticatedUser(PulsarityUser):
     """
     An unauthenticated user
     """
+
+    __slots__ = ()
 
     @property
     def is_authenticated(self) -> bool:
@@ -201,6 +206,7 @@ class PulsarityUnauthenticatedUser(PulsarityUser):
         return ""
 
 
+@final
 class PulsarityAuthBackend(AuthenticationBackend):
     """
     Authentication middleware

@@ -3,6 +3,7 @@ Custom logging configs
 """
 
 import logging.handlers
+from typing import Literal
 
 
 class AutoQueueListener(logging.handlers.QueueListener):
@@ -15,7 +16,7 @@ class AutoQueueListener(logging.handlers.QueueListener):
         self.start()
 
 
-def generate_default_config() -> dict:
+def generate_default_config(level: Literal["INFO", "DEBUG"] = "INFO") -> dict:
     """
     Generates the default logging config for the server
 
@@ -36,13 +37,13 @@ def generate_default_config() -> dict:
         },
         "handlers": {
             "stdout": {
-                "level": "INFO",
+                "level": level,
                 "formatter": "standard",
                 "class": "logging.StreamHandler",
                 "stream": "ext://sys.stdout",
             },
             "file": {
-                "level": "INFO",
+                "level": level,
                 "formatter": "detailed",
                 "class": "logging.handlers.TimedRotatingFileHandler",
                 "filename": "logs/pulsarity.log",
@@ -64,7 +65,7 @@ def generate_default_config() -> dict:
         "loggers": {
             "pulsarity": {
                 "handlers": ["queue_handler"],
-                "level": "INFO",
+                "level": level,
                 "propagate": False,
             },
             "_granian": {

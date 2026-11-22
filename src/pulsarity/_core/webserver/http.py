@@ -55,8 +55,9 @@ async def check_auth() -> Response:
 
     :return: The user's authentication status
     """
-    auth_user = ctx.user_ctx.get()
-    user_perms = ctx.request_ctx.get().auth.scopes
+    request = ctx.request_ctx.get()
+    user_perms = ctx.user_permsissions_ctx.get()
+    auth_user = request.user
 
     user_info = http_pb2.UserInfo(
         authenticated=auth_user.is_authenticated,
@@ -142,7 +143,7 @@ async def logout() -> Response:
 
     :return: JSON containing the status of the request
     """
-    auth_user = ctx.user_ctx.get()
+    auth_user = ctx.request_ctx.get().user
     logger.info("Logging out user %s", auth_user.identity)
     ctx.request_ctx.get().session.clear()
     return Response(status_code=HTTPStatusCodes.OK)
@@ -176,7 +177,7 @@ async def reset_password(request: _ResetPasswordRequest) -> Response:
     start = ctx.evt_loop.time()
     evt = asyncio.Event()
 
-    auth_user = ctx.user_ctx.get()
+    auth_user = ctx.request_ctx.get().user
     uuid = UUID(hex=auth_user.identity)
 
     if await User.verify_password_uuid(uuid, request.old_password):

@@ -25,7 +25,7 @@ class _MostLapsManager(LapsManager):
     Lap data manager for a single slot
     """
 
-    __slots__ = ("_metrics", "_score")
+    __slots__ = ("_all_laps", "_metrics", "_primary_laps", "_score", "_split_laps")
 
     def __init__(self):
         super().__init__()

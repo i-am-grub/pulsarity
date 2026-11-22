@@ -21,17 +21,15 @@ from starlette.middleware.cors import CORSMiddleware
 import pulsarity
 from pulsarity._core import ctx
 from pulsarity._core.events.broker import EventBroker
-from pulsarity._core.events.client import ClientServerRestart, ClientServerShutdown
 from pulsarity._core.race.manager import RaceManager
 from pulsarity._core.timing_interface.timer_manager import TimerInterfaceManager
 from pulsarity._core.utils import config
-from pulsarity._core.webserver import application, websockets
+from pulsarity._core.webserver import application
 
 if TYPE_CHECKING:
     from starlette.types import ASGIApp
 
 logger = logging.getLogger(__name__)
-_shutdown_event = asyncio.Event()
 
 
 class PulsarityServer(Server):
@@ -47,10 +45,7 @@ class PulsarityServer(Server):
         that can not be cleaned up before the
         Granian server is signalled to shutdown.
         """
-
-        websockets.ws_shutdown_evt.set()
-        await websockets.conn_tracker.wait_all_closed()
-
+        await ctx.ws_conn_tracker.wait_all_closed()
         self.stop()
 
 
@@ -58,7 +53,7 @@ def _signal_shutdown(*_) -> None:
     """
     Set the event to shutdown the server gracefully
     """
-    _shutdown_event.set()
+    ctx.shutdown_app.set()
     logger.debug("Server shutdown signaled")
 
 
@@ -83,7 +78,7 @@ def _generate_server() -> PulsarityServer:
         port=configs.webserver.port,
         interface=Interfaces.ASGI,
         log_level=LogLevels.info,
-        log_dictconfig=configs.logging,
+        log_dictconfig=config.generate_logging_config(configs.general.debug),
         ssl_key=configs.webserver.key_file,
         ssl_cert=configs.webserver.cert_file,
         ssl_key_password=configs.webserver.key_password,
@@ -95,17 +90,14 @@ async def _server() -> None:
     """
     The Pulsarity webserver coroutine.
     """
-    ctx.evt_loop = asyncio.get_running_loop()
+    ctx.evt_loop = loop = asyncio.get_running_loop()
 
     if sys.platform == "win32":
         signal.signal(signal.Signals.SIGINT, _signal_shutdown)
         signal.signal(signal.Signals.SIGTERM, _signal_shutdown)
     else:
-        loop = asyncio.get_running_loop()
         loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
         loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
-
-    server = _generate_server()
 
     logger.info("Platform: %s", platform.platform())
     logger.info("CPU count: %s", os.cpu_count())
@@ -116,21 +108,14 @@ async def _server() -> None:
     logger.info("Pulsarity application: %s", pulsarity.__version__)
     logger.info("Pulsarity localization: %s", pulsarity_localization.__version__)
 
+    server = _generate_server()
+
     async with asyncio.TaskGroup() as tg:
         tg.create_task(server.serve())
 
-        events = [
-            tg.create_task(ClientServerRestart.restart_evt.wait()),
-            tg.create_task(ClientServerShutdown.shutdown_evt.wait()),
-            tg.create_task(_shutdown_event.wait()),
-        ]
-
-        _, pending = await asyncio.wait(events, return_when=asyncio.FIRST_COMPLETED)
+        await ctx.shutdown_app.wait()
 
         logger.info("Server shutdown signaled")
-
-        for task in pending:
-            task.cancel()
 
         await server.shutdown_server()
 
@@ -149,10 +134,7 @@ def main() -> None:
 
     asyncio.run(_server())
 
-    if ClientServerShutdown.shutdown_evt.is_set():
-        return
-
-    if ClientServerRestart.restart_evt.is_set():
+    if ctx.restart_app:
         logger.info("Automatically rebooting server")
         os.execv(sys.executable, [sys.executable, *sys.argv])  # noqa: S606
 

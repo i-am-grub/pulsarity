@@ -2,7 +2,6 @@
 System events originating on a client
 """
 
-import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import ClassVar, Self, dataclass_transform
@@ -53,7 +52,10 @@ class ClientEventData(ABC):
     @abstractmethod
     def from_ws_event(cls, msg: websocket_pb2.WebsocketEvent) -> Self:
         """
-        Parse event from websocket data
+        Parse event from websocket data.
+
+        Any additiional validation for the parsed data should run here.
+        It is safe to raise TypeError or ValueError in non-abstract implementations.
         """
 
     @abstractmethod
@@ -92,15 +94,13 @@ class ClientServerShutdown(ClientEventData):
     event_id = websocket_pb2.EVENT_SHUTDOWN
     permission = SystemDefaultPerms.SYSTEM_CONTROL
 
-    shutdown_evt: ClassVar[asyncio.Event] = asyncio.Event()
-
     @classmethod
     def from_ws_event(cls, msg):
         uuid = UUID(bytes=msg.uuid)
         return cls(uuid)
 
     async def run_handler(self):
-        self.shutdown_evt.set()
+        ctx.shutdown_app.set()
 
 
 @client_event
@@ -112,15 +112,14 @@ class ClientServerRestart(ClientEventData):
     event_id = websocket_pb2.EVENT_RESTART
     permission = SystemDefaultPerms.SYSTEM_CONTROL
 
-    restart_evt: ClassVar[asyncio.Event] = asyncio.Event()
-
     @classmethod
     def from_ws_event(cls, msg):
         uuid = UUID(bytes=msg.uuid)
         return cls(uuid)
 
     async def run_handler(self):
-        self.restart_evt.set()
+        ctx.restart_app = True
+        ctx.shutdown_app.set()
 
 
 @client_event

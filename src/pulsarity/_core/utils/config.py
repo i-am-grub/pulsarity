@@ -6,15 +6,15 @@ import asyncio
 import datetime as dt
 import json
 import logging
+import secrets
 from dataclasses import asdict, dataclass, field
 from functools import partial
 from pathlib import Path
-from secrets import token_urlsafe
 from typing import Any, Self
 
 import anyio
 
-from pulsarity._core.utils.logging import generate_default_config
+import pulsarity._core.utils.logging as plogging
 
 DEFAULT_CONFIG_FILE = Path("config.json")
 
@@ -42,7 +42,7 @@ def _parse_types(params: list[tuple[str, Any]]):
 class _SecretsConfig:
     default_username: str = "admin"
     default_password: str = "pulsarity"  # noqa: S105
-    secret_key: str = field(default_factory=partial(token_urlsafe, 32))
+    secret_key: str = field(default_factory=partial(secrets.token_urlsafe, 32))
 
 
 @dataclass
@@ -73,45 +73,12 @@ class _WebserverConfig:
 @dataclass
 class _GeneralConfig:
     server_name: str = "Pulsarity"
+    debug: bool = False
     last_modified_time: dt.datetime = field(default_factory=dt.datetime.now)
 
     def __post_init__(self):
         if isinstance(self.last_modified_time, str):
             self.last_modified_time = dt.datetime.fromisoformat(self.last_modified_time)
-
-
-@dataclass
-class _SystemDatabaseConfig:
-    engine: str = "tortoise.backends.sqlite"
-    credentials: dict = field(
-        default_factory=partial(dict, (("file_path", "system.db"),)),
-    )
-
-
-@dataclass
-class _EventDatabaseConfig:
-    engine: str = "tortoise.backends.sqlite"
-    credentials: dict = field(
-        default_factory=partial(dict, (("file_path", "event.db"),)),
-    )
-
-
-@dataclass
-class _DatabaseConfig:
-    system_db: _SystemDatabaseConfig = field(default_factory=_SystemDatabaseConfig)
-    event_db: _EventDatabaseConfig = field(default_factory=_EventDatabaseConfig)
-
-    def __post_init__(self):
-        if isinstance(self.system_db, dict):
-            self.system_db = _SystemDatabaseConfig(**self.system_db)
-        if isinstance(self.event_db, dict):
-            self.event_db = _EventDatabaseConfig(**self.event_db)
-
-    def model_dump(self) -> dict:
-        """
-        Dumps the model to a dictionary
-        """
-        return asdict(self)
 
 
 @dataclass
@@ -123,8 +90,6 @@ class PulsarityConfig:
     secrets: _SecretsConfig = field(default_factory=_SecretsConfig)
     webserver: _WebserverConfig = field(default_factory=_WebserverConfig)
     general: _GeneralConfig = field(default_factory=_GeneralConfig)
-    database: _DatabaseConfig = field(default_factory=_DatabaseConfig)
-    logging: dict = field(default_factory=generate_default_config)
     _lock: asyncio.locks.Lock = field(default_factory=asyncio.locks.Lock, init=False)
     _from_save: bool = field(default=False, init=False)
 
@@ -135,8 +100,6 @@ class PulsarityConfig:
             self.webserver = _WebserverConfig(**self.webserver)
         if isinstance(self.general, dict):
             self.general = _GeneralConfig(**self.general)
-        if isinstance(self.database, dict):
-            self.database = _DatabaseConfig(**self.database)
 
     @classmethod
     def from_file(cls, filepath: Path) -> Self:
@@ -203,6 +166,31 @@ class PulsarityConfig:
                 await file.write(
                     json.dumps(asdict(self, dict_factory=_parse_types), indent=4),
                 )
+
+
+def get_sqlite_config() -> dict:
+    """
+    Get the default database config for sqlite connections
+    """
+    return {
+        "system_db": {
+            "engine": "tortoise.backends.sqlite",
+            "credentials": {"file_path": "system.db"},
+        },
+        "event_db": {
+            "engine": "tortoise.backends.sqlite",
+            "credentials": {"file_path": "event.db"},
+        },
+    }
+
+
+def generate_logging_config(debug: bool) -> dict:
+    """
+    Generate the logging configuration
+    """
+    if debug:
+        return plogging.generate_default_config("DEBUG")
+    return plogging.generate_default_config("INFO")
 
 
 config_manager = PulsarityConfig.from_file(DEFAULT_CONFIG_FILE)

@@ -10,7 +10,7 @@ import itertools
 import logging
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Any, ClassVar, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self, final
 
 from pulsarity._core.events.server import EvtPriority, SystemEventData
 from pulsarity._core.utils import background
@@ -45,6 +45,7 @@ class _EvtCallbackData:
         return (self.priority, self._id) < (other.priority, other._id)
 
 
+@final
 class EventBroker:
     """
     Manages distributing server side events to connect clients and

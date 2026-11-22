@@ -9,7 +9,7 @@ from collections.abc import (
     Sequence,
     ValuesView,
 )
-from typing import TYPE_CHECKING, overload, override
+from typing import TYPE_CHECKING, final, overload, override
 
 if TYPE_CHECKING:
     from _typeshed import SupportsRichComparison
@@ -70,6 +70,7 @@ class SortedItemsView[U: Hashable, V: "SupportsRichComparison"](ItemsView[U, V])
         return key, self._mapping[key]
 
 
+@final
 class ValueSortedDict[U: Hashable, V: "SupportsRichComparison"](dict[U, V]):
     """Dictionary with sorted values"""
 

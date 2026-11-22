@@ -4,7 +4,7 @@ ORM classes for signal data
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Self, final
 
 from google.protobuf.message import Message
 from tortoise import Model, fields
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from pulsarity._core.database.slot import Slot
 
 
+@final
 class ProtobufField[T: Message](fields.Field[T]):
     """
     Protocol buffer field with automatic object encoding and decoding.

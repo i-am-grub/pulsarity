@@ -5,7 +5,7 @@ Race management
 import logging
 import secrets
 from enum import Flag, auto, unique
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, final
 
 import pulsarity._core.events.server as server_evts
 from pulsarity._core import ctx
@@ -56,6 +56,7 @@ class _RaceEventRecord(NamedTuple):
     timestamp: float
 
 
+@final
 class RaceStateManager:
     """
     Manager for conducting races. Acts as a finite state

@@ -8,7 +8,7 @@ import logging
 import uuid
 from dataclasses import dataclass
 from enum import Enum, auto, unique
-from typing import ClassVar, NamedTuple
+from typing import ClassVar, NamedTuple, final
 
 from pulsarity._core import ctx
 from pulsarity._core.timing_interface.timer_interface import (
@@ -98,6 +98,7 @@ class _ActiveTimer:
     """The index of the timer. Used for ordering timers. 0 is the PRIMARY timer"""
 
 
+@final
 class TimerInterfaceManager:
     """
     Manages the abstract and active timer interfaces

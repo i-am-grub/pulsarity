@@ -14,49 +14,15 @@ from starlette.websockets import WebSocketDisconnect
 from pulsarity._core import ctx
 from pulsarity._core._protobuf import websocket_pb2
 from pulsarity._core.database.permission import SystemDefaultPerms
-from pulsarity._core.events import client
+from pulsarity._core.events import client as client_evts
 from pulsarity._core.utils import background
-from pulsarity._core.webserver._auth import PulsarityUser, PulsarityWebsocket, requires
+from pulsarity._core.webserver._auth import PulsarityWebsocket, requires
 from pulsarity._core.webserver._status_codes import WebSocketStatusCodes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
 
 logger = logging.getLogger(__name__)
-
-ws_shutdown_evt = asyncio.Event()
-
-
-class _WebSocketConnTracker:
-    """
-    Context manager for tracking the client websocket
-    connections actively connected to the server
-    """
-
-    __slots__ = ("_evt", "_num_conn")
-
-    def __init__(self) -> None:
-        self._evt = asyncio.Event()
-        self._evt.set()
-        self._num_conn = 0
-
-    def __enter__(self):
-        self._num_conn += 1
-        self._evt.clear()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._num_conn -= 1
-        if not self._num_conn:
-            self._evt.set()
-
-    async def wait_all_closed(self) -> None:
-        """
-        Wait for all websocket connections to close
-        """
-        await self._evt.wait()
-
-
-conn_tracker = _WebSocketConnTracker()
 
 
 class _WebsocketClosureInfo(NamedTuple):
@@ -118,9 +84,9 @@ async def duplex_recieve_event_data() -> None:
     - Use the event handler to validate the data
     - Schedule the event to run as a background task
     """
-    user = ctx.user_ctx.get()
     websocket = ctx.websocket_ctx.get()
-    permissions: set[str] = websocket.auth.scopes
+    permissions = ctx.user_permsissions_ctx.get()
+    user = websocket.user
 
     while True:
         data = await websocket.receive_bytes()
@@ -132,25 +98,25 @@ async def duplex_recieve_event_data() -> None:
             continue
 
         try:
-            cls = client.registry[event.event_id]
+            evt_cls = client_evts.registry[event.event_id]
         except KeyError:
             logger.exception(
-                "User (%s) attempted to route data to non-registed event handler: %s",
+                "%s attempted to route data to non-registered event handler: %s",
                 user.identity,
                 event,
             )
             continue
 
-        if cls.permission not in permissions:
-            logger.debug(
-                "User (%s) does not have permissions for activating event: %s",
+        if evt_cls.permission not in permissions:
+            logger.warning(
+                "%s attempted to activate websocket event with invalid permissions: %s",
                 user.identity,
                 event,
             )
             continue
 
         try:
-            validated_evt = cls.from_ws_event(event)
+            validated_evt = evt_cls.from_ws_event(event)
 
         except TypeError, ValueError:
             logger.debug("Error validating websocket data: %s", event)
@@ -177,19 +143,15 @@ async def ws_connection(
 
     await websocket.accept(headers=[(b"Content-Type", b"application/x-protobuf")])
 
-    user: PulsarityUser = websocket.user
-    permissions = websocket.auth.scopes
-
     websocket_token = ctx.websocket_ctx.set(websocket)
-    user_token = ctx.user_ctx.set(user)
-    permission_token = ctx.user_permsissions_ctx.set(permissions)
+    permission_token = ctx.user_permsissions_ctx.set(websocket.auth.scopes)
 
     try:
         async with asyncio.TaskGroup() as tg:
             recv_task = tg.create_task(rev_coro_func())
             send_task = tg.create_task(send_event_data())
 
-            await ws_shutdown_evt.wait()
+            await ctx.shutdown_app.wait()
 
             recv_task.cancel()
             send_task.cancel()
@@ -199,7 +161,7 @@ async def ws_connection(
     except* WebSocketDisconnect:
         logger.debug(
             "Client disconnected from websocket (id=%s)",
-            ctx.user_ctx.get().identity,
+            websocket.user.identity,
         )
 
     except* BaseException:
@@ -209,7 +171,6 @@ async def ws_connection(
     finally:
         await websocket.close(*close_info)
         ctx.websocket_ctx.reset(websocket_token)
-        ctx.user_ctx.reset(user_token)
         ctx.user_permsissions_ctx.reset(permission_token)
 
 
@@ -221,15 +182,15 @@ async def simplex_ws(websocket: PulsarityWebsocket):
     Prevents the ability to generate new websocket connections
     if the server is signalled to shut down.
     """
-    if ws_shutdown_evt.is_set():
+    if ctx.shutdown_app.is_set():
         await websocket.close(*_WebsocketClosure.GOING_AWAY)
         return
 
-    user: PulsarityUser = websocket.user
+    logger.debug(
+        "Establishing simplex websocket connection (id=%s)", websocket.user.identity
+    )
 
-    logger.debug("Establishing simplex websocket connection (id=%s)", user.identity)
-
-    with conn_tracker:
+    with ctx.ws_conn_tracker:
         await ws_connection(websocket, simplex_recieve_event_data)
 
 
@@ -241,15 +202,15 @@ async def duplex_ws(websocket: PulsarityWebsocket):
     Prevents the ability to generate new websocket connections
     if the server is signalled to shut down.
     """
-    if ws_shutdown_evt.is_set():
+    if ctx.shutdown_app.is_set():
         await websocket.close(*_WebsocketClosure.GOING_AWAY)
         return
 
-    user: PulsarityUser = websocket.user
+    logger.debug(
+        "Establishing duplex websocket connection (id=%s)", websocket.user.identity
+    )
 
-    logger.debug("Establishing duplex websocket connection (id=%s)", user.identity)
-
-    with conn_tracker:
+    with ctx.ws_conn_tracker:
         await ws_connection(websocket, duplex_recieve_event_data)
 
 

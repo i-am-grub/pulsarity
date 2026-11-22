@@ -14,6 +14,7 @@ from typing import (
     NamedTuple,
     Self,
     dataclass_transform,
+    final,
 )
 
 from google.protobuf.message import DecodeError, Message
@@ -35,6 +36,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+@final
 class ProtobufResponse(Response):
     """
     Response sending protocol buffer data
@@ -162,7 +164,6 @@ def endpoint(
             @requires(permissions, status_code=HTTPStatusCodes.FORBIDDEN)
             async def auth_wrapper(request: PulsarityRequest) -> Response:
                 request_token = ctx.request_ctx.set(request)
-                user_token = ctx.user_ctx.set(request.user)
                 perm_token = ctx.user_permsissions_ctx.set(request.auth.scopes)
 
                 try:
@@ -170,7 +171,6 @@ def endpoint(
 
                 finally:
                     ctx.request_ctx.reset(request_token)
-                    ctx.user_ctx.reset(user_token)
                     ctx.user_permsissions_ctx.reset(perm_token)
 
             return auth_wrapper
@@ -178,7 +178,6 @@ def endpoint(
         @functools.wraps(func)
         async def no_auth_wrapper(request: PulsarityRequest) -> Response:
             request_token = ctx.request_ctx.set(request)
-            user_token = ctx.user_ctx.set(request.user)
             perm_token = ctx.user_permsissions_ctx.set(request.auth.scopes)
 
             try:
@@ -186,7 +185,6 @@ def endpoint(
 
             finally:
                 ctx.request_ctx.reset(request_token)
-                ctx.user_ctx.reset(user_token)
                 ctx.user_permsissions_ctx.reset(perm_token)
 
         return no_auth_wrapper
