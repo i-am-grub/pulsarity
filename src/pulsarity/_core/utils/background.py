@@ -1,6 +1,4 @@
-"""
-Background task manager
-"""
+"""Background task manager."""
 
 import logging
 from typing import TYPE_CHECKING, Any
@@ -27,10 +25,15 @@ def add_background_task[T](
     *args: Any,
     **kwargs: Any,
 ) -> asyncio.Task[T]:
-    """
-    Adds a background task.
+    """Adds a background task.
 
-    :param func: The function to run as a background task
+    Args:
+        func: The function to run
+        args: The positional arguments
+        kwargs: The keyword arguments
+
+    Returns:
+        A generated coroutine
     """
 
     async def _wrapper(awaitable: Awaitable[T]) -> T:
@@ -46,22 +49,24 @@ def add_background_task[T](
 
 
 def add_pregenerated_task(task: asyncio.Task):
-    """
-    Adds a pre-generated task. Typically used to make sure tasks are shutdown
-    with the server
+    """Adds a pre-generated task.
 
-    :param task: The task to add to the background manager
+    Typically used to make sure tasks are shutdown with the server.
+
+    Args:
+        task: The task to add to the background manager
     """
     _tasks.add(task)
     task.add_done_callback(_tasks.discard)
 
 
 async def shutdown(timeout: float) -> None:  # noqa: ASYNC109
-    """
-    Wait for all background tasks to complete. If not completed within
-    the timeout duration, raise `TimeoutError`
+    """Wait for all background tasks to complete.
 
-    :param timeout: The duration to wait for background tasks to finish
+    If not completed within the timeout duration, raise `TimeoutError`.
+
+    Args:
+        timeout: The duration to wait for background tasks to finish
     """
     msg = "Error encountered in background task"
     await wait_task_cancellation(_tasks, msg, timeout=timeout)

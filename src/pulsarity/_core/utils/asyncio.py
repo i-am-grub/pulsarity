@@ -1,6 +1,4 @@
-"""
-Asyncio helpers
-"""
+"""Asyncio helpers."""
 
 import asyncio
 import inspect
@@ -17,11 +15,15 @@ logger = logging.getLogger(__name__)
 
 
 def ensure_async[**P, T](func: Callable[P, T], *args, **kwargs) -> Awaitable[T]:
-    """
-    Ensures that the provided function is ran asynchronously
+    """Ensures that the provided function is ran asynchronously.
 
-    :param func: The function to run
-    :return: A generated coroutine
+    Args:
+        func: The function to run
+        args: The positional arguments
+        kwargs: The keyword arguments
+
+    Returns:
+        A generated coroutine
     """
     if inspect.iscoroutinefunction(func):
         return func(*args, **kwargs)
@@ -30,15 +32,16 @@ def ensure_async[**P, T](func: Callable[P, T], *args, **kwargs) -> Awaitable[T]:
 
 
 def run_coroutine_from_thread(coro: Coroutine) -> Future:
-    """
-    Schedules a coroutine to run in the set event loop. Threadsafe
-    when scheduling coroutines from other threads
+    """Schedules a coroutine to run in the set event loop.
 
-    :param coro: The coroutine to run
-    :raises RuntimeError: When an event loop is not set
-    :return: A `concurrent.futures` Future
-    """
+    Threadsafe when scheduling coroutines from other threads.
 
+    Args:
+        coro: The coroutine to run
+
+    Returns:
+        A `concurrent.futures` Future
+    """
     return asyncio.run_coroutine_threadsafe(coro, ctx.evt_loop)
 
 
@@ -48,11 +51,14 @@ async def wait_task_cancellation(
     *,
     timeout: float | None = None,  # noqa: ASYNC109
 ) -> None:
-    """
-    Wait for all background tasks to complete. If not completed within
-    the timeout duration, cancel the pending tasks.
+    """Wait for all background tasks to complete.
 
-    :param tasks: The tasks to
+    If not completed within the timeout duration, cancel the pending tasks.
+
+    Args:
+        tasks: The tasks to wait for
+        exc_message: The exception to log as an error
+        timeout: The timeout duration. Defaults to None.
     """
     if not tasks:
         return

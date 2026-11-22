@@ -1,3 +1,1 @@
-"""
-Custom utilies for the application
-"""
+"""Custom utilies for the application."""

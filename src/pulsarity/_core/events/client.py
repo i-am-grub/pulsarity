@@ -1,6 +1,4 @@
-"""
-System events originating on a client
-"""
+"""System events originating on a client."""
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -17,10 +15,7 @@ registry: dict[websocket_pb2.EventID, type[ClientEventData]] = {}
 
 @dataclass_transform(frozen_default=True)
 def client_event[T: ClientEventData](cls: type[T]) -> type[T]:
-    """
-    Decorator for generating registering client event handlers as dataclasses
-    """
-
+    """Decorator for generating registering client event handlers as dataclasses."""
     if cls.event_id in registry:
         msg = f"Class with event_id={cls.event_id} already used"
         raise ValueError(msg)
@@ -36,9 +31,7 @@ def client_event[T: ClientEventData](cls: type[T]) -> type[T]:
 
 @dataclass(frozen=True, slots=True)
 class ClientEventData(ABC):
-    """
-    ABC for event data originating on the client
-    """
+    """ABC for event data originating on the client."""
 
     event_id: ClassVar[websocket_pb2.EventID]
     """Protocol buffer event id"""
@@ -51,8 +44,7 @@ class ClientEventData(ABC):
     @classmethod
     @abstractmethod
     def from_ws_event(cls, msg: websocket_pb2.WebsocketEvent) -> Self:
-        """
-        Parse event from websocket data.
+        """Parse event from websocket data.
 
         Any additiional validation for the parsed data should run here.
         It is safe to raise TypeError or ValueError in non-abstract implementations.
@@ -60,16 +52,12 @@ class ClientEventData(ABC):
 
     @abstractmethod
     async def run_handler(self):
-        """
-        Run the handler's functionality
-        """
+        """Run the handler's functionality."""
 
 
 @client_event
 class ClientHeartbeat(ClientEventData):
-    """
-    Client heartbeat
-    """
+    """Client heartbeat."""
 
     event_id = websocket_pb2.EVENT_HEARTBEAT
     permission = SystemDefaultPerms.WRITE_WEBSOCKET
@@ -87,9 +75,7 @@ class ClientHeartbeat(ClientEventData):
 
 @client_event
 class ClientServerShutdown(ClientEventData):
-    """
-    Client commanded system shutdown
-    """
+    """Client commanded system shutdown."""
 
     event_id = websocket_pb2.EVENT_SHUTDOWN
     permission = SystemDefaultPerms.SYSTEM_CONTROL
@@ -105,9 +91,7 @@ class ClientServerShutdown(ClientEventData):
 
 @client_event
 class ClientServerRestart(ClientEventData):
-    """
-    Client commanded system restart
-    """
+    """Client commanded system restart."""
 
     event_id = websocket_pb2.EVENT_RESTART
     permission = SystemDefaultPerms.SYSTEM_CONTROL
@@ -124,9 +108,7 @@ class ClientServerRestart(ClientEventData):
 
 @client_event
 class ClientScheduleRace(ClientEventData):
-    """
-    Client commanded race schedule
-    """
+    """Client commanded race schedule."""
 
     event_id = websocket_pb2.EVENT_RACE_SCHEDULE
     permission = SystemDefaultPerms.RACE_CONTROL
@@ -142,9 +124,7 @@ class ClientScheduleRace(ClientEventData):
 
 @client_event
 class ClientStopRace(ClientEventData):
-    """
-    Client commanded race stop
-    """
+    """Client commanded race stop."""
 
     event_id = websocket_pb2.EVENT_RACE_STOP
     permission = SystemDefaultPerms.RACE_CONTROL
@@ -160,9 +140,7 @@ class ClientStopRace(ClientEventData):
 
 @client_event
 class ClientPilotAdd(ClientEventData):
-    """
-    Client commanded pilot add
-    """
+    """Client commanded pilot add."""
 
     event_id = websocket_pb2.EVENT_PILOT_ADD
     permission = SystemDefaultPerms.WRITE_PILOTS
@@ -180,9 +158,7 @@ class ClientPilotAdd(ClientEventData):
 
 @client_event
 class ClientPilotAlter(ClientEventData):
-    """
-    Client commanded pilot alter
-    """
+    """Client commanded pilot alter."""
 
     event_id = websocket_pb2.EVENT_PILOT_ALTER
     permission = SystemDefaultPerms.WRITE_PILOTS
@@ -200,9 +176,7 @@ class ClientPilotAlter(ClientEventData):
 
 @client_event
 class ClientPilotDelete(ClientEventData):
-    """
-    Client commanded pilot delete event
-    """
+    """Client commanded pilot delete event."""
 
     event_id = websocket_pb2.EVENT_PILOT_DELETE
     permission = SystemDefaultPerms.WRITE_PILOTS

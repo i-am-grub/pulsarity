@@ -1,6 +1,4 @@
-"""
-ORM classes for signal data
-"""
+"""ORM classes for signal data."""
 
 from __future__ import annotations
 
@@ -18,8 +16,7 @@ if TYPE_CHECKING:
 
 @final
 class ProtobufField[T: Message](fields.Field[T]):
-    """
-    Protocol buffer field with automatic object encoding and decoding.
+    """Protocol buffer field with automatic object encoding and decoding.
 
     Note that filter or queryset-update operations are not supported.
     """
@@ -62,12 +59,10 @@ class ProtobufField[T: Message](fields.Field[T]):
 
 
 class SignalHistory(_PulsarityBase):
-    """
-    Time series context for slot
-    """
+    """Time series context for slot."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "slot_history"
@@ -86,7 +81,8 @@ class SignalHistory(_PulsarityBase):
     """The series of history for the slot"""
 
     def __lt__(self, obj: Self) -> bool:
-        """
-        Less than operation definition. Allows for sorting instances by timer index.
+        """Less than operation definition.
+
+        Allows for sorting instances by timer index.
         """
         return self.timer_index < obj.timer_index

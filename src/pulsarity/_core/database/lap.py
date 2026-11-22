@@ -1,6 +1,4 @@
-"""
-ORM classes for event data
-"""
+"""ORM classes for event data."""
 
 from __future__ import annotations
 
@@ -14,13 +12,11 @@ if TYPE_CHECKING:
     from pulsarity._core.database.slot import Slot
 
 
-class LapAttribute[ATTRIBUTE](_PulsarityBase):
-    """
-    Unique and stored individually stored values for each event.
-    """
+class LapAttribute[T](_PulsarityBase):
+    """Unique and stored individually stored values for each event."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "lap_attr"
@@ -31,16 +27,14 @@ class LapAttribute[ATTRIBUTE](_PulsarityBase):
         "event.Lap",
         related_name="attributes",
     )
-    value = fields.JSONField[ATTRIBUTE]()
+    value = fields.JSONField[T]()
 
 
 class Lap(_PulsarityBase):
-    """
-    Database content for race laps
-    """
+    """Database content for race laps."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "event"
         table = "lap"

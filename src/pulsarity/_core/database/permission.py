@@ -1,6 +1,4 @@
-"""
-ORM classes for Permission data
-"""
+"""ORM classes for Permission data."""
 
 from __future__ import annotations
 
@@ -16,12 +14,10 @@ if TYPE_CHECKING:
 
 
 class Permission(_PulsarityBase):
-    """
-    Role for the application
-    """
+    """Role for the application."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "system"
         table = "permission"
@@ -35,9 +31,7 @@ class Permission(_PulsarityBase):
 
     @classmethod
     async def verify_persistant(cls) -> None:
-        """
-        Verify all nessessary permissions are in the user database.
-        """
+        """Verify all nessessary permissions are in the user database."""
 
         def generate_permissions():
             for permission_class in UserPermission.__subclasses__():
@@ -52,8 +46,7 @@ class Permission(_PulsarityBase):
 
 
 class UserPermission(StrEnum):
-    """
-    Parent class for all user permissions enums
+    """Parent class for all user permissions enums.
 
     Plugins can inherit from this class to add
     and use custom permissions.
@@ -62,9 +55,7 @@ class UserPermission(StrEnum):
 
 @unique
 class SystemDefaultPerms(UserPermission):
-    """
-    Default user permissions for the system
-    """
+    """Default user permissions for the system."""
 
     AUTHENTICATED = auto()
     """Permission to force user authentication"""

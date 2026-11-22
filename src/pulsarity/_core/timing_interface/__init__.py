@@ -1,6 +1,4 @@
-"""
-Hardware Interfaces
-"""
+"""Hardware Interfaces."""
 
 from pulsarity._core.timing_interface.timer_interface import (
     Action,

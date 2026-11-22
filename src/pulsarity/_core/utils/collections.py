@@ -1,4 +1,4 @@
-"""Custom collections"""
+"""Custom collections."""
 
 import bisect
 from collections.abc import (
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class SortedKeysView[U: Hashable](KeysView[U], Sequence[U]):
-    """Sorted keys view of `ValueSortedDict`"""
+    """Sorted keys view of `ValueSortedDict`."""
 
     def __init__(self, mapping: ValueSortedDict):
         super().__init__(mapping)
@@ -31,7 +31,7 @@ class SortedKeysView[U: Hashable](KeysView[U], Sequence[U]):
 
 
 class SortedValuesView[V: "SupportsRichComparison"](ValuesView[V], Sequence[V]):
-    """Sorted values view of `ValueSortedDict`"""
+    """Sorted values view of `ValueSortedDict`."""
 
     def __init__(self, mapping: ValueSortedDict):
         super().__init__(mapping)
@@ -51,7 +51,7 @@ class SortedValuesView[V: "SupportsRichComparison"](ValuesView[V], Sequence[V]):
 
 
 class SortedItemsView[U: Hashable, V: "SupportsRichComparison"](ItemsView[U, V]):
-    """Sorted values view of `ValueSortedDict`"""
+    """Sorted values view of `ValueSortedDict`."""
 
     def __init__(self, mapping: ValueSortedDict):
         super().__init__(mapping)
@@ -72,7 +72,7 @@ class SortedItemsView[U: Hashable, V: "SupportsRichComparison"](ItemsView[U, V])
 
 @final
 class ValueSortedDict[U: Hashable, V: "SupportsRichComparison"](dict[U, V]):
-    """Dictionary with sorted values"""
+    """Dictionary with sorted values."""
 
     __slots__ = ("list",)
     __marker = object()

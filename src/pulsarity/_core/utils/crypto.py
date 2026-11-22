@@ -1,6 +1,4 @@
-"""
-Cryptography for the application
-"""
+"""Cryptography for the application."""
 
 import datetime as dt
 from typing import TYPE_CHECKING
@@ -15,8 +13,7 @@ if TYPE_CHECKING:
 
 
 def generate_self_signed_cert(key_file: Path, cert_file: Path) -> None:
-    """
-    Generates a simple self signed cert to enable HTTPS on the webserver.
+    """Generates a simple self signed cert to enable HTTPS on the webserver.
 
     ***NOTE***: It is the responsibility of the user to replace any generated certs
     with ones signed by a reputable certificate authority.
@@ -24,7 +21,6 @@ def generate_self_signed_cert(key_file: Path, cert_file: Path) -> None:
     :param key_file: Filepath to save the key as.
     :param cert_file: Filepath to save the cert as.
     """
-
     key = ec.generate_private_key(ec.SECP256R1())
 
     subject = issuer = x509.Name(

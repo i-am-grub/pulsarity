@@ -1,6 +1,4 @@
-"""
-Manage timer interfaces
-"""
+"""Manage timer interfaces."""
 
 import asyncio
 import inspect
@@ -24,9 +22,7 @@ logger = logging.getLogger(__name__)
 
 @unique
 class TimerMode(Enum):
-    """
-    The different modes a timer can registered as
-    """
+    """The different modes a timer can registered as."""
 
     PRIMARY = auto()
     """The primary timer for scoring"""
@@ -35,10 +31,7 @@ class TimerMode(Enum):
 
 
 class FullSignalData(NamedTuple):
-    """
-    Tuple for passing timer signal data to
-    other parts of the system
-    """
+    """Tuple for passing timer signal data to other parts of the system."""
 
     millis: int
     """The time of processing the value"""
@@ -53,19 +46,14 @@ class FullSignalData(NamedTuple):
 
     @property
     def timer_mode(self) -> TimerMode:
-        """
-        Mode of the timer
-        """
+        """Mode of the timer."""
         if self.timer_index:
             return TimerMode.SPLIT
         return TimerMode.PRIMARY
 
 
 class FullLapData(NamedTuple):
-    """
-    Tuple for passing timer lap data to
-    other parts of the system
-    """
+    """Tuple for passing timer lap data to other parts of the system."""
 
     millis: int
     """The time of processing the value"""
@@ -78,9 +66,7 @@ class FullLapData(NamedTuple):
 
     @property
     def timer_mode(self) -> TimerMode:
-        """
-        Mode of the timer
-        """
+        """Mode of the timer."""
         if self.timer_index:
             return TimerMode.SPLIT
         return TimerMode.PRIMARY
@@ -88,9 +74,7 @@ class FullLapData(NamedTuple):
 
 @dataclass(slots=True)
 class _ActiveTimer:
-    """
-    Timer interfaces with an active connection
-    """
+    """Timer interfaces with an active connection."""
 
     interface: TimerInterface
     """The timer's interface"""
@@ -100,9 +84,7 @@ class _ActiveTimer:
 
 @final
 class TimerInterfaceManager:
-    """
-    Manages the abstract and active timer interfaces
-    """
+    """Manages the abstract and active timer interfaces."""
 
     __slots__ = (
         "_active_interfaces",
@@ -124,9 +106,7 @@ class TimerInterfaceManager:
         self._tasks: tuple[asyncio.Task, asyncio.Task] | None = None
 
     def start(self) -> None:
-        """
-        Start the interface processing tasks
-        """
+        """Start the interface processing tasks."""
         if self._tasks is not None:
             msg = "Timer instance manager already started"
             raise RuntimeError(msg)
@@ -142,12 +122,7 @@ class TimerInterfaceManager:
             interface.interface.subscribe(self._lap_queue, self._signal_queue)
 
     async def _process_lap_data(self):
-        """
-        Add interface data to the incoming rimer data and pass
-        along to the next stage
-
-        :param manager: The manager to use for processing
-        """
+        """Adds interface data to the timer data and passes it to the next stage."""
         while not self._shutdown_evt.is_set():
             recieved = await self._lap_queue.get()
             interface = self._active_interfaces[recieved.timer_identifier]
@@ -159,12 +134,7 @@ class TimerInterfaceManager:
             ctx.race_manager.status_aware_lap_record(recieved.node_index, outgoing)
 
     async def _process_signal_data(self):
-        """
-        Add interface data to the incoming rimer data and pass
-        along to the next stage
-
-        :param manager: The manager to use for processing
-        """
+        """Adds interface data to the signal data and passes it to the next stage."""
         while not self._shutdown_evt.is_set():
             recieved = await self._signal_queue.get()
             interface = self._active_interfaces[recieved.timer_identifier]
@@ -177,13 +147,21 @@ class TimerInterfaceManager:
 
     @classmethod
     def register(cls, interface: type[TimerInterface]) -> type[TimerInterface]:
-        """
-        Registers an interface type to be used by the system
+        """Registers an interface type to be used by the system.
 
-        :param interface: The
-        :raises RuntimeError: Interface with matching identifier has already registered
-        """
+        Can be used as a decorator.
 
+        Args:
+            interface: The interface type to register
+
+        Raises:
+            TypeError: The timing interface was not an abstract class
+            RuntimeError: Interface with matching identifier has already registered
+            TypeError: The provided object was not a proper subclass of `TimerInterface`
+
+        Returns:
+            The provided interface type
+        """
         if issubclass(interface, TimerInterface):
             if inspect.isabstract(interface):
                 msg = "Attempted to register an abstract timing interface type"
@@ -202,9 +180,7 @@ class TimerInterfaceManager:
 
     @classmethod
     def _clear_registered(cls) -> None:
-        """
-        UNIT TESTING ONLY: Clears all registered interfaces.
-        """
+        """UNIT TESTING ONLY: Clears all registered interfaces."""
         cls._interfaces.clear()
 
     def instantiate_interface(
@@ -213,18 +189,20 @@ class TimerInterfaceManager:
         *,
         uuid_: uuid.UUID | None = None,
     ):
-        """
-        Creates an interface instance from a registered interface type
+        """Creates an interface instance from a registered interface type.
 
-        :param identifier: The identifer of the abstract interface
-        :param mode: The mode to use for the interface
-        :param location: Location of the timer, defaults to 0
-        :param uuid_: Internal identifer of the instance, defaults to None
+        Args:
+            identifier: The identifer of the abstract interface
+            uuid_: Internal identifer of the instance. Defaults to None.
+
+        Raises:
+            RuntimeError: Instance uuid already used by another interface
+            RuntimeError: Interface class not registered
         """
         interface = self._interfaces.get(identifier)
         if interface is not None:
             if uuid_ is None:
-                uuid_ = uuid.uuid4()
+                uuid_ = uuid.uuid7()
 
             if uuid_.hex in self._active_interfaces:
                 msg = "Attempted to register with an already allocated uuid"
@@ -245,10 +223,13 @@ class TimerInterfaceManager:
             raise RuntimeError(msg)
 
     def decommission_interface(self, uuid_: uuid.UUID):
-        """
-        Decommission an interface instance
+        """Decommission an interface instance.
 
-        :param identifier: The internal identifer for the interface instance
+        Args:
+            uuid_: The internal identifer for the interface instance
+
+        Raises:
+            RuntimeError: Instance with uuid does not exist
         """
         interface = self._active_interfaces.get(uuid_.hex)
         if interface is not None:
@@ -259,9 +240,7 @@ class TimerInterfaceManager:
             raise RuntimeError(msg)
 
     async def shutdown(self) -> None:
-        """
-        Shutdown all interfaces
-        """
+        """Shutdown all interfaces."""
         if self._tasks is None:
             msg = "Timer instance manager not started"
             raise RuntimeError(msg)
@@ -278,11 +257,13 @@ class TimerInterfaceManager:
 
 
 def register_interface(interface_class: type[TimerInterface]) -> type[TimerInterface]:
-    """
-    Decorator used for registering TimerInterface classes
+    """Decorator used for registering TimerInterface classes.
 
-    :param interface_class: The timer interface class to register
-    :return: The registered timer interface
+    Args:
+        interface_class: The timer interface class to register
+
+    Returns:
+        The registered timer interface
     """
     TimerInterfaceManager.register(interface_class)
     return interface_class

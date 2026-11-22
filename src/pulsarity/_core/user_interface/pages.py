@@ -1,6 +1,4 @@
-"""
-User Interface Pages
-"""
+"""User Interface Pages."""
 
 import itertools
 import logging
@@ -23,9 +21,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class UIPage(ABC):
-    """
-    Class for plugin based user interface pages/routes
-    """
+    """Class for plugin based user interface pages/routes."""
 
     _registered_names: ClassVar[set[str]] = _default_names.copy()
 
@@ -68,26 +64,19 @@ class UIPage(ABC):
 
     @property
     def registered(self) -> bool:
-        """
-        The page's registration status
-        """
+        """The page's registration status."""
         return self in self._store
 
     @classmethod
     def is_name_registered(cls, page: UIPage | str) -> bool:
-        """
-        Check if a name is registered to a page
-        """
-
+        """Check if a name is registered to a page."""
         if isinstance(page, UIPage):
             page = page.name
 
         return page in cls._registered_names
 
     def register(self) -> None:
-        """
-        Registers a page to be shown in the user interface.
-        """
+        """Registers a page to be shown in the user interface."""
         if self in self._store:
             msg = f"Page {self.name} is already registered for use."
             raise RuntimeError(msg)
@@ -102,9 +91,7 @@ class UIPage(ABC):
         self._store.append(self)
 
     def unregister(self) -> None:
-        """
-        Unregisteres a page to be shown in the user interface.
-        """
+        """Unregisteres a page to be shown in the user interface."""
         if self not in self._store:
             msg = f"Page {self.name} is not registered for use."
             raise RuntimeError(msg)
@@ -116,17 +103,13 @@ class UIPage(ABC):
 
     @classmethod
     def _clear_registered(cls) -> None:
-        """
-        UNIT TESTING ONLY: Clears all registered pages in cls store
-        """
+        """UNIT TESTING ONLY: Clears all registered pages in cls store."""
         cls._store.clear()
         cls._registered_names = _default_names.copy()
 
     @classmethod
     def store_to_message(cls) -> ui_pb2.UIPages:
-        """
-        Convert the store data to message
-        """
+        """Convert the store data to message."""
         scopes = ctx.user_permsissions_ctx.get()
         pages = (
             ui_pb2.UIPage(

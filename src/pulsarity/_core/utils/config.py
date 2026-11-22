@@ -1,6 +1,4 @@
-"""
-Global configurations
-"""
+"""Global configurations."""
 
 import asyncio
 import datetime as dt
@@ -64,9 +62,7 @@ class _WebserverConfig:
 
     @property
     def using_ssl(self):
-        """
-        Property defining if ssl is expected to be used based on the configuration file
-        """
+        """Property defining if ssl is expected to be used."""
         return self.key_file is not None and self.cert_file is not None
 
 
@@ -83,9 +79,7 @@ class _GeneralConfig:
 
 @dataclass
 class PulsarityConfig:
-    """
-    The server configs
-    """
+    """The server configs."""
 
     secrets: _SecretsConfig = field(default_factory=_SecretsConfig)
     webserver: _WebserverConfig = field(default_factory=_WebserverConfig)
@@ -103,8 +97,7 @@ class PulsarityConfig:
 
     @classmethod
     def from_file(cls, filepath: Path) -> Self:
-        """
-        Loads a config from a filepath
+        """Loads a config from a filepath.
 
         :param filepath: The filepath to load the config from
         """
@@ -127,21 +120,16 @@ class PulsarityConfig:
 
     @property
     def from_save(self) -> bool:
-        """
-        Status of the config file loading from a previous config file
-        """
+        """Status of the config file loading from a previous config file."""
         return self._from_save
 
     @from_save.setter
     def from_save(self, status: bool) -> None:
-        """
-        Status of the config file loading from a previous config file
-        """
+        """Status of the config file loading from a previous config file."""
         self._from_save = status
 
     def write_config_to_file(self, filepath: Path = DEFAULT_CONFIG_FILE) -> None:
-        """
-        Writes the current config to a file
+        """Writes the current config to a file.
 
         :param filepath: The filepath to save the config to
         """
@@ -154,8 +142,7 @@ class PulsarityConfig:
         self,
         filepath: Path = DEFAULT_CONFIG_FILE,
     ) -> None:
-        """
-        Writes the current config to a file
+        """Writes the current config to a file.
 
         :param filepath: The filepath to save the config to
         """
@@ -169,9 +156,7 @@ class PulsarityConfig:
 
 
 def get_sqlite_config() -> dict:
-    """
-    Get the default database config for sqlite connections
-    """
+    """Get the default database config for sqlite connections."""
     return {
         "system_db": {
             "engine": "tortoise.backends.sqlite",
@@ -185,9 +170,7 @@ def get_sqlite_config() -> dict:
 
 
 def generate_logging_config(debug: bool) -> dict:
-    """
-    Generate the logging configuration
-    """
+    """Generate the logging configuration."""
     if debug:
         return plogging.generate_default_config("DEBUG")
     return plogging.generate_default_config("INFO")

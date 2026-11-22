@@ -1,6 +1,4 @@
-"""
-System events
-"""
+"""System events."""
 
 from pulsarity._core.events.broker import EventBroker
 from pulsarity._core.events.enums import SystemEvt

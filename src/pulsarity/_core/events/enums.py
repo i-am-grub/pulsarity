@@ -1,6 +1,4 @@
-"""
-Enums for system events
-"""
+"""Enums for system events."""
 
 from dataclasses import dataclass
 from enum import Enum, unique
@@ -11,9 +9,7 @@ from pulsarity._core.events import server
 
 @dataclass(frozen=True)
 class _EvtData:
-    """
-    The dataclass used to define event enums
-    """
+    """The dataclass used to define event enums."""
 
     event_id: websocket_pb2.EventID
     """Identifier for the event. This field should match the protocol buffer value"""
@@ -21,8 +17,7 @@ class _EvtData:
 
 @unique
 class SystemEvt(_EvtData, Enum):
-    """
-    Enum for system events.
+    """Enum for system events.
 
     Typically used for registering event callbacks
     """

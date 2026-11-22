@@ -1,6 +1,4 @@
-"""
-System event broker
-"""
+"""System event broker."""
 
 import asyncio
 import bisect
@@ -27,9 +25,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class _EvtCallbackData:
-    """
-    Dataclass used for containing event callback data
-    """
+    """Dataclass used for containing event callback data."""
 
     priority: EvtPriority
     func: Callable
@@ -39,62 +35,46 @@ class _EvtCallbackData:
     _id: int = field(default_factory=functools.partial(next, _counter))
 
     def __lt__(self, other: Self):
-        """
-        Less than comparsion. Enables the use of builtin sorting algorithms
-        """
+        """Less than comparsion. Enables the use of builtin sorting algorithms."""
         return (self.priority, self._id) < (other.priority, other._id)
 
 
 @final
 class EventBroker:
-    """
-    Manages distributing server side events to connect clients and
-    triggering server side event callbacks.
-    """
+    """Distributes server side events to clients and triggers event callbacks."""
 
     __slots__ = ("_connections",)
 
     _callbacks: ClassVar[dict[EventID, list[_EvtCallbackData]]] = defaultdict(list)
 
     def __init__(self) -> None:
-        """
-        Class initialization
-        """
+        """Class initialization."""
         self._connections: set[asyncio.PriorityQueue[SystemEventData]] = set()
 
     def publish(self, data: SystemEventData) -> None:
-        """
-        Push the event data to all subscribed clients
+        """Push the event data to all subscribed clients.
 
-        :param event: Event type
-        :param data: Event data
-        :param uuid: Message uuid, defaults to None
+        Args:
+            data: The data to publish
         """
         for connection in self._connections:
             connection.put_nowait(data)
 
     async def trigger(self, data: SystemEventData) -> None:
-        """
-        Publishes data to all subscribed clients and triggers
-        all registered callbacks for the event
+        """Publishes data to all subscribed clients and triggers registered callbacks.
 
-        :param event: Event type
-        :param data: Event data
-        :param uuid: Message uuid, defaults to None
+        Args:
+            data: The data to publish
         """
-
         self.publish(data)
         callbacks = copy.copy(self._callbacks[data.event_id])
         await self._callback_runner(callbacks, data)
 
     def trigger_background(self, data: SystemEventData) -> None:
-        """
-        Publishes data to all subscribed clients and triggers
-        all registered callbacks for the event in the background
+        """Publishes data to all clients and runs callbacks in the background.
 
-        :param event: Event type
-        :param data: Event data
-        :param uuid: Message uuid, defaults to None
+        Args:
+            data: The event data to pulish and run in the background
         """
         self.publish(data)
         callbacks = copy.copy(self._callbacks[data.event_id])
@@ -105,11 +85,11 @@ class EventBroker:
         callbacks: list[_EvtCallbackData],
         data: SystemEventData,
     ) -> None:
-        """
-        Run all procided callbacks sequentially
+        """Run all procided callbacks sequentially.
 
-        :param callbacks: The list of callbacks to run
-        :param data: The additional data to provide for each callback
+        Args:
+            callbacks: The callbacks to run
+            data: The event data
         """
         data_ = asdict(data)
 
@@ -135,13 +115,13 @@ class EventBroker:
         priority: EvtPriority = EvtPriority.LOWEST,
         default_kwargs: dict[str, Any] | None = None,
     ) -> None:
-        """
-        Register a callback to run when when an event is published
+        """Register a callback to run when when an event is published.
 
-        :param callback: The callback to run
-        :param event: The id of the event to register the callback against
-        :param priority: The priority associated with scheduling the callback.
-        :param default_kwargs: Default key word arguments to use and/or include
+        Args:
+            callback: The callback to run
+            event: The id of the event to register the callback against
+            priority: The priority associated with scheduling the callback.
+            default_kwargs: Default key word arguments to use and/or include.
         """
         if default_kwargs is None:
             default_kwargs = {}
@@ -155,11 +135,14 @@ class EventBroker:
         callback: Callable,
         event: SystemEvt,
     ) -> None:
-        """
-        Unregister an event callback
+        """Unregister an event callback.
 
-        :param callback: The callback to remove
-        :param event_id: The identifier of the event to register the callback against
+        Args:
+            callback: The callback to remove
+            event: The identifier of the event to register the callback against
+
+        Raises:
+            RuntimeError: Raised when attempting to unregister a non-registerd callback.
         """
         callbacks = cls._callbacks[event.event_id]
         for callback_ in callbacks:
@@ -167,23 +150,21 @@ class EventBroker:
                 callbacks.remove(callback_)
                 break
         else:
-            msg = "Callback not register in system"
+            msg = "Callback not registered in the system"
             raise RuntimeError(msg)
 
     @classmethod
     def _clear_registered(cls) -> None:
-        """
-        UNIT TESTING ONLY: Clears all registered interfaces.
-        """
+        """UNIT TESTING ONLY: Clears all registered interfaces."""
         cls._callbacks.clear()
 
     async def subscribe(
         self,
     ) -> AsyncGenerator[SystemEventData]:
-        """
-        Subscribe to recieve server events. Typically used for client connections
+        """Subscribe to recieve server events. Typically used for client connections.
 
-        :yield: Event data
+        Yields:
+            System event data
         """
         connection: asyncio.PriorityQueue = asyncio.PriorityQueue()
         self._connections.add(connection)

@@ -1,6 +1,4 @@
-"""
-ORM classes for User data
-"""
+"""ORM classes for User data."""
 
 import asyncio
 import datetime as dt
@@ -29,11 +27,13 @@ _PH = PasswordHasher()
 
 
 async def _generate_hash(password: str) -> str:
-    """
-    Generates a hash of the provided password without blocking.
+    """Generates a hash of the provided password without blocking.
 
-    :param password: The password to hash.
-    :return: The hashed password
+    Args:
+        password: The password to hash.
+
+    Returns:
+        The hashed password
     """
     loop = asyncio.get_running_loop()
 
@@ -47,9 +47,7 @@ async def _generate_hash(password: str) -> str:
 
 
 async def _verify_password(pw_hash: str, password: str, uuid: UUID) -> bool:
-    """
-    Checks a hash of the provided password against the hash in the database.
-    """
+    """Checks a hash of the provided password against the hash in the database."""
     loop = asyncio.get_running_loop()
 
     try:
@@ -76,11 +74,13 @@ async def _verify_password(pw_hash: str, password: str, uuid: UUID) -> bool:
 
 
 async def _check_password_rehash(pw_hash: str) -> bool:
-    """
-    Checks if the user's password needs to be rehashed due to a
-    configuration change.
+    """Checks if the user's password needs to be rehashed due to a configuration change.
 
-    :return: The status of the check
+    Args:
+        pw_hash: The password hash to check
+
+    Returns:
+        The status of the check
     """
     loop = asyncio.get_running_loop()
 
@@ -92,12 +92,10 @@ async def _check_password_rehash(pw_hash: str) -> bool:
 
 
 class User(_PulsarityBase):
-    """
-    User for the application
-    """
+    """User for the application."""
 
     class Meta:
-        """Tortoise ORM metadata"""
+        """Tortoise ORM metadata."""
 
         app = "system"
         table = "user"
@@ -127,8 +125,7 @@ class User(_PulsarityBase):
 
     @property
     def display_name(self) -> str:
-        """
-        The display name for the user when authenticated
+        """The display name for the user when authenticated.
 
         :return: The name to display
         """
@@ -142,11 +139,12 @@ class User(_PulsarityBase):
 
     @cached_property
     def permissions(self) -> set[str]:
-        """
-        Gets the permissions for the user. Can only be used when roles
-        and permissions are prefetched for the user
+        """Gets the permissions for the user.
 
-        :return: The set of permissions
+        Can only be used when roles and permissions are prefetched for the user.
+
+        Returns:
+            The set of permissions
         """
 
         def perm_generator():
@@ -156,10 +154,7 @@ class User(_PulsarityBase):
         return set(perm_generator())
 
     async def verify_password(self, password: str) -> bool:
-        """
-        Checks a hash of the provided password against the hash in the database
-        for a user.
-        """
+        """Checks a hash of the provided password against the stored hash for a user."""
         if not self._password_hash:
             return False
 
@@ -167,9 +162,9 @@ class User(_PulsarityBase):
 
     @classmethod
     async def verify_password_uuid(cls, uuid: UUID, password: str) -> bool:
-        """
-        Checks a hash of the provided password against the hash in the database by
-        UUID.
+        """Checks a hash of the provided password against the hash in the database.
+
+        Uses the user's uuid as a lookup for the stored hash.
         """
         user = await cls.get_or_none(auth_id=uuid).only("_password_hash")
 
@@ -179,11 +174,10 @@ class User(_PulsarityBase):
         return await _verify_password(user._password_hash, password, uuid)
 
     async def check_password_rehash(self) -> bool:
-        """
-        Checks if the user's password needs to be rehashed due to a
-        configuration change.
+        """Checks if password needs to be rehashed due to a configuration change.
 
-        :return: The status of the check
+        Returns:
+            The status of the check
         """
         if self._password_hash is None:
             return True
@@ -198,20 +192,22 @@ class User(_PulsarityBase):
 
     @classmethod
     async def update_user_password(cls, uuid: UUID, password: str) -> None:
-        """
-        Updates a user's password hash in the database.
+        """Updates a user's password hash in the database.
 
-        :param password: The password to hash and store
+        Args:
+            uuid: The user's uuid
+            password: The password to hash and store
         """
         hashed_password = await _generate_hash(password)
         await cls.filter(auth_id=uuid).update(_password_hash=hashed_password)
 
     @classmethod
     async def update_user_password_and_status(cls, uuid: UUID, password: str) -> None:
-        """
-        Updates a user's password hash in the database.
+        """Updates a user's password hash in the database.
 
-        :param password: The password to hash and store
+        Args:
+            uuid: The user's uuid
+            password: The password to hash and store
         """
         hashed_password = await _generate_hash(password)
         await cls.filter(auth_id=uuid).update(
@@ -221,23 +217,29 @@ class User(_PulsarityBase):
 
     @classmethod
     async def get_by_uuid(cls, uuid: UUID) -> Self | None:
-        """
-        Attempt to retrieve a user by uuid.
+        """Attempt to retrieve a user by uuid.
 
-        :param uuid: The uuid to search for
+        Args:
+            uuid: The uuid to search for
+
+        Returns:
+            A user or `None`
         """
         return await cls.get_or_none(auth_id=uuid)
 
     @classmethod
     @async_lru.alru_cache(ttl=300, jitter=60)
     async def get_authentication_by_uuid(cls, uuid: UUID) -> Self | None:
-        """
-        Attempt to retrieve a user by uuid. A successful retrieval will
-        prefetch data down to the permissions level for the user.
+        """Attempt to retrieve a user by uuid.
 
-        This class method only loads part of the object from the database
+        A successful retrieval will prefetch data down to
+        the permissions level for the user.
 
-        :param uuid: The uuid to search for
+        Args:
+            uuid: The uuid to search for
+
+        Returns:
+            A user or `None`
         """
         return (
             await cls.get_or_none(auth_id=uuid)
@@ -249,19 +251,25 @@ class User(_PulsarityBase):
 
     @classmethod
     async def get_by_username(cls, username: str) -> Self | None:
-        """
-        Attempt to retrieve a user by username
+        """Attempt to retrieve a user by username.
 
-        :param username: The username to search for
+        Args:
+            username: The username to search for
+
+        Returns:
+            A user or `None`
         """
         return await cls.get_or_none(username=username)
 
     @classmethod
     async def get_by_username_prefetch(cls, username: str) -> Self | None:
-        """
-        Attempt to retrieve a user by username
+        """Attempt to retrieve a user by username.
 
-        :param username: The username to search for
+        Args:
+            username: The username to search for
+
+        Returns:
+            A user or `None`
         """
         return await cls.get_or_none(username=username).prefetch_related(
             "roles__permissions",
@@ -269,9 +277,7 @@ class User(_PulsarityBase):
 
     @classmethod
     async def verify_persistant(cls) -> None:
-        """
-        Verify all system roles are in the user database.
-        """
+        """Verify all system roles are in the user database."""
         default_username = config.config_manager.secrets.default_username
         default_password = config.config_manager.secrets.default_password
 
@@ -291,11 +297,12 @@ class User(_PulsarityBase):
             await cls.update_user_password(user.auth_id, default_password)
 
     async def check_for_rehash(self, password: str) -> None:
-        """
-        Checks to see if a user's hash needs to be updated. Update it
-        automatically automatically if it does.
+        """Checks to see if a user's hash needs to be updated.
 
-        :param password: The password to rehash if necessary
+        Update it automatically automatically if it does.
+
+        Args:
+            password: The password to rehash if necessary
         """
         if self._password_hash is None:
             return
@@ -304,16 +311,15 @@ class User(_PulsarityBase):
             await self.update_user_password(self.auth_id, password)
 
     async def update_user_login_time(self) -> None:
-        """
-        Update a user's `last_login` time.
-        """
+        """Update a user's `last_login` time."""
         await self.filter(id=self.id).update(last_login=dt.datetime.now(tz=dt.UTC))
 
     @classmethod
     async def update_password_required(cls, uuid: UUID, status: bool) -> None:
-        """
-        Change the status of the `reset_required` attribute for a user
+        """Change the status of the `reset_required` attribute for a user.
 
-        :param status: The value to set the status to
+        Args:
+            uuid: The uuid of the user
+            status: The status to set the user's `reset_required` attribute to
         """
         await cls.filter(auth_id=uuid).update(reset_required=status)

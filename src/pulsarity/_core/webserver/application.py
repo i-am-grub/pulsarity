@@ -1,6 +1,4 @@
-"""
-Webserver Components
-"""
+"""Webserver Components."""
 
 import asyncio
 import contextlib
@@ -29,8 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class SPAStaticFiles(StaticFiles):
-    """
-    Staticfiles for single-page-apps
+    """Staticfiles for single-page-apps.
 
     Wraps the base `lookup_path` to fallback to the root `index.html`.
     """
@@ -44,11 +41,10 @@ class SPAStaticFiles(StaticFiles):
 
 
 def generate_api_application() -> Starlette:
-    """
-    Generates the api and timing application with session and
-    context middleware.
+    """Generates the api and timing application with session and context middleware.
 
-    :return: The api application object
+    Returns:
+        The api application object
     """
     configs = config.config_manager
 
@@ -72,16 +68,14 @@ def generate_api_application() -> Starlette:
 
 
 def generate_pulsarity_application() -> Starlette:
-    """
-    Generates the Pulsarity application with CORS middlesware and
-    routes to the sub application.
+    """Generates the Pulsarity application with CORS middlesware and routing.
 
     File serving app is mounted to the root of the domain (`/`) and the
     api application is mounted to (`/api`)
 
-    :return: The webserver application
+    Returns:
+        The webserver application
     """
-
     routes = [
         Mount(path="/api", app=generate_api_application(), name="api"),
     ]
@@ -131,9 +125,7 @@ def generate_pulsarity_application() -> Starlette:
 
 
 async def heartbeat_coroutine():
-    """
-    Publish a heartbeat event at 15 second intervals
-    """
+    """Publish a heartbeat event at 15 second intervals."""
     evt = asyncio.Event()
 
     for i in itertools.count(start=ctx.evt_loop.time(), step=15.0):
@@ -147,12 +139,11 @@ async def heartbeat_coroutine():
 
 @contextlib.asynccontextmanager
 async def lifespan(_app: Starlette):
-    """
-    Startup and shutdown procedures for the webserver. The states created
-    during the startup phase of the lifespan can be propagated to the
-    request via the `ContextState` dictionary.
-    """
+    """Startup and shutdown procedures for the webserver.
 
+    The states created during the startup phase of the lifespan
+    can be propagated to the request via the `ContextState` dictionary.
+    """
     logger.info("Starting application")
 
     await database.setup_default_objects()
@@ -186,18 +177,14 @@ async def lifespan(_app: Starlette):
 
 
 async def server_starup_workflow() -> None:
-    """
-    Startup workflow
-    """
+    """Startup workflow."""
     _native.import_all_submodules()
     ctx.timer_manager.start()
     await ctx.event_broker.trigger(ServerStartup())
 
 
 async def server_shutdown_workflow() -> None:
-    """
-    Shutdown workflow
-    """
+    """Shutdown workflow."""
     await ctx.event_broker.trigger(ServerShutdown())
     await ctx.timer_manager.shutdown()
     await background.shutdown(5)

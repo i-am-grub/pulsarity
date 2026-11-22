@@ -1,6 +1,4 @@
-"""
-User Interface Elements
-"""
+"""User Interface Elements."""
 
 from __future__ import annotations
 
@@ -31,9 +29,7 @@ logger = logging.getLogger(__name__)
 
 @system_event
 class UIElementUpdate(SystemEventData):
-    """
-    User interface element update event
-    """
+    """User interface element update event."""
 
     event_id: ClassVar = websocket_pb2.EVENT_UI_UPDATE
     priority: ClassVar = EvtPriority.LOW
@@ -50,9 +46,7 @@ class UIElementUpdate(SystemEventData):
 
 @dataclass(frozen=True, slots=True)
 class UIElement[T: Message](ABC):
-    """
-    User interface element abstract base class
-    """
+    """User interface element abstract base class."""
 
     element_type_id: ClassVar[ui_pb2.UIElementType]
     _store: ClassVar[dict[int, UIElement]]
@@ -70,40 +64,31 @@ class UIElement[T: Message](ABC):
             self.register()
 
     def set_visible(self) -> None:
-        """
-        Set the element to be visible
-        """
+        """Set the element to be visible."""
         if not self.visible:
             object.__setattr__(self, "visible", True)
             self.publish_update_event()
 
     def set_invsible(self) -> None:
-        """
-        Set the element to be invsible
-        """
+        """Set the element to be invsible."""
         if self.visible:
             object.__setattr__(self, "visible", False)
             self.publish_update_event()
 
     @property
     def registered(self) -> bool:
-        """
-        The element's registration status
-        """
+        """The element's registration status."""
         return self.uid in self._store
 
     @classmethod
     def get_element_by_uid(cls, uid: int) -> UIElement[T] | None:
-        """
-        Get an element from the class store by uid
-        """
+        """Get an element from the class store by uid."""
         if uid in cls._store:
             return cls._store[uid]
         return None
 
     def publish_update_event(self) -> None:
-        """
-        Publish an UI element update event
+        """Publish an UI element update event.
 
         Passes `None` as a default to prevent issues with fields
         being updated before the context is valid
@@ -113,21 +98,15 @@ class UIElement[T: Message](ABC):
 
     @abstractmethod
     def element_to_message(self) -> T:
-        """
-        Convert the element data to message
-        """
+        """Convert the element data to message."""
 
     @abstractmethod
     def to_element_update_message(self) -> ui_pb2.UIElementUpdate:
-        """
-        Convert the UI element data to a ui element update message
-        """
+        """Convert the UI element data to a ui element update message."""
 
     @classmethod
     def store_element_message(cls) -> Iterable[T]:
-        """
-        Generate element messages from the store
-        """
+        """Generate element messages from the store."""
         scopes = ctx.user_permsissions_ctx.get()
         return (
             i.element_to_message()
@@ -138,14 +117,10 @@ class UIElement[T: Message](ABC):
     @classmethod
     @abstractmethod
     def store_to_message(cls) -> Message:
-        """
-        Convert the store data to message
-        """
+        """Convert the store data to message."""
 
     def register(self) -> None:
-        """
-        Registers an element to be shown in the user interface.
-        """
+        """Registers an element to be shown in the user interface."""
         if self.uid in self._store:
             msg = f"Element {self} is already registered for use."
             raise RuntimeError(msg)
@@ -153,9 +128,7 @@ class UIElement[T: Message](ABC):
         self._store[self.uid] = self
 
     def unregister(self) -> None:
-        """
-        Unregisters an element to be shown in the user interface.
-        """
+        """Unregisters an element to be shown in the user interface."""
         if self.uid not in self._store:
             msg = f"Element {self} is not registered for use."
             raise RuntimeError(msg)
@@ -164,17 +137,13 @@ class UIElement[T: Message](ABC):
 
     @classmethod
     def _clear_registered(cls) -> None:
-        """
-        Clears the registered elements from the class store
-        """
+        """Clears the registered elements from the class store."""
         cls._store.clear()
 
 
 @dataclass(frozen=True, slots=True)
 class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
-    """
-    User interface element tree
-    """
+    """User interface element tree."""
 
     element_type_id: ClassVar = ui_pb2.ELEMENT_TYPE_ETREE
     _store: ClassVar = {}
@@ -184,9 +153,7 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
     _elements: list[UIElement] = field(default_factory=list, init=False)
 
     def add_element(self, element: UIElement) -> None:
-        """
-        Adds an element to the element tree
-        """
+        """Adds an element to the element tree."""
         if not self.registered:
             logger.warning("Adding an element to an unregisterd UIETree (%s)", self)
 
@@ -196,9 +163,7 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
         self._elements.append(element)
 
     def remove_element(self, element: UIElement) -> None:
-        """
-        Removes an element from the element tree
-        """
+        """Removes an element from the element tree."""
         self._elements.remove(element)
 
     def __iter__(self):
@@ -208,9 +173,7 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
         return key in self._elements
 
     def _convert_entries(self) -> Iterable[ui_pb2.UIElementTreeEntry]:
-        """
-        Convert element tree entries to protocol buffer messages
-        """
+        """Convert element tree entries to protocol buffer messages."""
         scopes = ctx.user_permsissions_ctx.get()
         return (
             ui_pb2.UIElementTreeEntry(type=elem.element_type_id, element_id=elem.uid)
@@ -219,17 +182,13 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
         )
 
     def element_to_message(self):
-        """
-        Convert the element data to message
-        """
+        """Convert the element data to message."""
         return ui_pb2.UIElementTree(
             element_id=self.uid, visible=self.visible, elements=self._convert_entries()
         )
 
     def to_element_update_message(self):
-        """
-        Convert the UI element data to a ui element update message
-        """
+        """Convert the UI element data to a ui element update message."""
         etree = self.element_to_message()
         return ui_pb2.UIElementUpdate(
             element_type=self.element_type_id, element_id=self.uid, etree=etree
@@ -237,15 +196,11 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
 
     @classmethod
     def store_to_message(cls):
-        """
-        Convert the store data to message
-        """
+        """Convert the store data to message."""
         return ui_pb2.UIElementTrees(etrees=cls.store_element_message())
 
     def map_to_page(self, page: UIPage | str) -> None:
-        """
-        Maps an element tree to a provided page
-        """
+        """Maps an element tree to a provided page."""
         if not self.registered:
             logger.warning("Mapping an unregisterd UIETree (%s) to a UIPage", self)
 
@@ -267,27 +222,21 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
 
     @classmethod
     def mappings_to_message(cls) -> ui_pb2.UIETreeMapping:
-        """
-        Convert the store data to message
-        """
+        """Convert the store data to message."""
         mapping = {k: cls._etree_to_ids(v) for k, v in cls._mapping_store.items()}
         return ui_pb2.UIETreeMapping(mapping=mapping)
 
     @override
     @classmethod
     def _clear_registered(cls) -> None:
-        """
-        Clears the registered elements from the class store
-        """
+        """Clears the registered elements from the class store."""
         super()._clear_registered()
         cls._mapping_store.clear()
 
 
 @dataclass(frozen=True, slots=True)
 class UIMarkdownField(UIElement[ui_pb2.UIMarkdownField]):
-    """
-    User interface markdown field
-    """
+    """User interface markdown field."""
 
     element_type_id: ClassVar = ui_pb2.ELEMENT_TYPE_MARKDOWN
     _store: ClassVar = {}
@@ -295,35 +244,27 @@ class UIMarkdownField(UIElement[ui_pb2.UIMarkdownField]):
     text: str
 
     def to_element_update_message(self):
-        """
-        Convert the UI element data to a ui element update message
-        """
+        """Convert the UI element data to a ui element update message."""
         markdown = self.element_to_message()
         return ui_pb2.UIElementUpdate(
             element_type=self.element_type_id, element_id=self.uid, markdown=markdown
         )
 
     def element_to_message(self):
-        """
-        Convert the element data to message
-        """
+        """Convert the element data to message."""
         return ui_pb2.UIMarkdownField(
             element_id=self.uid, visible=self.visible, text=self.text
         )
 
     @classmethod
     def store_to_message(cls):
-        """
-        Convert the store data to message
-        """
+        """Convert the store data to message."""
         return ui_pb2.UIMarkdownFields(fields=cls.store_element_message())
 
 
 @dataclass(frozen=True, slots=True)
 class UIButtonField(UIElement[ui_pb2.UIButtonField]):
-    """
-    User interface button field
-    """
+    """User interface button field."""
 
     element_type_id: ClassVar = ui_pb2.ELEMENT_TYPE_BUTTON
     _store: ClassVar = {}
@@ -332,35 +273,27 @@ class UIButtonField(UIElement[ui_pb2.UIButtonField]):
     callback: Callable[[], None]
 
     def to_element_update_message(self):
-        """
-        Convert the UI element data to a ui element update message
-        """
+        """Convert the UI element data to a ui element update message."""
         button = self.element_to_message()
         return ui_pb2.UIElementUpdate(
             element_type=self.element_type_id, element_id=self.uid, button=button
         )
 
     def element_to_message(self):
-        """
-        Convert the element data to message
-        """
+        """Convert the element data to message."""
         return ui_pb2.UIButtonField(
             element_id=self.uid, visible=self.visible, text=self.text
         )
 
     @classmethod
     def store_to_message(cls):
-        """
-        Convert the store data to message
-        """
+        """Convert the store data to message."""
         return ui_pb2.UIButtonFields(fields=cls.store_element_message())
 
 
 @dataclass(frozen=True, slots=True)
 class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
-    """
-    User interface value field
-    """
+    """User interface value field."""
 
     element_type_id: ClassVar = ui_pb2.ELEMENT_TYPE_VALUE
     _store: ClassVar = {}
@@ -380,9 +313,7 @@ class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
 
     @property
     def value(self) -> T | None:
-        """
-        The value of the field
-        """
+        """The value of the field."""
         return self._value
 
     @value.setter
@@ -394,9 +325,7 @@ class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
     def _validate_value(self, value: T) -> None: ...  # pyright: ignore[reportUnusedParameter]
 
     def to_element_update_message(self):
-        """
-        Convert the UI element data to a ui element update message
-        """
+        """Convert the UI element data to a ui element update message."""
         value = self.element_to_message()
         return ui_pb2.UIElementUpdate(
             element_type=self.element_type_id, element_id=self.uid, value=value
@@ -404,17 +333,13 @@ class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
 
     @classmethod
     def store_to_message(cls):
-        """
-        Convert the store data to message
-        """
+        """Convert the store data to message."""
         return ui_pb2.UIValueFields(fields=cls.store_element_message())
 
 
 @dataclass(frozen=True, slots=True)
 class UITextValueField(UIValueField[str]):
-    """
-    User interface text value field
-    """
+    """User interface text value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_TEXT
 
@@ -425,9 +350,7 @@ class UITextValueField(UIValueField[str]):
             raise TypeError(msg)
 
     def element_to_message(self):
-        """
-        Convert the element data to message
-        """
+        """Convert the element data to message."""
         return ui_pb2.UIValueField(
             element_id=self.uid,
             visible=self.visible,
@@ -439,45 +362,35 @@ class UITextValueField(UIValueField[str]):
 
 @dataclass(frozen=True, slots=True)
 class UIPasswordValueField(UITextValueField):
-    """
-    User interface password value field
-    """
+    """User interface password value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_PASSWORD
 
 
 @dataclass(frozen=True, slots=True)
 class UIEmailValueField(UITextValueField):
-    """
-    User interface email value field
-    """
+    """User interface email value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_EMAIL
 
 
 @dataclass(frozen=True, slots=True)
 class UIURLValueField(UITextValueField):
-    """
-    User interface URL value field
-    """
+    """User interface URL value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_URL
 
 
 @dataclass(frozen=True, slots=True)
 class UITelValueField(UITextValueField):
-    """
-    User interface telephone value field
-    """
+    """User interface telephone value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_TEL
 
 
 @dataclass(frozen=True, slots=True)
 class UINumberValueField(UIValueField[float]):
-    """
-    User interface number value field
-    """
+    """User interface number value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_NUMBER
 
@@ -507,9 +420,7 @@ class UINumberValueField(UIValueField[float]):
             raise ValueError(msg)
 
     def element_to_message(self):
-        """
-        Convert the element data to message
-        """
+        """Convert the element data to message."""
         number = ui_pb2.NumberFieldData(
             value=self.value, min=self.min, max=self.max, step=self.step
         )
@@ -524,9 +435,7 @@ class UINumberValueField(UIValueField[float]):
 
 @dataclass(frozen=True, slots=True)
 class UIRangeValueField(UINumberValueField):
-    """
-    User interface range value field
-    """
+    """User interface range value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_RANGE
 
@@ -537,9 +446,7 @@ class UIRangeValueField(UINumberValueField):
 
 @dataclass(frozen=True, slots=True)
 class UICheckboxValueField(UIValueField[bool]):
-    """
-    User interface checkbox value field
-    """
+    """User interface checkbox value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_CHECKBOX
 
@@ -549,9 +456,7 @@ class UICheckboxValueField(UIValueField[bool]):
     @property
     @override
     def value(self) -> bool:
-        """
-        The value of the field
-        """
+        """The value of the field."""
         return self._value
 
     @value.setter
@@ -567,9 +472,7 @@ class UICheckboxValueField(UIValueField[bool]):
             raise TypeError(msg)
 
     def element_to_message(self):
-        """
-        Convert the element data to message
-        """
+        """Convert the element data to message."""
         return ui_pb2.UIValueField(
             element_id=self.uid,
             visible=self.visible,
@@ -581,9 +484,7 @@ class UICheckboxValueField(UIValueField[bool]):
 
 @dataclass(frozen=True, slots=True)
 class UIDatetimeValueField(UIValueField[dt.datetime]):
-    """
-    User interface datetime value field
-    """
+    """User interface datetime value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_DATETIME
 
@@ -594,9 +495,7 @@ class UIDatetimeValueField(UIValueField[dt.datetime]):
             raise TypeError(msg)
 
     def element_to_message(self):
-        """
-        Convert the element data to message
-        """
+        """Convert the element data to message."""
         if self._value is not None:
             datetime_ = Timestamp()
             datetime_.FromDatetime(self._value)
@@ -614,9 +513,7 @@ class UIDatetimeValueField(UIValueField[dt.datetime]):
 
 @dataclass(frozen=True, slots=True)
 class UIDateValueField(UIValueField[dt.date]):
-    """
-    User interface date value field
-    """
+    """User interface date value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_DATE
 
@@ -627,9 +524,7 @@ class UIDateValueField(UIValueField[dt.date]):
             raise TypeError(msg)
 
     def element_to_message(self):
-        """
-        Convert the element data to message
-        """
+        """Convert the element data to message."""
         if self._value is not None:
             dt_ = dt.datetime(
                 year=self._value.year,
@@ -653,9 +548,7 @@ class UIDateValueField(UIValueField[dt.date]):
 
 @dataclass(frozen=True, slots=True)
 class UITimeValueField(UIValueField[dt.time]):
-    """
-    User interface time value field
-    """
+    """User interface time value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_TIME
 
@@ -666,9 +559,7 @@ class UITimeValueField(UIValueField[dt.time]):
             raise TypeError(msg)
 
     def element_to_message(self):
-        """
-        Convert the element data to message
-        """
+        """Convert the element data to message."""
         if self._value is not None:
             seconds = (
                 (self._value.hour * 3600)
@@ -690,9 +581,7 @@ class UITimeValueField(UIValueField[dt.time]):
 
 
 class _SelectOption[T](NamedTuple):
-    """
-    Named tuple for storing select option data
-    """
+    """Named tuple for storing select option data."""
 
     label: str
     value: T
@@ -700,9 +589,7 @@ class _SelectOption[T](NamedTuple):
 
 @dataclass(frozen=True, slots=True)
 class UISelectValueField[T](UIValueField[int]):
-    """
-    User interface time value field
-    """
+    """User interface time value field."""
 
     field_type: ClassVar = ui_pb2.FIELD_TYPE_SELECT
 
@@ -711,9 +598,7 @@ class UISelectValueField[T](UIValueField[int]):
 
     @property
     def selected_value(self) -> T:
-        """
-        The value of the current selection
-        """
+        """The value of the current selection."""
         if self._value is None:
             msg = "Unable to get value when selection is None"
             raise ValueError(msg)
@@ -740,12 +625,14 @@ class UISelectValueField[T](UIValueField[int]):
             raise ValueError(msg)
 
     def register_option(self, label: str, value: T) -> int:
-        """
-        Add an option to the select field
+        """Add an option to the select field.
 
-        :param label: The option label
-        :param value: The option's internal value
-        :return: The registered option id
+        Args:
+            label: The option label
+            value: The option's internal value
+
+        Returns:
+            The registered option id
         """
         id_ = next(self._opt_counter)
         self._options[id_] = _SelectOption(label, value)
@@ -753,10 +640,10 @@ class UISelectValueField[T](UIValueField[int]):
         return id_
 
     def remove_option(self, id_: int) -> None:
-        """
-        Removes an option from the selection field
+        """Removes an option from the selection field.
 
-        :param id_: The option's id
+        Args:
+            id_: The option's id
         """
         self._options.pop(id_)
         if id_ == self._value:
@@ -769,9 +656,7 @@ class UISelectValueField[T](UIValueField[int]):
         self.publish_update_event()
 
     def element_to_message(self):
-        """
-        Convert the element data to message
-        """
+        """Convert the element data to message."""
         select = ui_pb2.SelectFieldData(
             mapping={id_: val.label for id_, val in self._options.items()},
             selected=self._value,

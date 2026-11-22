@@ -1,6 +1,4 @@
-"""
-Race ruleset
-"""
+"""Race ruleset."""
 
 from __future__ import annotations
 
@@ -29,8 +27,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class SlotResult[T]:
-    """
-    Basic class for representing race data.
+    """Basic class for representing race data.
 
     Supported types for generic include dataclasses (preferred)
     and dicts
@@ -74,15 +71,11 @@ class SlotResult[T]:
 
 @dataclass(frozen=True, slots=True)
 class RulesetCustomFields:
-    """
-    Base class for race format fields
-    """
+    """Base class for race format fields."""
 
 
 class SafeRaceFormat[T: RulesetCustomFields](NamedTuple):
-    """
-    Immutable for holding race format data
-    """
+    """Immutable for holding race format data."""
 
     stage_time_sec: int
     random_stage_delay: int
@@ -93,9 +86,7 @@ class SafeRaceFormat[T: RulesetCustomFields](NamedTuple):
 
     @classmethod
     def from_format(cls, format_: RaceFormat) -> Self:
-        """
-        Builds an immutable from the a database race format instance and
-        the ruleset fields default values.
+        """Builds an immutable from a database race format and ruleset default values.
 
         This classmethod checks current database values against the current
         definition of the format's custom fields. This prevent issues in the
@@ -126,9 +117,7 @@ class SafeRaceFormat[T: RulesetCustomFields](NamedTuple):
 
 
 class RulesetMeta[T: RulesetCustomFields](NamedTuple):
-    """
-    Ruleset metadata
-    """
+    """Ruleset metadata."""
 
     uid: str
     """ruleset unique identifier"""
@@ -137,88 +126,94 @@ class RulesetMeta[T: RulesetCustomFields](NamedTuple):
 
 
 class RaceRuleset[T: RulesetCustomFields, U: Any](ABC):
-    """
-    Abstract base class for processing race data.
-    Can be used to enforce custom rulesets
+    """Abstract base class for processing race data.
+
+    Can be used to enforce custom rulesets.
     """
 
     __meta__: RulesetMeta[T]
 
     @abstractmethod
     def __init__(self, race_format: SafeRaceFormat[T]) -> None:
-        """
-        Class initializer
+        """Class initializer.
 
-        :param race_format: The active race format
+        Args:
+            race_format: The active race format
         """
 
     @abstractmethod
     def add_lap_record(self, slot: int, record: FullLapData) -> int | None:
-        """
-        Add lap record to the supervisor instance
+        """Add lap record to the supervisor instance.
 
-        :param slot: The slot to assign the lap record
-        :param record: The lap record to add
-        :return: The key for the slot record or None if the record was not added
+        Args:
+            slot: The slot to assign the lap record
+            record: The lap record to add
+
+        Returns:
+            The key for the slot record or None if the record was not added
         """
 
     @abstractmethod
     def remove_lap_record(self, slot: int, key: int) -> None:
-        """
-        Remove lap record from the supervisor instance
+        """Remove lap record from the supervisor instance.
 
-        :param slot: Slot where the lap record is stored
-        :param key: The key of the slot lap record
-        :raises: `KeyError` when key not found
+        Args:
+            slot: Slot where the lap record is stored
+            key: The key of the slot lap record
+
+        Raises:
+            KeyError: key not found
         """
 
     @abstractmethod
     def is_slot_done(self, slot_num: int) -> bool:
-        """
-        Check if the slot has finished
+        """Check if the slot has finished.
 
-        :param slot_num: number
-        :return: Done status
+        Args:
+            slot_num: number
+
+        Returns:
+            Done status
         """
 
     @abstractmethod
     def all_slots_finished(self) -> bool:
-        """
-        Check if all the slots have finished
+        """Check if all the slots have finished.
 
-        :return: Finished status
+        Returns:
+            Finished status
         """
 
     @abstractmethod
     def get_race_results(self) -> Sequence[SlotResult[U]]:
-        """
-        Get the results of the race
+        """Get the results of the race.
 
-        :return: An iterable of the results for all the slots
+        Returns:
+            An iterable of the results for all the slots
         """
 
     @abstractmethod
     def get_slot_result(self, slot_num: int) -> SlotResult[U] | None:
-        """
-        Get the race results for a slot
+        """Get the race results for a slot.
 
-        :param slot_num: The slot number
-        :return: The results for the slot
+        Args:
+            slot_num: The slot number
+
+        Returns:
+            The results for the slot
         """
 
     @abstractmethod
     def get_laps_iterable(self) -> Iterable[FullLapData]:
-        """
-        Gets all of the laps stored by the race ruleset
+        """Gets all of the laps stored by the race ruleset.
 
-        :return: An iterable of the lap data
+        Returns:
+            An iterable of the lap data
         """
 
 
 class RaceRulesetManager:
-    """
-    Manages the race rulesets
-    """
+    """Manages the race rulesets."""
 
     _registered_ruleset: ClassVar[
         dict[str | Callable[[RaceRuleset], str], type[RaceRuleset]],
@@ -226,14 +221,19 @@ class RaceRulesetManager:
 
     @classmethod
     def register(cls, ruleset_class: type[RaceRuleset]) -> type[RaceRuleset]:
-        """
-        Registers a rulesets type to be used by the system.
-        Can be used as a decorator
+        """Registers a rulesets type . Can be used as a decorator.
 
-        :param ruleset_class: The class to register
-        :raises RuntimeError: Class already registered
-        """
+        Args:
+            ruleset_class: The class to register
 
+        Raises:
+            TypeError: The provided type isn't abstract
+            RuntimeError: Class already registered
+            TypeError: Type isn't valid for registration
+
+        Returns:
+            The provided ruleset type
+        """
         if issubclass(ruleset_class, RaceRuleset):
             if inspect.isabstract(ruleset_class):
                 msg = "Attempted to register an abstract race ruleset"
@@ -253,11 +253,13 @@ class RaceRulesetManager:
 
     @classmethod
     def get_ruleset(cls, ruleset_uid: str) -> type[RaceRuleset]:
-        """
-        Gets the ruleset for the provided uid
+        """Gets the ruleset for the provided uid.
 
-        :param ruleset_uid: The uid of the ruleset
-        :return:
+        Args:
+            ruleset_uid: The uid of the ruleset
+
+        Returns:
+            The ruleset type for the provided uid
         """
         try:
             return cls._registered_ruleset[ruleset_uid]
@@ -270,18 +272,17 @@ class RaceRulesetManager:
 
     @classmethod
     def _clear_registered(cls) -> None:
-        """
-        UNIT TESTING ONLY: Clears all registered rulesets.
-        """
+        """UNIT TESTING ONLY: Clears all registered rulesets."""
         cls._registered_ruleset.clear()
 
 
 def register_ruleset(interface_class: type[RaceRuleset]) -> type[RaceRuleset]:
-    """
-    Decorator used for registering :py:class:`~pulsarity.api.ruleset.RaceRuleset`
-    classes when its module is imported.
+    """Decorator used for registering :py:class:`~pulsarity.api.ruleset.RaceRuleset`.
 
-    :param interface_class: The race ruleset class to register
-    :return: The registered race ruleset
+    Args:
+        interface_class: The race ruleset class to register
+
+    Returns:
+        The registered race ruleset
     """
     return RaceRulesetManager.register(interface_class)

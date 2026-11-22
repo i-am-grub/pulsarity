@@ -1,5 +1,4 @@
-"""
-Native Plugin-like Implementations
+"""Native Plugin-like Implementations.
 
 Files contained in this structure will be imported when calling
 the `import_all_submodules` function found within this module.
@@ -16,9 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def _import_submodules(name: str, path: Path) -> None:
-    """
-    Recursively import submodules
-    """
+    """Recursively import submodules."""
     for path_ in path.iterdir():
         if (
             path_.is_file()
@@ -45,7 +42,5 @@ def _import_submodules(name: str, path: Path) -> None:
 
 
 def import_all_submodules() -> None:
-    """
-    Import all built-in implementation submodules
-    """
+    """Import all built-in implementation submodules."""
     _import_submodules(f"{__name__}", Path(__file__).parent)

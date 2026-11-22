@@ -1,6 +1,4 @@
-"""
-Abstract timer interface
-"""
+"""Abstract timer interface."""
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -17,10 +15,7 @@ if TYPE_CHECKING:
 
 
 class BasicSignalData(NamedTuple):
-    """
-    Tuple for passing timer signal data to
-    other parts of the system
-    """
+    """Tuple for passing timer signal data to other parts of the system."""
 
     millis: int
     """Time of processing after race start (milliseconds)"""
@@ -33,10 +28,7 @@ class BasicSignalData(NamedTuple):
 
 
 class BasicLapData(NamedTuple):
-    """
-    Tuple for passing timer lap data to
-    other parts of the system
-    """
+    """Tuple for passing timer lap data to other parts of the system."""
 
     millis: int
     """Time of processing after race start (milliseconds)"""
@@ -48,9 +40,7 @@ class BasicLapData(NamedTuple):
 
 @dataclass(frozen=True, slots=True)
 class TimerSetting[T: int | str | bool | Enum]:
-    """
-    Interface settings
-    """
+    """Interface settings."""
 
     id_: str
     """Setting identifier"""
@@ -62,9 +52,7 @@ class TimerSetting[T: int | str | bool | Enum]:
 
 @dataclass(frozen=True, slots=True)
 class Action:
-    """
-    Action callback
-    """
+    """Action callback."""
 
     id_: str
     """Action interface identifier"""
@@ -73,10 +61,7 @@ class Action:
 
 
 class NodeInterface(Protocol):
-    """
-    Protocol for defining how nodes on a timing interface should
-    be integrated.
-    """
+    """Protocol for defining how nodes on a timing interface should be integrated."""
 
     index: int
     """Index of the node"""
@@ -85,10 +70,7 @@ class NodeInterface(Protocol):
 
 
 class TimerInterface(ABC):
-    """
-    Protocol for defining how timers should be integrated
-    into the server.
-    """
+    """Protocol for defining how timers should be integrated into the server."""
 
     identifier: str
     """Internal identifier"""
@@ -111,8 +93,7 @@ class TimerInterface(ABC):
         lap_queue: Queue[BasicLapData],
         signal_queue: Queue[BasicSignalData],
     ) -> None:
-        """
-        Subscribe to recieve lap and signal data from the interface
+        """Subscribe to recieve lap and signal data from the interface.
 
         :param lap_queue: The queue to provide for recieving lap data
         :param signal_queue: The queue to provide for recieving signal data
@@ -120,7 +101,7 @@ class TimerInterface(ABC):
 
     @abstractmethod
     def shutdown(self):
-        """
-        Shutdown the interface connection. When called, prevent adding more data to
-        the lap and signal queues.
+        """Shutdown the interface connection.
+
+        When called, prevent adding more data to the lap and signal queues.
         """
