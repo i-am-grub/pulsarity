@@ -10,6 +10,7 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, final
 
+from pulsarity._core._protobuf.websocket_pb2 import EventID
 from pulsarity._core.events.server import EvtPriority, SystemEventData
 from pulsarity._core.utils import background
 from pulsarity._core.utils.asyncio import ensure_async
@@ -18,7 +19,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable
 
     from pulsarity._core._protobuf.websocket_pb2 import EventID
-    from pulsarity._core.events.enums import SystemEvt
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ class EventBroker:
     def register_event_callback(
         cls,
         callback: Callable,
-        event: SystemEvt,
+        event: EventID,
         *,
         priority: EvtPriority = EvtPriority.LOWEST,
         default_kwargs: dict[str, Any] | None = None,
@@ -127,13 +127,13 @@ class EventBroker:
             default_kwargs = {}
 
         evt_cb = _EvtCallbackData(priority, callback, default_kwargs)
-        bisect.insort_right(cls._callbacks[event.event_id], evt_cb)
+        bisect.insort_right(cls._callbacks[event], evt_cb)
 
     @classmethod
     def unregister_event_callback(
         cls,
         callback: Callable,
-        event: SystemEvt,
+        event: EventID,
     ) -> None:
         """Unregister an event callback.
 
@@ -144,7 +144,7 @@ class EventBroker:
         Raises:
             RuntimeError: Raised when attempting to unregister a non-registerd callback.
         """
-        callbacks = cls._callbacks[event.event_id]
+        callbacks = cls._callbacks[event]
         for callback_ in callbacks:
             if callback is callback_.func:
                 callbacks.remove(callback_)

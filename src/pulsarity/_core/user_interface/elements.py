@@ -15,7 +15,9 @@ from typing import TYPE_CHECKING, ClassVar, NamedTuple, override
 from google.protobuf.timestamp_pb2 import Timestamp
 
 from pulsarity._core import ctx
-from pulsarity._core._protobuf import ui_pb2, websocket_pb2
+from pulsarity._core._protobuf import ui_pb2
+from pulsarity._core._protobuf.ui_pb2 import FieldType, UIElementType
+from pulsarity._core._protobuf.websocket_pb2 import EventID, WebsocketEvent
 from pulsarity._core.database.permission import SystemDefaultPerms
 from pulsarity._core.events import EvtPriority
 from pulsarity._core.events.server import SystemEventData, system_event
@@ -31,7 +33,7 @@ logger = logging.getLogger(__name__)
 class UIElementUpdate(SystemEventData):
     """User interface element update event."""
 
-    event_id: ClassVar = websocket_pb2.EVENT_UI_UPDATE
+    event_id: ClassVar = EventID.EVENT_UI_UPDATE
     priority: ClassVar = EvtPriority.LOW
     permission: ClassVar = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -39,7 +41,7 @@ class UIElementUpdate(SystemEventData):
 
     def serialize_message(self) -> bytes:
         update_data = self.ui_element.to_element_update_message()
-        return websocket_pb2.WebsocketEvent(
+        return WebsocketEvent(
             event_id=self.event_id, ui_element_update=update_data
         ).SerializeToString()
 
@@ -145,7 +147,7 @@ class UIElement[T: Message](ABC):
 class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
     """User interface element tree."""
 
-    element_type_id: ClassVar = ui_pb2.ELEMENT_TYPE_ETREE
+    element_type_id: ClassVar = UIElementType.ELEMENT_TYPE_ETREE
     _store: ClassVar = {}
 
     _mapping_store: ClassVar[dict[str, list[UIETree]]] = defaultdict(list)
@@ -238,7 +240,7 @@ class UIETree(UIElement[ui_pb2.UIElementTree], Iterable[UIElement]):
 class UIMarkdownField(UIElement[ui_pb2.UIMarkdownField]):
     """User interface markdown field."""
 
-    element_type_id: ClassVar = ui_pb2.ELEMENT_TYPE_MARKDOWN
+    element_type_id: ClassVar = UIElementType.ELEMENT_TYPE_MARKDOWN
     _store: ClassVar = {}
 
     text: str
@@ -266,7 +268,7 @@ class UIMarkdownField(UIElement[ui_pb2.UIMarkdownField]):
 class UIButtonField(UIElement[ui_pb2.UIButtonField]):
     """User interface button field."""
 
-    element_type_id: ClassVar = ui_pb2.ELEMENT_TYPE_BUTTON
+    element_type_id: ClassVar = UIElementType.ELEMENT_TYPE_BUTTON
     _store: ClassVar = {}
 
     text: str
@@ -295,10 +297,10 @@ class UIButtonField(UIElement[ui_pb2.UIButtonField]):
 class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
     """User interface value field."""
 
-    element_type_id: ClassVar = ui_pb2.ELEMENT_TYPE_VALUE
+    element_type_id: ClassVar = UIElementType.ELEMENT_TYPE_VALUE
     _store: ClassVar = {}
 
-    field_type: ClassVar[ui_pb2.FieldType]
+    field_type: ClassVar[FieldType]
 
     _value: T | None = field(init=False, default=None)
     default: InitVar[T | None] = None
@@ -341,7 +343,7 @@ class UIValueField[T](UIElement[ui_pb2.UIValueField], ABC):
 class UITextValueField(UIValueField[str]):
     """User interface text value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_TEXT
+    field_type: ClassVar = FieldType.FIELD_TYPE_TEXT
 
     @override
     def _validate_value(self, value):
@@ -364,35 +366,35 @@ class UITextValueField(UIValueField[str]):
 class UIPasswordValueField(UITextValueField):
     """User interface password value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_PASSWORD
+    field_type: ClassVar = FieldType.FIELD_TYPE_PASSWORD
 
 
 @dataclass(frozen=True, slots=True)
 class UIEmailValueField(UITextValueField):
     """User interface email value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_EMAIL
+    field_type: ClassVar = FieldType.FIELD_TYPE_EMAIL
 
 
 @dataclass(frozen=True, slots=True)
 class UIURLValueField(UITextValueField):
     """User interface URL value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_URL
+    field_type: ClassVar = FieldType.FIELD_TYPE_URL
 
 
 @dataclass(frozen=True, slots=True)
 class UITelValueField(UITextValueField):
     """User interface telephone value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_TEL
+    field_type: ClassVar = FieldType.FIELD_TYPE_TEL
 
 
 @dataclass(frozen=True, slots=True)
 class UINumberValueField(UIValueField[float]):
     """User interface number value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_NUMBER
+    field_type: ClassVar = FieldType.FIELD_TYPE_NUMBER
 
     min: float | None = None
     max: float | None = None
@@ -437,7 +439,7 @@ class UINumberValueField(UIValueField[float]):
 class UIRangeValueField(UINumberValueField):
     """User interface range value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_RANGE
+    field_type: ClassVar = FieldType.FIELD_TYPE_RANGE
 
     min: float = 0
     max: float = 100
@@ -448,7 +450,7 @@ class UIRangeValueField(UINumberValueField):
 class UICheckboxValueField(UIValueField[bool]):
     """User interface checkbox value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_CHECKBOX
+    field_type: ClassVar = FieldType.FIELD_TYPE_CHECKBOX
 
     _value: bool = field(init=False, default=False)
     default: InitVar[bool] = False
@@ -486,7 +488,7 @@ class UICheckboxValueField(UIValueField[bool]):
 class UIDatetimeValueField(UIValueField[dt.datetime]):
     """User interface datetime value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_DATETIME
+    field_type: ClassVar = FieldType.FIELD_TYPE_DATETIME
 
     @override
     def _validate_value(self, value) -> None:
@@ -515,7 +517,7 @@ class UIDatetimeValueField(UIValueField[dt.datetime]):
 class UIDateValueField(UIValueField[dt.date]):
     """User interface date value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_DATE
+    field_type: ClassVar = FieldType.FIELD_TYPE_DATE
 
     @override
     def _validate_value(self, value) -> None:
@@ -550,7 +552,7 @@ class UIDateValueField(UIValueField[dt.date]):
 class UITimeValueField(UIValueField[dt.time]):
     """User interface time value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_TIME
+    field_type: ClassVar = FieldType.FIELD_TYPE_TIME
 
     @override
     def _validate_value(self, value) -> None:
@@ -591,7 +593,7 @@ class _SelectOption[T](NamedTuple):
 class UISelectValueField[T](UIValueField[int]):
     """User interface time value field."""
 
-    field_type: ClassVar = ui_pb2.FIELD_TYPE_SELECT
+    field_type: ClassVar = FieldType.FIELD_TYPE_SELECT
 
     _opt_counter: itertools.count = field(default_factory=itertools.count, init=False)
     _options: dict[int, _SelectOption[T]] = field(default_factory=dict, init=False)

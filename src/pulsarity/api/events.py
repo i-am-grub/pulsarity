@@ -4,15 +4,15 @@ import functools
 from typing import TYPE_CHECKING, Any
 
 from pulsarity._core import ctx
+from pulsarity._core._protobuf.websocket_pb2 import EventID
 from pulsarity._core.events import EventBroker, EvtPriority
-from pulsarity._core.events.enums import SystemEvt
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 __all__ = (
+    "EventID",
     "EvtPriority",
-    "SystemEvt",
     "register_as_callback",
     "register_event_callback",
     "unregister_event_callback",
@@ -21,7 +21,7 @@ __all__ = (
 
 def register_event_callback(
     callback: Callable,
-    event: SystemEvt,
+    event: EventID,
     *,
     priority: EvtPriority = EvtPriority.LOWEST,
     default_kwargs: dict[str, Any] | None = None,
@@ -44,7 +44,7 @@ register_event_callback.__doc__ = EventBroker.register_event_callback.__doc__
 
 def unregister_event_callback(
     callback: Callable,
-    event: SystemEvt,
+    event: EventID,
 ) -> None:
     """Unregister an event callback.
 
@@ -59,7 +59,7 @@ unregister_event_callback.__doc__ = EventBroker.unregister_event_callback.__doc_
 
 
 def register_as_callback(
-    event: SystemEvt,
+    event: EventID,
     *,
     priority: EvtPriority = EvtPriority.LOWEST,
     default_kwargs: dict[str, Any] | None = None,
