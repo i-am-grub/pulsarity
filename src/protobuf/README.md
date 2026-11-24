@@ -11,7 +11,10 @@ that supports protobufs.
 
 Follow the documentation for compiling Python modules from
 the protocol buffer definition files found
-[here](https://protobuf.dev/getting-started/pythontutorial/#compiling-protocol-buffers)
+[here](https://protobuf.dev/getting-started/pythontutorial/#compiling-protocol-buffers).
+Note that the protocol buffer compiler version in the apt package manager are out of
+date - it is recommended to use the complier binaries from GitHub instead. `v36.2` is
+the latest version used to generate the protocol buffer python files.
 
 With the protocol buffer compiler installed to your system, the command that will 
 typically be used to generate the python files from the definition files will similar to:

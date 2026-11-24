@@ -6,11 +6,11 @@ from typing import ClassVar, Self, dataclass_transform
 from uuid import UUID
 
 from pulsarity._core import ctx
-from pulsarity._core._protobuf import websocket_pb2
+from pulsarity._core._protobuf.websocket_pb2 import EventID, WebsocketEvent
 from pulsarity._core.database.permission import SystemDefaultPerms, UserPermission
 from pulsarity._core.events.server import SystemHeartBeat
 
-registry: dict[websocket_pb2.EventID, type[ClientEventData]] = {}
+registry: dict[EventID, type[ClientEventData]] = {}
 
 
 @dataclass_transform(frozen_default=True)
@@ -33,7 +33,7 @@ def client_event[T: ClientEventData](cls: type[T]) -> type[T]:
 class ClientEventData(ABC):
     """ABC for event data originating on the client."""
 
-    event_id: ClassVar[websocket_pb2.EventID]
+    event_id: ClassVar[EventID]
     """Protocol buffer event id"""
     permission: ClassVar[UserPermission]
     """Incoming required client permission"""
@@ -43,7 +43,7 @@ class ClientEventData(ABC):
 
     @classmethod
     @abstractmethod
-    def from_ws_event(cls, msg: websocket_pb2.WebsocketEvent) -> Self:
+    def from_ws_event(cls, msg: WebsocketEvent) -> Self:
         """Parse event from websocket data.
 
         Any additiional validation for the parsed data should run here.
@@ -59,7 +59,7 @@ class ClientEventData(ABC):
 class ClientHeartbeat(ClientEventData):
     """Client heartbeat."""
 
-    event_id = websocket_pb2.EVENT_HEARTBEAT
+    event_id = EventID.EVENT_HEARTBEAT
     permission = SystemDefaultPerms.WRITE_WEBSOCKET
 
     @classmethod
@@ -77,7 +77,7 @@ class ClientHeartbeat(ClientEventData):
 class ClientServerShutdown(ClientEventData):
     """Client commanded system shutdown."""
 
-    event_id = websocket_pb2.EVENT_SHUTDOWN
+    event_id = EventID.EVENT_SHUTDOWN
     permission = SystemDefaultPerms.SYSTEM_CONTROL
 
     @classmethod
@@ -93,7 +93,7 @@ class ClientServerShutdown(ClientEventData):
 class ClientServerRestart(ClientEventData):
     """Client commanded system restart."""
 
-    event_id = websocket_pb2.EVENT_RESTART
+    event_id = EventID.EVENT_RESTART
     permission = SystemDefaultPerms.SYSTEM_CONTROL
 
     @classmethod
@@ -110,7 +110,7 @@ class ClientServerRestart(ClientEventData):
 class ClientScheduleRace(ClientEventData):
     """Client commanded race schedule."""
 
-    event_id = websocket_pb2.EVENT_RACE_SCHEDULE
+    event_id = EventID.EVENT_RACE_SCHEDULE
     permission = SystemDefaultPerms.RACE_CONTROL
 
     @classmethod
@@ -126,7 +126,7 @@ class ClientScheduleRace(ClientEventData):
 class ClientStopRace(ClientEventData):
     """Client commanded race stop."""
 
-    event_id = websocket_pb2.EVENT_RACE_STOP
+    event_id = EventID.EVENT_RACE_STOP
     permission = SystemDefaultPerms.RACE_CONTROL
 
     @classmethod
@@ -142,7 +142,7 @@ class ClientStopRace(ClientEventData):
 class ClientPilotAdd(ClientEventData):
     """Client commanded pilot add."""
 
-    event_id = websocket_pb2.EVENT_PILOT_ADD
+    event_id = EventID.EVENT_PILOT_ADD
     permission = SystemDefaultPerms.WRITE_PILOTS
 
     pilot_id: int
@@ -160,7 +160,7 @@ class ClientPilotAdd(ClientEventData):
 class ClientPilotAlter(ClientEventData):
     """Client commanded pilot alter."""
 
-    event_id = websocket_pb2.EVENT_PILOT_ALTER
+    event_id = EventID.EVENT_PILOT_ALTER
     permission = SystemDefaultPerms.WRITE_PILOTS
 
     pilot_id: int
@@ -178,7 +178,7 @@ class ClientPilotAlter(ClientEventData):
 class ClientPilotDelete(ClientEventData):
     """Client commanded pilot delete event."""
 
-    event_id = websocket_pb2.EVENT_PILOT_DELETE
+    event_id = EventID.EVENT_PILOT_DELETE
     permission = SystemDefaultPerms.WRITE_PILOTS
 
     pilot_id: int

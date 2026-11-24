@@ -8,10 +8,16 @@ from enum import Enum, unique
 from functools import partial
 from typing import ClassVar, Self, dataclass_transform, override
 
-from pulsarity._core._protobuf import websocket_pb2
+from pulsarity._core._protobuf.websocket_pb2 import (
+    EventID,
+    PilotAddData,
+    PilotAlterData,
+    PilotDeleteData,
+    WebsocketEvent,
+)
 from pulsarity._core.database.permission import SystemDefaultPerms, UserPermission
 
-_registered: set[websocket_pb2.EventID] = set()
+_registered: set[EventID] = set()
 
 
 @dataclass_transform(frozen_default=True)
@@ -52,7 +58,7 @@ class SystemEventData(ABC):
     _counter: ClassVar = itertools.count()
     """Event data ID generator"""
 
-    event_id: ClassVar[websocket_pb2.EventID]
+    event_id: ClassVar[EventID]
     """Protocol buffer event id"""
     priority: ClassVar[EvtPriority]
     """Outgoing priority"""
@@ -68,7 +74,7 @@ class SystemEventData(ABC):
 
     def serialize_message(self) -> bytes:
         """Generate the serialized message."""
-        return websocket_pb2.WebsocketEvent(
+        return WebsocketEvent(
             uuid=self.uuid.bytes,
             event_id=self.event_id,
         ).SerializeToString()
@@ -88,7 +94,7 @@ class SystemEventData(ABC):
 class SystemHeartBeat(SystemEventData):
     """Heartbeat echo."""
 
-    event_id = websocket_pb2.EVENT_HEARTBEAT
+    event_id = EventID.EVENT_HEARTBEAT
     priority = EvtPriority.LOW
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -97,7 +103,7 @@ class SystemHeartBeat(SystemEventData):
 class SystemPermissionUpdate(SystemEventData):
     """Permission update."""
 
-    event_id = websocket_pb2.EVENT_PERMISSIONS_UPDATE
+    event_id = EventID.EVENT_PERMISSIONS_UPDATE
     priority = EvtPriority.HIGH
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -106,7 +112,7 @@ class SystemPermissionUpdate(SystemEventData):
 class ServerStartup(SystemEventData):
     """System startup event."""
 
-    event_id = websocket_pb2.EVENT_STARTUP
+    event_id = EventID.EVENT_STARTUP
     priority = EvtPriority.HIGHEST
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -115,7 +121,7 @@ class ServerStartup(SystemEventData):
 class ServerShutdown(SystemEventData):
     """System shutdown event."""
 
-    event_id = websocket_pb2.EVENT_SHUTDOWN
+    event_id = EventID.EVENT_SHUTDOWN
     priority = EvtPriority.HIGHEST
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -124,7 +130,7 @@ class ServerShutdown(SystemEventData):
 class ServerRestart(SystemEventData):
     """System restart event."""
 
-    event_id = websocket_pb2.EVENT_RESTART
+    event_id = EventID.EVENT_RESTART
     priority = EvtPriority.LOW
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -133,7 +139,7 @@ class ServerRestart(SystemEventData):
 class RaceSchedule(SystemEventData):
     """Race schedule event."""
 
-    event_id = websocket_pb2.EVENT_RACE_SCHEDULE
+    event_id = EventID.EVENT_RACE_SCHEDULE
     priority = EvtPriority.HIGHEST
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -142,7 +148,7 @@ class RaceSchedule(SystemEventData):
 class RaceStage(SystemEventData):
     """Race stage event."""
 
-    event_id = websocket_pb2.EVENT_RACE_STAGE
+    event_id = EventID.EVENT_RACE_STAGE
     priority = EvtPriority.HIGHEST
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -151,7 +157,7 @@ class RaceStage(SystemEventData):
 class RaceStart(SystemEventData):
     """Race schedule event."""
 
-    event_id = websocket_pb2.EVENT_RACE_START
+    event_id = EventID.EVENT_RACE_START
     priority = EvtPriority.HIGHEST
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -160,7 +166,7 @@ class RaceStart(SystemEventData):
 class RaceFinish(SystemEventData):
     """Race stop event."""
 
-    event_id = websocket_pb2.EVENT_RACE_FINISH
+    event_id = EventID.EVENT_RACE_FINISH
     priority = EvtPriority.HIGHEST
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -169,7 +175,7 @@ class RaceFinish(SystemEventData):
 class RaceStop(SystemEventData):
     """Race stop event."""
 
-    event_id = websocket_pb2.EVENT_RACE_STOP
+    event_id = EventID.EVENT_RACE_STOP
     priority = EvtPriority.HIGHEST
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -178,7 +184,7 @@ class RaceStop(SystemEventData):
 class RacePause(SystemEventData):
     """Race stop event."""
 
-    event_id = websocket_pb2.EVENT_RACE_PAUSE
+    event_id = EventID.EVENT_RACE_PAUSE
     priority = EvtPriority.HIGHEST
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -187,7 +193,7 @@ class RacePause(SystemEventData):
 class RaceResume(SystemEventData):
     """Race stop event."""
 
-    event_id = websocket_pb2.EVENT_RACE_RESUME
+    event_id = EventID.EVENT_RACE_RESUME
     priority = EvtPriority.HIGHEST
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
@@ -196,7 +202,7 @@ class RaceResume(SystemEventData):
 class PilotAdd(SystemEventData):
     """Pilot Add event."""
 
-    event_id = websocket_pb2.EVENT_PILOT_ADD
+    event_id = EventID.EVENT_PILOT_ADD
     priority = EvtPriority.MEDIUM
     permission = SystemDefaultPerms.READ_PILOTS
 
@@ -204,8 +210,8 @@ class PilotAdd(SystemEventData):
 
     @override
     def serialize_message(self) -> bytes:
-        pilot_data = websocket_pb2.PilotAddData(pilot_id=self.pilot_id)
-        return websocket_pb2.WebsocketEvent(
+        pilot_data = PilotAddData(pilot_id=self.pilot_id)
+        return WebsocketEvent(
             uuid=self.uuid.bytes,
             event_id=self.event_id,
             pilot_add=pilot_data,
@@ -216,7 +222,7 @@ class PilotAdd(SystemEventData):
 class PilotAlter(SystemEventData):
     """Pilot alter event."""
 
-    event_id = websocket_pb2.EVENT_PILOT_ALTER
+    event_id = EventID.EVENT_PILOT_ALTER
     priority = EvtPriority.MEDIUM
     permission = SystemDefaultPerms.READ_PILOTS
 
@@ -224,8 +230,8 @@ class PilotAlter(SystemEventData):
 
     @override
     def serialize_message(self) -> bytes:
-        pilot_data = websocket_pb2.PilotAlterData(pilot_id=self.pilot_id)
-        return websocket_pb2.WebsocketEvent(
+        pilot_data = PilotAlterData(pilot_id=self.pilot_id)
+        return WebsocketEvent(
             uuid=self.uuid.bytes,
             event_id=self.event_id,
             pilot_alter=pilot_data,
@@ -236,7 +242,7 @@ class PilotAlter(SystemEventData):
 class PilotDelete(SystemEventData):
     """Pilot delete event."""
 
-    event_id = websocket_pb2.EVENT_PILOT_DELETE
+    event_id = EventID.EVENT_PILOT_DELETE
     priority = EvtPriority.MEDIUM
     permission = SystemDefaultPerms.READ_PILOTS
 
@@ -244,8 +250,8 @@ class PilotDelete(SystemEventData):
 
     @override
     def serialize_message(self) -> bytes:
-        pilot_data = websocket_pb2.PilotDeleteData(pilot_id=self.pilot_id)
-        return websocket_pb2.WebsocketEvent(
+        pilot_data = PilotDeleteData(pilot_id=self.pilot_id)
+        return WebsocketEvent(
             uuid=self.uuid.bytes,
             event_id=self.event_id,
             pilot_delete=pilot_data,

@@ -7,7 +7,9 @@ from typing import Iterable, Sequence, TypedDict
 
 import pytest
 
-from pulsarity._core.events import EventBroker, SystemEvt
+from pulsarity._core._protobuf.websocket_pb2 import EventID
+from pulsarity._core.events import EventBroker
+
 from pulsarity._core.utils import background
 from pulsarity._core.events.server import (
     system_event,
@@ -135,7 +137,7 @@ async def test_event_async_callback():
         data["flag"].set()
 
     broker.register_event_callback(
-        test_cb, SystemEvt.STARTUP, default_kwargs={"flag": flag}
+        test_cb, EventID.EVENT_STARTUP, default_kwargs={"flag": flag}
     )
 
     assert not flag.is_set()
@@ -158,13 +160,13 @@ async def test_event_callback_unregister_pass():
     async def test_cb(**_):
         pass
 
-    broker.register_event_callback(test_cb, SystemEvt.PILOT_ADD)
+    broker.register_event_callback(test_cb, EventID.EVENT_PILOT_ADD)
 
-    assert len(broker._callbacks[SystemEvt.PILOT_ADD.event_id]) != 0
+    assert len(broker._callbacks[EventID.EVENT_PILOT_ADD]) != 0
 
-    broker.unregister_event_callback(test_cb, SystemEvt.PILOT_ADD)
+    broker.unregister_event_callback(test_cb, EventID.EVENT_PILOT_ADD)
 
-    assert len(broker._callbacks[SystemEvt.PILOT_ADD.event_id]) == 0
+    assert len(broker._callbacks[EventID.EVENT_PILOT_ADD]) == 0
 
 
 @pytest.mark.asyncio
@@ -178,7 +180,7 @@ async def test_event_callback_unregister_fail():
     async def test_cb(**_):
         pass
 
-    assert len(broker._callbacks[SystemEvt.PILOT_ADD.event_id]) == 0
+    assert len(broker._callbacks[EventID.EVENT_PILOT_ADD]) == 0
 
     with pytest.raises(RuntimeError):
-        broker.unregister_event_callback(test_cb, SystemEvt.PILOT_ADD)
+        broker.unregister_event_callback(test_cb, EventID.EVENT_PILOT_ADD)
