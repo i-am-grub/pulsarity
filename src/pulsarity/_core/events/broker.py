@@ -11,7 +11,8 @@ from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, final
 
 from pulsarity._core._protobuf.websocket_pb2 import EventID
-from pulsarity._core.events.server import EvtPriority, SystemEventData
+from pulsarity._core.events._base import ServerEventData
+from pulsarity._core.events.server import EvtPriority
 from pulsarity._core.utils import background
 from pulsarity._core.utils.asyncio import ensure_async
 
@@ -49,9 +50,9 @@ class EventBroker:
 
     def __init__(self) -> None:
         """Class initialization."""
-        self._connections: set[asyncio.PriorityQueue[SystemEventData]] = set()
+        self._connections: set[asyncio.PriorityQueue[ServerEventData]] = set()
 
-    def publish(self, data: SystemEventData) -> None:
+    def publish(self, data: ServerEventData) -> None:
         """Push the event data to all subscribed clients.
 
         Args:
@@ -60,7 +61,7 @@ class EventBroker:
         for connection in self._connections:
             connection.put_nowait(data)
 
-    async def trigger(self, data: SystemEventData) -> None:
+    async def trigger(self, data: ServerEventData) -> None:
         """Publishes data to all subscribed clients and triggers registered callbacks.
 
         Args:
@@ -70,7 +71,7 @@ class EventBroker:
         callbacks = copy.copy(self._callbacks[data.event_id])
         await self._callback_runner(callbacks, data)
 
-    def trigger_background(self, data: SystemEventData) -> None:
+    def trigger_background(self, data: ServerEventData) -> None:
         """Publishes data to all clients and runs callbacks in the background.
 
         Args:
@@ -83,7 +84,7 @@ class EventBroker:
     async def _callback_runner(
         self,
         callbacks: list[_EvtCallbackData],
-        data: SystemEventData,
+        data: ServerEventData,
     ) -> None:
         """Run all procided callbacks sequentially.
 
@@ -160,7 +161,7 @@ class EventBroker:
 
     async def subscribe(
         self,
-    ) -> AsyncGenerator[SystemEventData]:
+    ) -> AsyncGenerator[ServerEventData]:
         """Subscribe to recieve server events. Typically used for client connections.
 
         Yields:

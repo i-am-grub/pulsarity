@@ -12,23 +12,23 @@ from pulsarity._core.events import EventBroker
 
 from pulsarity._core.utils import background
 from pulsarity._core.events.server import (
-    system_event,
-    SystemEventData,
+    server_event,
+    ServerEventData,
     EvtPriority,
     ServerStartup,
 )
 from pulsarity._core.database.permission import SystemDefaultPerms
 
 
-@system_event
-class LowPriorityEvent(SystemEventData):
+@server_event
+class LowPriorityEvent(ServerEventData):
     event_id = -1  # pyright: ignore[reportAssignmentType]
     priority = EvtPriority.LOW
     permission = SystemDefaultPerms.WRITE_WEBSOCKET
 
 
-@system_event
-class HighPriorityEvent(SystemEventData):
+@server_event
+class HighPriorityEvent(ServerEventData):
     event_id = -2  # pyright: ignore[reportAssignmentType]
     priority = EvtPriority.HIGH
     permission = SystemDefaultPerms.WRITE_WEBSOCKET
@@ -55,7 +55,7 @@ async def broker_subscriber(broker: EventBroker, test_values: Sequence[int]):
 
 async def broker_publish_test(
     broker: EventBroker,
-    event_values: Iterable[SystemEventData],
+    event_values: Iterable[ServerEventData],
     test_values: Sequence[int],
     *,
     use_trigger: bool = False,

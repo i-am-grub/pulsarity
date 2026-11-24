@@ -1,12 +1,6 @@
-"""System events originating on the server."""
+"""Server event serialization definitions."""
 
-import itertools
-import uuid
-from abc import ABC
-from dataclasses import dataclass, field
-from enum import Enum, unique
-from functools import partial
-from typing import ClassVar, Self, dataclass_transform, override
+from typing import TYPE_CHECKING, override
 
 from pulsarity._core._protobuf.websocket_pb2 import (
     EventID,
@@ -15,83 +9,15 @@ from pulsarity._core._protobuf.websocket_pb2 import (
     PilotDeleteData,
     WebsocketEvent,
 )
-from pulsarity._core.database.permission import SystemDefaultPerms, UserPermission
+from pulsarity._core.database.permission import SystemDefaultPerms
+from pulsarity._core.events._base import EvtPriority, ServerEventData, server_event
 
-_registered: set[EventID] = set()
-
-
-@dataclass_transform(frozen_default=True)
-def system_event[T: SystemEventData](cls: type[T]) -> type[T]:
-    """Decorator for generating registering system event handlers as dataclasses."""
-    if cls.event_id in _registered:
-        msg = f"Class with event_id={cls.event_id} already registered"
-        raise ValueError(msg)
-
-    if issubclass(cls, SystemEventData):
-        _registered.add(cls.event_id)
-        return dataclass(cls, frozen=True, slots=True)
-
-    msg = f"{cls.__name__} is not a subclass of {SystemEventData.__name__}"
-    raise TypeError(msg)
+if TYPE_CHECKING:
+    from pulsarity._core.user_interface.elements import UIElement
 
 
-@unique
-class EvtPriority(Enum):
-    """The priority of the event over other events that may be queued."""
-
-    HIGHEST = 1
-    HIGHER = 2
-    HIGH = 3
-    MEDIUM = 4
-    LOW = 5
-    LOWER = 6
-    LOWEST = 7
-
-    def __lt__(self, other: Self):
-        return self.value < other.value
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class SystemEventData(ABC):
-    """ABC for event data originating on the server."""
-
-    _counter: ClassVar = itertools.count()
-    """Event data ID generator"""
-
-    event_id: ClassVar[EventID]
-    """Protocol buffer event id"""
-    priority: ClassVar[EvtPriority]
-    """Outgoing priority"""
-    permission: ClassVar[UserPermission]
-    """Outgoing required client permission"""
-
-    _id: int = field(default_factory=partial(next, _counter), init=False)
-    """ID of the event data"""
-    uuid: uuid.UUID = field(default_factory=uuid.uuid4)
-    """Unique instance identifier"""
-    _cached_message: bytes | None = field(default=None, init=False)
-    """Serialized message cache"""
-
-    def serialize_message(self) -> bytes:
-        """Generate the serialized message."""
-        return WebsocketEvent(
-            uuid=self.uuid.bytes,
-            event_id=self.event_id,
-        ).SerializeToString()
-
-    def message_dump_protobuf(self) -> bytes:
-        """Serialize as a protocol buffer message."""
-        if self._cached_message is None:
-            serialized_message = self.serialize_message()
-            object.__setattr__(self, "_cached_message", serialized_message)
-        return self._cached_message  # pyright: ignore[reportReturnType]
-
-    def __lt__(self, other: Self) -> bool:
-        return (self.priority, self._id) < (other.priority, other._id)
-
-
-@system_event
-class SystemHeartBeat(SystemEventData):
+@server_event
+class SystemHeartBeat(ServerEventData):
     """Heartbeat echo."""
 
     event_id = EventID.EVENT_HEARTBEAT
@@ -99,8 +25,8 @@ class SystemHeartBeat(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class SystemPermissionUpdate(SystemEventData):
+@server_event
+class SystemPermissionUpdate(ServerEventData):
     """Permission update."""
 
     event_id = EventID.EVENT_PERMISSIONS_UPDATE
@@ -108,8 +34,8 @@ class SystemPermissionUpdate(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class ServerStartup(SystemEventData):
+@server_event
+class ServerStartup(ServerEventData):
     """System startup event."""
 
     event_id = EventID.EVENT_STARTUP
@@ -117,8 +43,8 @@ class ServerStartup(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class ServerShutdown(SystemEventData):
+@server_event
+class ServerShutdown(ServerEventData):
     """System shutdown event."""
 
     event_id = EventID.EVENT_SHUTDOWN
@@ -126,8 +52,8 @@ class ServerShutdown(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class ServerRestart(SystemEventData):
+@server_event
+class ServerRestart(ServerEventData):
     """System restart event."""
 
     event_id = EventID.EVENT_RESTART
@@ -135,8 +61,25 @@ class ServerRestart(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class RaceSchedule(SystemEventData):
+@server_event
+class UIElementUpdate(ServerEventData):
+    """User interface element update event."""
+
+    event_id = EventID.EVENT_UI_UPDATE
+    priority = EvtPriority.LOW
+    permission = SystemDefaultPerms.READ_WEBSOCKET
+
+    ui_element: UIElement
+
+    def serialize_message(self) -> bytes:
+        update_data = self.ui_element.to_element_update_message()
+        return WebsocketEvent(
+            event_id=self.event_id, ui_element_update=update_data
+        ).SerializeToString()
+
+
+@server_event
+class RaceSchedule(ServerEventData):
     """Race schedule event."""
 
     event_id = EventID.EVENT_RACE_SCHEDULE
@@ -144,8 +87,8 @@ class RaceSchedule(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class RaceStage(SystemEventData):
+@server_event
+class RaceStage(ServerEventData):
     """Race stage event."""
 
     event_id = EventID.EVENT_RACE_STAGE
@@ -153,8 +96,8 @@ class RaceStage(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class RaceStart(SystemEventData):
+@server_event
+class RaceStart(ServerEventData):
     """Race schedule event."""
 
     event_id = EventID.EVENT_RACE_START
@@ -162,8 +105,8 @@ class RaceStart(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class RaceFinish(SystemEventData):
+@server_event
+class RaceFinish(ServerEventData):
     """Race stop event."""
 
     event_id = EventID.EVENT_RACE_FINISH
@@ -171,8 +114,8 @@ class RaceFinish(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class RaceStop(SystemEventData):
+@server_event
+class RaceStop(ServerEventData):
     """Race stop event."""
 
     event_id = EventID.EVENT_RACE_STOP
@@ -180,8 +123,8 @@ class RaceStop(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class RacePause(SystemEventData):
+@server_event
+class RacePause(ServerEventData):
     """Race stop event."""
 
     event_id = EventID.EVENT_RACE_PAUSE
@@ -189,8 +132,8 @@ class RacePause(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class RaceResume(SystemEventData):
+@server_event
+class RaceResume(ServerEventData):
     """Race stop event."""
 
     event_id = EventID.EVENT_RACE_RESUME
@@ -198,8 +141,8 @@ class RaceResume(SystemEventData):
     permission = SystemDefaultPerms.READ_WEBSOCKET
 
 
-@system_event
-class PilotAdd(SystemEventData):
+@server_event
+class PilotAdd(ServerEventData):
     """Pilot Add event."""
 
     event_id = EventID.EVENT_PILOT_ADD
@@ -218,8 +161,8 @@ class PilotAdd(SystemEventData):
         ).SerializeToString()
 
 
-@system_event
-class PilotAlter(SystemEventData):
+@server_event
+class PilotAlter(ServerEventData):
     """Pilot alter event."""
 
     event_id = EventID.EVENT_PILOT_ALTER
@@ -238,8 +181,8 @@ class PilotAlter(SystemEventData):
         ).SerializeToString()
 
 
-@system_event
-class PilotDelete(SystemEventData):
+@server_event
+class PilotDelete(ServerEventData):
     """Pilot delete event."""
 
     event_id = EventID.EVENT_PILOT_DELETE

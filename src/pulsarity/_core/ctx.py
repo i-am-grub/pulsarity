@@ -11,7 +11,7 @@ from pulsarity._core.utils.connections import WebsocketConnTracker
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
 
-    from pulsarity._core.events.broker import EventBroker
+    from pulsarity._core.events import EventBroker
     from pulsarity._core.race.manager import RaceManager
     from pulsarity._core.timing_interface.timer_manager import TimerInterfaceManager
     from pulsarity._core.webserver._auth import (

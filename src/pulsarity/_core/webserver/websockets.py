@@ -9,10 +9,9 @@ from google.protobuf.message import DecodeError
 from starlette.routing import BaseRoute, WebSocketRoute
 from starlette.websockets import WebSocketDisconnect
 
-from pulsarity._core import ctx
+from pulsarity._core import ctx, events
 from pulsarity._core._protobuf import websocket_pb2
 from pulsarity._core.database.permission import SystemDefaultPerms
-from pulsarity._core.events import client as client_evts
 from pulsarity._core.utils import background
 from pulsarity._core.webserver._auth import PulsarityWebsocket, requires
 from pulsarity._core.webserver._status_codes import WebSocketStatusCodes
@@ -87,7 +86,7 @@ async def duplex_recieve_event_data() -> None:
             continue
 
         try:
-            evt_cls = client_evts.registry[event.event_id]
+            evt_cls = events.client_evt_registry[event.event_id]
         except KeyError:
             logger.exception(
                 "%s attempted to route data to non-registered event handler: %s",
@@ -111,7 +110,7 @@ async def duplex_recieve_event_data() -> None:
             logger.debug("Error validating websocket data: %s", event)
             continue
 
-        background.add_background_task(validated_evt.run_handler)
+        background.add_background_task(validated_evt.process)
 
 
 async def ws_connection(

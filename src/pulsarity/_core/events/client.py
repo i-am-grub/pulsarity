@@ -1,58 +1,12 @@
-"""System events originating on a client."""
+"""Client event handler definitions."""
 
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import ClassVar, Self, dataclass_transform
 from uuid import UUID
 
 from pulsarity._core import ctx
-from pulsarity._core._protobuf.websocket_pb2 import EventID, WebsocketEvent
-from pulsarity._core.database.permission import SystemDefaultPerms, UserPermission
+from pulsarity._core._protobuf.websocket_pb2 import EventID
+from pulsarity._core.database.permission import SystemDefaultPerms
+from pulsarity._core.events._base import ClientEventData, client_event
 from pulsarity._core.events.server import SystemHeartBeat
-
-registry: dict[EventID, type[ClientEventData]] = {}
-
-
-@dataclass_transform(frozen_default=True)
-def client_event[T: ClientEventData](cls: type[T]) -> type[T]:
-    """Decorator for generating registering client event handlers as dataclasses."""
-    if cls.event_id in registry:
-        msg = f"Class with event_id={cls.event_id} already used"
-        raise ValueError(msg)
-
-    if issubclass(cls, ClientEventData):
-        data_cls = dataclass(cls, frozen=True, slots=True)
-        registry[cls.event_id] = data_cls
-        return data_cls
-
-    msg = f"{cls.__name__} is not a subclass of {ClientEventData.__name__}"
-    raise TypeError(msg)
-
-
-@dataclass(frozen=True, slots=True)
-class ClientEventData(ABC):
-    """ABC for event data originating on the client."""
-
-    event_id: ClassVar[EventID]
-    """Protocol buffer event id"""
-    permission: ClassVar[UserPermission]
-    """Incoming required client permission"""
-
-    uuid: UUID
-    """Unique identifier"""
-
-    @classmethod
-    @abstractmethod
-    def from_ws_event(cls, msg: WebsocketEvent) -> Self:
-        """Parse event from websocket data.
-
-        Any additiional validation for the parsed data should run here.
-        It is safe to raise TypeError or ValueError in non-abstract implementations.
-        """
-
-    @abstractmethod
-    async def run_handler(self):
-        """Run the handler's functionality."""
 
 
 @client_event
@@ -67,7 +21,7 @@ class ClientHeartbeat(ClientEventData):
         uuid = UUID(bytes=msg.uuid)
         return cls(uuid)
 
-    async def run_handler(self):
+    async def process(self):
         websocket = ctx.websocket_ctx.get()
         response = SystemHeartBeat(uuid=self.uuid).message_dump_protobuf()
         await websocket.send_bytes(response)
@@ -85,7 +39,7 @@ class ClientServerShutdown(ClientEventData):
         uuid = UUID(bytes=msg.uuid)
         return cls(uuid)
 
-    async def run_handler(self):
+    async def process(self):
         ctx.shutdown_app.set()
 
 
@@ -101,7 +55,7 @@ class ClientServerRestart(ClientEventData):
         uuid = UUID(bytes=msg.uuid)
         return cls(uuid)
 
-    async def run_handler(self):
+    async def process(self):
         ctx.restart_app = True
         ctx.shutdown_app.set()
 
@@ -118,7 +72,7 @@ class ClientScheduleRace(ClientEventData):
         uuid = UUID(bytes=msg.uuid)
         return cls(uuid)
 
-    async def run_handler(self):
+    async def process(self):
         raise NotImplementedError
 
 
@@ -134,7 +88,7 @@ class ClientStopRace(ClientEventData):
         uuid = UUID(bytes=msg.uuid)
         return cls(uuid)
 
-    async def run_handler(self):
+    async def process(self):
         ctx.race_manager.stop_race()
 
 
@@ -152,7 +106,7 @@ class ClientPilotAdd(ClientEventData):
         uuid = UUID(bytes=msg.uuid)
         return cls(uuid, msg.pilot_add.pilot_id)
 
-    async def run_handler(self):
+    async def process(self):
         raise NotImplementedError
 
 
@@ -170,7 +124,7 @@ class ClientPilotAlter(ClientEventData):
         uuid = UUID(bytes=msg.uuid)
         return cls(uuid, msg.pilot_alter.pilot_id)
 
-    async def run_handler(self):
+    async def process(self):
         raise NotImplementedError
 
 
@@ -188,5 +142,5 @@ class ClientPilotDelete(ClientEventData):
         uuid = UUID(bytes=msg.uuid)
         return cls(uuid, msg.pilot_delete.pilot_id)
 
-    async def run_handler(self):
+    async def process(self):
         raise NotImplementedError

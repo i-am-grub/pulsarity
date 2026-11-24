@@ -21,7 +21,7 @@ from pulsarity._core.database import (
     Slot,
     setup_default_objects,
 )
-from pulsarity._core.events.broker import EventBroker
+from pulsarity._core.events import EventBroker
 from pulsarity._core.timing_interface.timer_manager import TimerInterfaceManager
 from pulsarity._core.race.manager import RaceManager
 from pulsarity._core.race.ruleset import RaceRulesetManager

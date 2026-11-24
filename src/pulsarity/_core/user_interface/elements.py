@@ -17,33 +17,15 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from pulsarity._core import ctx
 from pulsarity._core._protobuf import ui_pb2
 from pulsarity._core._protobuf.ui_pb2 import FieldType, UIElementType
-from pulsarity._core._protobuf.websocket_pb2 import EventID, WebsocketEvent
-from pulsarity._core.database.permission import SystemDefaultPerms
-from pulsarity._core.events import EvtPriority
-from pulsarity._core.events.server import SystemEventData, system_event
+from pulsarity._core.events.server import UIElementUpdate
 from pulsarity._core.user_interface.pages import UIPage
 
 if TYPE_CHECKING:
     from google.protobuf.message import Message
 
+    from pulsarity._core.database.permission import SystemDefaultPerms
+
 logger = logging.getLogger(__name__)
-
-
-@system_event
-class UIElementUpdate(SystemEventData):
-    """User interface element update event."""
-
-    event_id: ClassVar = EventID.EVENT_UI_UPDATE
-    priority: ClassVar = EvtPriority.LOW
-    permission: ClassVar = SystemDefaultPerms.READ_WEBSOCKET
-
-    ui_element: UIElement
-
-    def serialize_message(self) -> bytes:
-        update_data = self.ui_element.to_element_update_message()
-        return WebsocketEvent(
-            event_id=self.event_id, ui_element_update=update_data
-        ).SerializeToString()
 
 
 @dataclass(frozen=True, slots=True)
