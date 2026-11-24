@@ -11,7 +11,6 @@ from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, ClassVar, Self, final
 
 from pulsarity._core._protobuf.websocket_pb2 import EventID
-from pulsarity._core.events._base import ServerEventData
 from pulsarity._core.events.server import EvtPriority
 from pulsarity._core.utils import background
 from pulsarity._core.utils.asyncio import ensure_async
@@ -20,6 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable
 
     from pulsarity._core._protobuf.websocket_pb2 import EventID
+    from pulsarity._core.events._base import ServerEventData
 
 logger = logging.getLogger(__name__)
 
