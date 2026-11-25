@@ -93,9 +93,6 @@ docs = [
     "sphinx-copybutton==0.5.2",
     "sphinx-substitution-extensions==2026.10.9",
     "sphinx-autodoc-typehints==3.17.5",
-    # Upstream Dependencies
-    "urllib3>=2.8.0",
-    "certifi>=2026.10.19",
 ]
 profile = ["viztracer==1.1.1"]
 

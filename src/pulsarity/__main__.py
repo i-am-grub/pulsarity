@@ -51,7 +51,10 @@ def _signal_shutdown(*_) -> None:
 
 
 def _generate_server() -> PulsarityServer:
-    """Serve the Pulsarity application from a Granian server."""
+    """Build the Pulsarity application from a Granian server.
+
+    This also configures logging for the application.
+    """
     configs = config.config_manager
 
     app: ASGIApp = application.generate_pulsarity_application()
@@ -88,16 +91,15 @@ async def _server() -> None:
         loop.add_signal_handler(signal.Signals.SIGINT, _signal_shutdown)
         loop.add_signal_handler(signal.Signals.SIGTERM, _signal_shutdown)
 
+    server = _generate_server()
+
     logger.info("Platform: %s", platform.platform())
     logger.info("CPU count: %s", os.cpu_count())
-    logger.info("Python: %s", platform.python_version())
-    logger.info("GIL enabled: %s", sys._is_gil_enabled())
-    logger.info("JIT enabled: %s", sys._jit.is_enabled())
+    logger.info("Python Version: %s", platform.python_version())
+    logger.info("Environment Flags: %s", ctx.env.value)
     logger.debug("Granian server: %s", granian.__version__)
     logger.info("Pulsarity application: %s", pulsarity.__version__)
     logger.info("Pulsarity localization: %s", pulsarity_localization.__version__)
-
-    server = _generate_server()
 
     async with asyncio.TaskGroup() as tg:
         tg.create_task(server.serve())

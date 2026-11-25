@@ -867,14 +867,12 @@ dev = [
     { name = "types-protobuf" },
 ]
 docs = [
-    { name = "certifi" },
     { name = "myst-parser" },
     { name = "sphinx" },
     { name = "sphinx-autodoc-typehints" },
     { name = "sphinx-book-theme" },
     { name = "sphinx-copybutton" },
     { name = "sphinx-substitution-extensions" },
-    { name = "urllib3" },
 ]
 profile = [
     { name = "viztracer" },
@@ -919,14 +917,12 @@ dev = [
     { name = "types-protobuf", specifier = "==7.35.1.20260906" },
 ]
 docs = [
-    { name = "certifi", specifier = ">=2026.10.19" },
     { name = "myst-parser", specifier = "==5.2.0" },
     { name = "sphinx", specifier = "==9.2.0" },
     { name = "sphinx-autodoc-typehints", specifier = "==3.17.5" },
     { name = "sphinx-book-theme", specifier = "==1.4.0" },
     { name = "sphinx-copybutton", specifier = "==0.5.2" },
     { name = "sphinx-substitution-extensions", specifier = "==2026.10.9" },
-    { name = "urllib3", specifier = ">=2.8.0" },
 ]
 profile = [{ name = "viztracer", specifier = "==1.1.1" }]
 

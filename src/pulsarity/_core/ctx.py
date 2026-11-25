@@ -7,6 +7,7 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING
 
 from pulsarity._core.utils.connections import WebsocketConnTracker
+from pulsarity._core.utils.env import EnvironmentType
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop
@@ -28,6 +29,7 @@ timer_manager: TimerInterfaceManager
 
 
 # Shared aux application variables
+env = EnvironmentType.get_env_type()
 restart_app = False
 shutdown_app = asyncio.Event()
 ws_conn_tracker = WebsocketConnTracker()

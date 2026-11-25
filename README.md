@@ -74,13 +74,6 @@ python -m pip install . -e
 > This only installs the basic dependencies needed to
 > run the application.
 
-To install the the application with the `pgsql` extra dependency,
-use the following command instead:
-
-```bash
-python -m pip install .[pgsql] -e
-```
-
 To start the default webserver, the following command can
 be used:
 

@@ -58,12 +58,17 @@ def generate_default_config(level: Literal["INFO", "DEBUG"] = "INFO") -> dict:
         },
         "root": {
             "handlers": ["queue_handler"],
-            "level": "WARNING",
+            "level": "INFO",
         },
         "loggers": {
             "pulsarity": {
                 "handlers": ["queue_handler"],
                 "level": level,
+                "propagate": False,
+            },
+            "tortoise": {
+                "handlers": ["queue_handler"],
+                "level": "WARNING",
                 "propagate": False,
             },
             "_granian": {
