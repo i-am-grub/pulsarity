@@ -1,6 +1,7 @@
 """Application environment."""
 
 import os
+import subprocess
 import sys
 from enum import Flag, auto
 from pathlib import Path
@@ -26,6 +27,22 @@ def is_raspberry_pi() -> bool:
     return False
 
 
+def uv_in_env() -> bool:
+    """Checks if uv is installed in the same env as the current interpreter."""
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "uv", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except FileNotFoundError, subprocess.TimeoutExpired:
+        return False
+    else:
+        return result.returncode == 0
+
+
 class EnvironmentType(Flag):
     """Enum describing the runtime environment of the application."""
 
@@ -34,11 +51,13 @@ class EnvironmentType(Flag):
     GIL = auto()
     """Global interpreter lock is active"""
     RASP_PI = auto()
-    """"""
+    """Application is running on a raspberry pi"""
     DOCKER = auto()
     """Application is running in a docker container"""
     PYAPP = auto()
     """Application is deployed with PyApp"""
+    UV = auto()
+    """uv installed in the same environment as the application"""
 
     @classmethod
     def get_env_type(cls) -> EnvironmentType:
@@ -54,9 +73,11 @@ class EnvironmentType(Flag):
             env |= cls.GIL
         if is_raspberry_pi():
             env |= cls.RASP_PI
-        if os.getenv("PYAPP"):
+        if (val := os.getenv("PYAPP")) is not None and int(val):
             env |= cls.PYAPP
-        if os.getenv("DOCKER"):
+        if (val := os.getenv("DOCKER")) is not None and int(val):
             env |= cls.DOCKER
+        if uv_in_env():
+            env |= cls.UV
 
         return env

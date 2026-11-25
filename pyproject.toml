@@ -40,6 +40,9 @@ dependencies = [
     "pypika-tortoise==0.6.5",                             # tortoise-orm
 ]
 
+[project.optional-dependencies]
+uv = ["uv==0.13.9"]
+
 [project.urls]
 repository = "https://github.com/i-am-grub/pulsarity"
 
